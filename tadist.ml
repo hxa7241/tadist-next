@@ -43,13 +43,15 @@ struct
       | _                                                 -> true
 
    let filter (s:string) : string =
-      String.filter isAllowedChar s
+      String_.filter isAllowedChar s
 
    let checkf (s:string) : string eoption =
-      if String.check isAllowedChar s then Ok s else Err "StringT chars invalid"
+      if String_.check isAllowedChar s
+      then Oke s else Erre "StringT chars invalid"
 
    let checke (s:string) : string eoption =
-      if not (String.isEmpty s) then Ok s else Err "StringT emptiness invalid"
+      if not (String_.isEmpty s)
+      then Oke s else Erre "StringT emptiness invalid"
 
    let make (s:string) : t eoption =
       s |> checkf |>= checke
@@ -74,7 +76,7 @@ struct
    type 'a t = 'a array
 
    let make (a:'a array) : 'a t eoption =
-      if (Array.length a) > 0 then Ok a else Err "ArrayNe emptiness invalid"
+      if (Array.length a) > 0 then Oke a else Erre "ArrayNe emptiness invalid"
 
    let toArray (a:'a t) : 'a array =
       a
@@ -98,13 +100,13 @@ struct
 
    let make (s:string) : t eoption =
 
-      (mapErr (fun e -> "date " ^ e) (String.trimTrunc (s, 11)))
+      (mapErr (fun e -> "date " ^ e) (String_.trimTrunc (s, 11)))
 
       |>=
 
       (* check non-zero length *)
       (fun (st:string) ->
-         if String.isEmpty st then Err "date is empty" else Ok st)
+         if String_.isEmpty st then Erre "date is empty" else Oke st)
 
       |>-
 
@@ -119,20 +121,20 @@ struct
 
       (* convert non-compact to compact *)
       (fun ((bce:string) , (sr:string)) ->
-         let sc = String.filter (fun c -> c <> '-') sr in
+         let sc = String_.filter (fun c -> c <> '-') sr in
          (* detect if compact format or not (containing hyphens) *)
          let len  = (String.length sr) in
          let diff = len - (String.length sc) in
          if diff = 0
-         then Ok (bce , sr)
+         then Oke (bce , sr)
          else
             (* check: hyphens valid (presence then absence) *)
             if ((len >  4) && (sr.[4] <> '-'))  ||
                ((len >  7) && (sr.[7] <> '-'))  ||
                ((len <= 7) && (diff > 1))       ||
                ((len >  7) && (diff > 2))
-            then Err "date hyphens invalid"
-            else Ok (bce , sc))
+            then Erre "date hyphens invalid"
+            else Oke (bce , sc))
 
       |>=
 
@@ -144,39 +146,40 @@ struct
                (* one or more digits, then all digits or all 'X' *)
                then
                   let len = String.length s
-                  and px  = String.indexl 'X' s in
+                  and px  = String_.indexl 'X' s in
                   let dx  = String.sub s px (len - px) in
                   (  String.sub s 0 px ,
-                     (px = 0) || not (String.check (fun c -> c = 'X') dx) )
+                     (px = 0) || not (String_.check (fun c -> c = 'X') dx) )
                else
                   (s , false)
             in
-            if xb || not (String.check Char.isDigit dd)
-            then Err "date digits invalid"
-            else Ok s
+            if xb || not (String_.check Char_.isDigit dd)
+            then Erre "date digits invalid"
+            else Oke s
          in
 
          (* check length *)
          let len = String.length sc in
          if (len <> 4) && (len <> 6) && (len <> 8)
-         then Err "date length invalid"
+         then Erre "date length invalid"
          else
             (* build *)
             match checkDigitsX (String.sub sc 0 4) true with
-            | Err _ as e -> e
-            | Ok year    ->
+            | Erre _ as e -> e
+            | Oke year    ->
                if len = 4
-               then Ok (bce ^ year , None)
+               then Oke (bce ^ year , None)
                else
                   match checkDigitsX (String.sub sc 4 2) false with
-                  | Err _ as e -> e
-                  | Ok month   ->
+                  | Erre _ as e -> e
+                  | Oke month   ->
                      if len = 6
-                     then Ok (bce ^ year , Some (month, None))
+                     then Oke (bce ^ year , Some (month, None))
                      else
                         match checkDigitsX (String.sub sc 6 2) false with
-                        | Err _ as e -> e
-                        | Ok day    -> Ok (bce ^ year , Some (month, Some day)))
+                        | Erre _ as e -> e
+                        | Oke day     ->
+                           Oke (bce ^ year , Some (month, Some day)))
 
 
    let toString (isCompact:bool) (d:t) : string =
@@ -241,29 +244,29 @@ let isTextform (s:string) : bool =
 let extractNameHalfs (name:string) (isText:bool) (metaSep:char) :
    (string * string) eoption =
 
-   match String.index_o metaSep name with
+   match String_.index_o metaSep name with
    | Some pos ->
-      Ok (
+      Oke (
          let p , m = (String.sub name 0 pos ,
             String.sub name (pos + 1) ((String.length name) - (pos + 1)))
          in
          if isText
          then (String.trim p , String.trim m)
          else (p , m) )
-   | None -> Err "no plain/meta divider"
+   | None -> Erre "no plain/meta divider"
 
 
 let splitHalfIntoParts (half:string) (sep:char) (isText:bool)
    (halfName:string) : (string list) eoption =
 
-   let lp = String.split sep half in
+   let lp = String_.split sep half in
    if (List.length lp < 1) || (List.length lp > 3)
-   then Err ("wrong number of " ^ halfName ^ " parts")
+   then Erre ("wrong number of " ^ halfName ^ " parts")
    else
       let lp = if isText then List.map String.trim lp else lp in
-      if (List.exists String.isEmpty lp)
-      then Err ("empty " ^ halfName ^ " parts")
-      else Ok lp
+      if (List.exists String_.isEmpty lp)
+      then Erre ("empty " ^ halfName ^ " parts")
+      else Oke lp
 
 
 let extractPlainParts (plain:string) (isText:bool) (partSep:char)
@@ -281,23 +284,23 @@ let extractPlainParts (plain:string) (isText:bool) (partSep:char)
       let f parts index delQuotes subpartSep filterEmpty trimSubparts negLead
          maker =
 
-         match List.nth_o index parts with
+         match List_.nth_o index parts with
          | Some part ->
             (* remove quotes *)
             begin match delQuotes with
             | Some q ->
                let len = String.length part in
                if (len < 2) || (part.[0] <> q) || (part.[len - 1] <> q)
-               then Err "bad title quotes"
-               else Ok (String.sub part 1 (len - 2))
-            | None -> Ok part
+               then Erre "bad title quotes"
+               else Oke (String.sub part 1 (len - 2))
+            | None -> Oke part
             end
 
             |>-
 
             (* split into subparts *)
             (fun (part:string) ->
-               String.split subpartSep part)
+               String_.split subpartSep part)
 
             |>-
 
@@ -324,14 +327,14 @@ let extractPlainParts (plain:string) (isText:bool) (partSep:char)
                      lt
                   in
                   (* remove padding/blanks *)
-                  List.filtmap id lm
+                  List_.filtmap id lm
                else subparts)
 
             |>-
 
             (fun (subparts:string list) ->
                if filterEmpty
-               then List.filter (fNot String.isEmpty) subparts
+               then List.filter (fNot String_.isEmpty) subparts
                else subparts)
 
             |>-
@@ -342,9 +345,9 @@ let extractPlainParts (plain:string) (isText:bool) (partSep:char)
             |>=
 
             (fun (subparts:string list) ->
-               if (List.exists String.isEmpty subparts)
-               then Err "empty plain subparts"
-               else Ok subparts)
+               if (List.exists String_.isEmpty subparts)
+               then Erre "empty plain subparts"
+               else Oke subparts)
 
             |>=
 
@@ -352,18 +355,18 @@ let extractPlainParts (plain:string) (isText:bool) (partSep:char)
                (* make subparts *)
                let lmo = List.map maker subparts in
                (* if any errors, just get first one *)
-               match List.find_o
-                  (function | Err _ -> true | Ok _ -> false) lmo
+               match List_.find_o
+                  (function | Erre _ -> true | Oke _ -> false) lmo
                with
-               | Some (Err _ as e)  -> e
-               | Some (Ok _) | None ->
-                  let lm = List.filtmap eopToOpt lmo in
-                  Ok (Array.of_list lm))
+               | Some (Erre _ as e)  -> e
+               | Some (Oke _) | None ->
+                  let lm = List_.filtmap eopToOpt lmo in
+                  Oke (Array.of_list lm))
 
-         | None -> Ok [||]
+         | None -> Oke [||]
       in
 
-      (Ok parts)
+      (Oke parts)
 
       |^^^=
 
@@ -394,9 +397,9 @@ let extractMetaParts (meta:string) (isText:bool) (metaSep:char) :
       then
          let len = String.length meta in
          if meta.[len - 1] <> '.'
-         then Err "no meta terminator"
-         else Ok (String.sub meta 0 (len - 1))
-      else Ok meta
+         then Erre "no meta terminator"
+         else Oke (String.sub meta 0 (len - 1))
+      else Oke meta
       end
 
       |>=
@@ -410,13 +413,13 @@ let extractMetaParts (meta:string) (isText:bool) (metaSep:char) :
       (* line-up/disambiguate optional parts *)
       (fun (parts:string list) ->
          match parts with
-         | typ :: []                 -> Ok (None, None, typ)
+         | typ :: []                 -> Oke (None, None, typ)
          | idOrSubtyp :: typ :: []   ->
             if String.contains idOrSubtyp '-'
-            then Ok (Some idOrSubtyp, None, typ)
-            else Ok (None, Some idOrSubtyp, typ)
-         | id :: subtyp :: typ :: [] -> Ok (Some id, Some subtyp, typ)
-         | _ -> Err "unrecognised meta parts")
+            then Oke (Some idOrSubtyp, None, typ)
+            else Oke (None, Some idOrSubtyp, typ)
+         | id :: subtyp :: typ :: [] -> Oke (Some id, Some subtyp, typ)
+         | _ -> Erre "unrecognised meta parts")
    end
 
    |^^^=
@@ -426,10 +429,10 @@ let extractMetaParts (meta:string) (isText:bool) (metaSep:char) :
       (fun ((id:string option) , (_:string option) , (_:string)) ->
          match id with
          | Some s ->
-            begin match String.split '-' s with
+            begin match String_.split '-' s with
             | label :: code :: [] ->
                (let lco =
-                  Ok (label , code)
+                  Oke (label , code)
                   |^^=
                   (  (fun ((label:string) , (_:string)) ->
                         StringT.make label)
@@ -438,20 +441,20 @@ let extractMetaParts (meta:string) (isText:bool) (metaSep:char) :
                         StringT.make code) )
                in
                match lco with
-               | Ok lc -> Ok (Some lc)
-               | Err e -> Err ("id " ^ e))
-            | _  -> Err "bad id"
+               | Oke lc -> Oke (Some lc)
+               | Erre e -> Erre ("id " ^ e))
+            | _  -> Erre "bad id"
             end
-         | None -> Ok None)
+         | None -> Oke None)
       ,
       (fun ((_:string option) , (subtyp:string option) , (_:string)) ->
          match subtyp with
          | Some s ->
             begin match StringT.make s with
-            | Ok o  -> Ok (Some o)
-            | Err e -> Err ("subtype " ^ e)
+            | Oke o  -> Oke (Some o)
+            | Erre e -> Erre ("subtype " ^ e)
             end
-         | None   -> Ok None
+         | None   -> Oke None
       )
       ,
       (fun ((_:string option) , (_:string option) , (typ:string)) ->
@@ -472,7 +475,7 @@ let makeNameStruct (s:string) : nameStruct eoption =
 
    |>
 
-   String.trimTrunc
+   String_.trimTrunc
 
    |>=
 
@@ -482,9 +485,9 @@ let makeNameStruct (s:string) : nameStruct eoption =
       |>=
       (* check not empty *)
       (fun ((plain:string) , (meta:string)) ->
-         if (String.isEmpty plain) || (String.isEmpty meta)
-         then Err "empty plain or meta part"
-         else Ok (plain , meta)))
+         if (String_.isEmpty plain) || (String_.isEmpty meta)
+         then Erre "empty plain or meta part"
+         else Oke (plain , meta)))
 
    |^^=
 

@@ -28,7 +28,7 @@ let nonEmpties (ls:string list) : (string list) =
 
    ls
    |> (List.map StringT.filter)
-   |> (List.filter (fNot String.isEmpty))
+   |> (List.filter (fNot String_.isEmpty))
 
 
 (* NB: truncates according to byte-length, not necessarily char-length *)
@@ -54,7 +54,7 @@ let normaliseTitle (titles:string list) : StringT.t ArrayNe.t eoption =
 
    (* use only first *)
    match titles with
-   | []         -> Err "no title found"
+   | []         -> Erre "no title found"
    | first :: _ ->
       first
       |> Utf8filter.replace |> blankSpacyCtrlChars
@@ -65,10 +65,10 @@ let normaliseTitle (titles:string list) : StringT.t ArrayNe.t eoption =
             if i > 8 then String.sub title 0 i else title
          with Not_found -> title)
       (* tokenise *)
-      |> String.trim |> (String.split ' ') |> (List.map String.trim)
+      |> String.trim |> (String_.split ' ') |> (List.map String.trim)
       (* constrain (non-empties, max length, StringT) *)
       |> nonEmpties |> (truncateWords 48)
-      |> (List.filtmap (StringT.make % eopToOpt))
+      |> (List_.filtmap (StringT.make % eopToOpt))
       (* convert to (non-empty) array *)
       |> Array.of_list |> ArrayNe.make
       |> mapErr (fun _ -> "no valid title")
@@ -82,7 +82,7 @@ let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
    |> (fun authors ->
       authors
       (* first, split by ';'s *)
-      |> (List.map (fun s -> String.split ';' s))
+      |> (List.map (fun s -> String_.split ';' s))
       |> List.flatten
       (* then, split those by 'and' and ','s *)
       |> (
@@ -95,12 +95,12 @@ let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
                with Not_found -> false)
             then
                let ss = Str.global_replace rx2 " ; " s in
-               String.split ';' ss
+               String_.split ';' ss
             else [s]) )
       |> List.flatten
       (* clean-up *)
       |> (List.map String.trim)
-      |> (List.filter (fNot String.isEmpty)))
+      |> (List.filter (fNot String_.isEmpty)))
    |> (fun names ->
       if trace
       then print_endline ("* names:      " ^ (String.concat " | " names)) ;
@@ -122,7 +122,7 @@ let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
       lastNames)
    (* constrain *)
    |> nonEmpties |> (truncateWords 32)
-   |> (List.filtmap (StringT.make % eopToOpt))
+   |> (List_.filtmap (StringT.make % eopToOpt))
    |> Array.of_list
 
 
@@ -142,7 +142,7 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
       String.sub s 0 i))
    (* check, and just keep OK, sorted, unique years *)
    |> (List.map DateIso8601e.make)
-   |> (List.filtmap eopToOpt)
+   |> (List_.filtmap eopToOpt)
    |> (List.map DateIso8601e.yearOnly)
    |> (List.sort_uniq DateIso8601e.compare)
    (* first and last only *)
@@ -159,25 +159,25 @@ let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =
    isbns
    |> List.map (Utf8filter.filter % unifySpaces)
    (* to machine-readable form *)
-   |> List.map (String.filter (function | ' ' | '-' -> false | _ -> true))
+   |> List.map (String_.filter (function | ' ' | '-' -> false | _ -> true))
    (* remove bad ones *)
    |> List.filter (fun mForm ->
       match String.length mForm with
       | 13 ->
-         String.check Char.isDigit mForm
+         String_.check Char_.isDigit mForm
       | 10 ->
          let isDigitOrX = function | '0'..'9' | 'X' -> true | _ -> false
          and main,last =
             let len = String.length mForm in
             (String.sub mForm 0 (len - 1) , String.sub mForm (len - 1) 1)
          in
-         (String.check Char.isDigit main) && (String.check isDigitOrX last)
+         (String_.check Char_.isDigit main) && (String_.check isDigitOrX last)
       | _ -> false)
    (* choose first 13-form one *)
    |> List.sort (fun a b -> compare (String.length b) (String.length a))
    |> (function
       | first :: _ ->
-         (Ok first)
+         (Oke first)
          |^^= ( (fun _ -> StringT.make "ISBN") , StringT.make )
          |> eopToOpt
       | _ -> None)
@@ -190,7 +190,7 @@ let normaliseString (s:string) : StringT.t option =
    (* truncate utf8 chars to max byte length *)
    |> (fun st ->
       st
-      |> (let _MAXLEN = 24 in String.truncate _MAXLEN)
+      |> (let _MAXLEN = 24 in String_.truncate _MAXLEN)
       |> Utf8filter.filter)
    |> StringT.make |> eopToOpt
 
@@ -201,14 +201,14 @@ let normaliseMetadata (trace:bool) (titles:string list) (authors:string list)
 
    (* title is mandatory *)
    match normaliseTitle titles with
-   | Err _ as e -> e
-   | Ok title   ->
+   | Erre _ as e -> e
+   | Oke title   ->
       (* type is mandatory *)
       match normaliseString typ with
-      | None     -> Err "invalid type"
+      | None     -> Erre "invalid type"
       | Some typ ->
          (* the rest are optional *)
-         Ok {
+         Oke {
             title  = title ;
             author = normaliseAuthor trace authors ;
             date   = normaliseDate dates ;
@@ -226,11 +226,11 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
 
    (* redundant with recogniseEpub ... and the others?
    (* check file exists *)
-   match (try close_in (open_in_bin filePathname) ; Ok true
-      with _ -> Err "cannot open file")
+   match (try close_in (open_in_bin filePathname) ; Oke true
+      with _ -> Erre "cannot open file")
    with
-   | Err _ as e -> e
-   | Ok _       ->
+   | Erre _ as e -> e
+   | Oke _       ->
    *)
 
    let rec fileTryer (filePathname:string)
@@ -239,13 +239,13 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
       match lf with
       | f :: rest ->
          begin match f trace filePathname with
-         | Ok None     -> fileTryer filePathname rest
-         | Ok Some nsr ->
+         | Oke None     -> fileTryer filePathname rest
+         | Oke Some nsr ->
             normaliseMetadata trace nsr.titleRaw nsr.authorRaw nsr.dateRaw
                nsr.idRaw nsr.subtypRaw nsr.typRaw
-         | Err _ as e  -> e
+         | Erre _ as e  -> e
          end
-      | [] -> Err "unrecognised file type"
+      | [] -> Erre "unrecognised file type"
    in
 
    fileTryer filePathname [

@@ -14,7 +14,7 @@
 
 (* ---- types ---- *)
 
-type 'a eoption = Ok of 'a | Err of string
+type 'a eoption = Oke of 'a | Erre of string
 
 
 
@@ -55,14 +55,14 @@ let id (v:'a) : 'a =
 
 let eopToOpt (veo:'a eoption) : 'a option =
    match veo with
-   | Ok v  -> Some v
-   | Err _ -> None
+   | Oke v  -> Some v
+   | Erre _ -> None
 
 
 let optToEop (vo:'a option) (s:string) : 'a eoption =
    match vo with
-   | Some v -> Ok v
-   | None   -> Err s
+   | Some v -> Oke v
+   | None   -> Erre s
 
 
 let mapOpt (f:'a -> 'b) (o:'a option) : 'b option =
@@ -73,8 +73,8 @@ let mapOpt (f:'a -> 'b) (o:'a option) : 'b option =
 
 let mapErr (f:string -> string) (eo:'a eoption) : 'a eoption =
    match eo with
-   | Ok _ as o -> o
-   | Err e     -> Err (f e)
+   | Oke _ as o -> o
+   | Erre e     -> Erre (f e)
 
 
 let ( % ) f g x =
@@ -95,8 +95,8 @@ let ( &&> ) (o:'a option) (f:unit -> 'b option) : 'b option =
 
 let ( |>= ) (eo:'a eoption) (f:'a -> 'b eoption) : 'b eoption =
    match eo with
-   | Ok v       -> f v
-   | Err _ as e -> e
+   | Oke v       -> f v
+   | Erre _ as e -> e
 
 
 let ( |^^= ) (eo:'a eoption) ((f0:'a -> 'b eoption) , (f1:'a -> 'c eoption))
@@ -104,39 +104,40 @@ let ( |^^= ) (eo:'a eoption) ((f0:'a -> 'b eoption) , (f1:'a -> 'c eoption))
 
    eo |>= (fun v ->
       match ((f0 v) , (f1 v)) with
-      | (Ok b , Ok c)          -> Ok (b , c)
-      | ((Err _ as e0) , Ok _) -> e0
-      | (Ok _ , (Err _ as e1)) -> e1
-      | (Err s0 , Err s1)      -> Err (s0 ^ " && " ^ s1))
+      | (Oke b , Oke c)          -> Oke (b , c)
+      | ((Erre _ as e0) , Oke _) -> e0
+      | (Oke _ , (Erre _ as e1)) -> e1
+      | (Erre s0 , Erre s1)      -> Erre (s0 ^ " && " ^ s1))
 
 
 let ( |^^^= ) (eo:'a eoption)
    ((f0:'a -> 'b eoption) , (f1:'a -> 'c eoption) , (f2:'a -> 'd eoption))
    : ('b * 'c * 'd) eoption =
 
-   let f12 = (fun v -> (Ok v) |^^= (f1 , f2)) in
+   let f12 = (fun v -> (Oke v) |^^= (f1 , f2)) in
    match eo |^^= (f0 , f12) with
-   | Ok (b , (c , d)) -> Ok (b , c , d)
-   | Err _ as e       -> e
+   | Oke (b , (c , d)) -> Oke (b , c , d)
+   | Erre _ as e       -> e
 
    (*eo |>= (fun v ->
       match ((f0 v) , (f1 v) , (f2 v)) with
-      | (Ok b , Ok c , Ok d)          -> Ok (b , c , d)
-      | ((Err _ as e0) , Ok _ , Ok _) -> e0
-      | (Ok _ , (Err _ as e1) , Ok _) -> e1
-      | (Ok _ , Ok _ , (Err _ as e2)) -> e2
-      | (Err s0 , Err s1 , Ok _)      -> Err (s0 ^ " && " ^ s1)
-      | (Err s0 , Ok _ , Err s2)      -> Err (s0 ^ " && " ^ s2)
-      | (Ok _ , Err s1 , Err s2)      -> Err (s1 ^ " && " ^ s2)
-      | (Err s0 , Err s1 , Err s2)    -> Err (s0 ^ " && " ^ s1 ^ " && " ^ s2))*)
+      | (Oke b , Oke c , Oke d)          -> Oke (b , c , d)
+      | ((Erre _ as e0) , Oke _ , Oke _) -> e0
+      | (Oke _ , (Erre _ as e1) , Oke _) -> e1
+      | (Oke _ , Oke _ , (Erre _ as e2)) -> e2
+      | (Erre s0 , Erre s1 , Oke _)      -> Erre (s0 ^ " && " ^ s1)
+      | (Erre s0 , Oke _ , Erre s2)      -> Erre (s0 ^ " && " ^ s2)
+      | (Oke _ , Erre s1 , Erre s2)      -> Erre (s1 ^ " && " ^ s2)
+      | (Erre s0 , Erre s1 , Erre s2)    ->
+         Erre (s0 ^ " && " ^ s1 ^ " && " ^ s2))*)
 
 
 let ( |>+ ) (v:'a) (f:'a -> 'b eoption) : 'b eoption =
-   (Ok v) |>= f
+   (Oke v) |>= f
 
 
 let ( |>- ) (eo:'a eoption) (f:'a -> 'b) : 'b eoption =
-   eo |>= (fun v -> Ok (f v))
+   eo |>= (fun v -> Oke (f v))
 
 
 let string_of_char (c:char) : string =
@@ -180,7 +181,7 @@ let blankNewlines : (string -> string) =
 
 (* ---- std lib module augmentations ---- *)
 
-module Char :
+module Char_ :
 sig
    include module type of Char
 
@@ -195,7 +196,7 @@ struct
 end
 
 
-module String :
+module String_ :
 sig
    include module type of String
 
@@ -250,15 +251,15 @@ struct
    let trimTrunc ((s:string) , (max:int)) : string eoption =
       let st = String.trim s in
       if (String.length st) <= max
-      then Ok st
-      else Err ("too long (> " ^ (string_of_int max) ^ ")")
+      then Oke st
+      else Erre ("too long (> " ^ (string_of_int max) ^ ")")
 
    let truncate (max:int) (s:string) : string =
       if String.length s <= max then s else String.sub s 0 max
 end
 
 
-module List :
+module List_ :
 sig
    include module type of List
 

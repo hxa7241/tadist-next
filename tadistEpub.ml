@@ -65,13 +65,13 @@ struct
       : 'a eoption =
       (* open file *)
       match
-         try Ok (Zip.open_in filePathname) with
-         | Sys_error s -> Err s
+         try Oke (Zip.open_in filePathname) with
+         | Sys_error s -> Erre s
          | Zip.Error (zipName, entryName, message) ->
-            Err (Printf.sprintf "%s %s: %s" zipName entryName message)
+            Erre (Printf.sprintf "%s %s: %s" zipName entryName message)
       with
-      | Err _ as e -> e
-      | Ok zipfile ->
+      | Erre _ as e -> e
+      | Oke zipfile ->
          try
             let ao = f zipfile in
             (* close file *)
@@ -85,11 +85,11 @@ struct
       : string eoption =
       try
          let a = Zip.find_entry zipfile pathname in
-         Ok (Zip.read_entry zipfile a)
+         Oke (Zip.read_entry zipfile a)
       with
-      | Not_found -> Err "zip entry not found"
+      | Not_found -> Erre "zip entry not found"
       | Zip.Error (zipName, entryName, message) ->
-         Err (Printf.sprintf "%s %s: %s" zipName entryName message)
+         Erre (Printf.sprintf "%s %s: %s" zipName entryName message)
 
 end
 
@@ -115,9 +115,9 @@ let recogniseEpub (epubPathname:string) : bool eoption =
       in
 
       close_in_noerr file ;
-      Ok recognised
+      Oke recognised
    with
-   | _ -> Err ("cannot open/read file: " ^ epubPathname)
+   | _ -> Erre ("cannot open/read file: " ^ epubPathname)
 
 
 let getContentOpf (epubPathname:string) : (string * string) eoption =
@@ -130,8 +130,8 @@ let getContentOpf (epubPathname:string) : (string * string) eoption =
             (* get pathname of metadata zipped-file, from epub-root
                zipped file *)
             match Zip.readZippedItem zipfile "META-INF/container.xml" with
-            | Err _ as e      -> e
-            | Ok containerxml ->
+            | Erre _ as e      -> e
+            | Oke containerxml ->
                (* find the filepathname string *)
                try
                   (* remove line-ends for easier regexps *)
@@ -140,18 +140,18 @@ let getContentOpf (epubPathname:string) : (string * string) eoption =
                      full-path=[\"']\\([^\"']*\\)[\"']"
                   in
                   let _ = Str.search_forward rx containerxml 0 in
-                  Ok (Str.matched_group 2 containerxml)
+                  Oke (Str.matched_group 2 containerxml)
                with
-               | Not_found -> Err "content.opf FilePathname not found"
+               | Not_found -> Erre "content.opf FilePathname not found"
          with
-         | Err _ as e                -> e
-         | Ok contentopfFilepathname ->
+         | Erre _ as e                -> e
+         | Oke contentopfFilepathname ->
 
             (* read metadata zipped-file *)
             match Zip.readZippedItem zipfile contentopfFilepathname with
-            | Err _ as e    -> e
-            | Ok contentopf ->
-               Ok ( getFilePath contentopfFilepathname , contentopf )
+            | Erre _ as e    -> e
+            | Oke contentopf ->
+               Oke ( getFilePath contentopfFilepathname , contentopf )
       )
 
 
@@ -267,12 +267,12 @@ let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
       match
          Zip.withZipfile epubPathname
             (fun zipfile ->
-               Ok (List.map (fun htmlPathname ->
+               Oke (List.map (fun htmlPathname ->
                   Zip.readZippedItem zipfile (contentopfpath ^ htmlPathname))
                   htmlPathnames))
       with
-      | Ok a  -> a
-      | Err _ -> []
+      | Oke a  -> a
+      | Erre _ -> []
    in
 
    if trace
@@ -280,9 +280,9 @@ let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
 
    (* filter for ISBN presence *)
    let isbnFiles =
-      List.filtmap (function
-         | Err _    -> None
-         | Ok html  ->
+      List_.filtmap (function
+         | Erre _    -> None
+         | Oke html  ->
             (* for easier searching: coerce to UTF-8; blank-out line-ends,
                tabs, markup; translate en-dashs to hyphens *)
             let text = html
@@ -335,13 +335,13 @@ let extractTadist (trace:bool) (epubPathname:string)
    : (Tadist.nameStructRaw option) eoption =
 
    match recogniseEpub epubPathname with
-   | Err _ as e -> e
-   | Ok false   -> Ok None
-   | Ok true    ->
+   | Erre _ as e -> e
+   | Oke false   -> Oke None
+   | Oke true    ->
 
       match getContentOpf epubPathname with
-      | Err _ as e    -> e
-      | Ok (contentopfpath , contentopf) ->
+      | Erre _ as e    -> e
+      | Oke (contentopfpath , contentopf) ->
 
          let titles , authors , dates , isbns =
             getContentopfMetadata contentopf
@@ -367,7 +367,7 @@ let extractTadist (trace:bool) (epubPathname:string)
                isbns
          in
 
-         Ok (Some Tadist.( {
+         Oke (Some Tadist.( {
             titleRaw  = titles ;
             authorRaw = authors ;
             dateRaw   = dates ;

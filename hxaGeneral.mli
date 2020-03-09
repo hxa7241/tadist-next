@@ -15,7 +15,7 @@
 (* ---- types ---- *)
 
 (** Like option, but instead of None has a string for messages. *)
-type 'a eoption = Ok of 'a | Err of string
+type 'a eoption = Oke of 'a | Erre of string
 
 
 
@@ -49,7 +49,7 @@ val optToEop : 'a option -> string -> 'a eoption
 (** Map Some a -> Some (f a). *)
 val mapOpt : ('a -> 'b) -> 'a option -> 'b option
 
-(** Map Err a -> Err (f a). *)
+(** Map Erre a -> Erre (f a). *)
 val mapErr : (string -> string) -> 'a eoption -> 'a eoption
 
 (** Compose functions (be aware of value restriction). *)
@@ -135,7 +135,7 @@ val blankNewlines : string -> string
 
 (* ---- std lib module augmentations ---- *)
 
-module Char :
+module Char_ :
 sig
    include module type of Char
 
@@ -144,7 +144,7 @@ sig
 end
 
 
-module String :
+module String_ :
 sig
    include module type of String
 
@@ -177,7 +177,7 @@ sig
 end
 
 
-module List :
+module List_ :
 sig
    include module type of List
 

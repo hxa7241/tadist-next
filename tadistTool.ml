@@ -223,8 +223,8 @@ let suggestRename ~(rename:bool) ?(quiet:bool = false) ?(verbose:bool = false)
       match
          TadistRenamer.makeNameStructFromFileName verbose filePathnameOld
       with
-      | Ok ns -> ( Tadist.toStringName ns , Tadist.toStringText ns )
-      | Err s -> fail s
+      | Oke ns -> ( Tadist.toStringName ns , Tadist.toStringText ns )
+      | Erre s -> fail s
    in
    let filePathnameNew = path ^ nameNew in
 
@@ -263,11 +263,11 @@ let convert (input:string) : unit =
 
    let output =
       match Tadist.makeNameStruct input with
-      | Ok ns ->
+      | Oke ns ->
          if Tadist.isTextform input
          then Tadist.toStringName ns
          else Tadist.toStringText ns
-      | Err s -> fail ("bad input: " ^ s)
+      | Erre s -> fail ("bad input: " ^ s)
    in
 
    print_endline output
