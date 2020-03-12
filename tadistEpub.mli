@@ -37,4 +37,4 @@ val _TYPE : string
  * @param string Epub filepathname
  *)
 val extractTadist : bool -> string ->
-   (Tadist.nameStructRaw option) HxaGeneral.eoption
+   (Tadist.nameStructRaw option) HxaGeneral.ress

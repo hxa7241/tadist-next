@@ -50,11 +50,11 @@ let truncateWords (max:int) (words:string list) : string list =
    |> List.split |> fst
 
 
-let normaliseTitle (titles:string list) : StringT.t ArrayNe.t eoption =
+let normaliseTitle (titles:string list) : StringT.t ArrayNe.t ress =
 
    (* use only first *)
    match titles with
-   | []         -> Erre "no title found"
+   | []         -> Error "no title found"
    | first :: _ ->
       first
       |> Utf8filter.replace |> blankSpacyCtrlChars
@@ -65,13 +65,13 @@ let normaliseTitle (titles:string list) : StringT.t ArrayNe.t eoption =
             if i > 8 then String.sub title 0 i else title
          with Not_found -> title)
       (* tokenise *)
-      |> String.trim |> (String_.split ' ') |> (List.map String.trim)
+      |> String.trim |> (String_.split ((=) ' ')) |> (List.map String.trim)
       (* constrain (non-empties, max length, StringT) *)
       |> nonEmpties |> (truncateWords 48)
-      |> (List_.filtmap (StringT.make % eopToOpt))
+      |> (List_.filtmap (StringT.make % resToOpt))
       (* convert to (non-empty) array *)
       |> Array.of_list |> ArrayNe.make
-      |> mapErr (fun _ -> "no valid title")
+      |> errorMap (fun _ -> "no valid title")
 
 
 let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
@@ -82,7 +82,7 @@ let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
    |> (fun authors ->
       authors
       (* first, split by ';'s *)
-      |> (List.map (fun s -> String_.split ';' s))
+      |> (List.map (fun s -> String_.split ((=) ';') s))
       |> List.flatten
       (* then, split those by 'and' and ','s *)
       |> (
@@ -95,7 +95,7 @@ let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
                with Not_found -> false)
             then
                let ss = Str.global_replace rx2 " ; " s in
-               String_.split ';' ss
+               String_.split ((=) ';') ss
             else [s]) )
       |> List.flatten
       (* clean-up *)
@@ -122,7 +122,7 @@ let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
       lastNames)
    (* constrain *)
    |> nonEmpties |> (truncateWords 32)
-   |> (List_.filtmap (StringT.make % eopToOpt))
+   |> (List_.filtmap (StringT.make % resToOpt))
    |> Array.of_list
 
 
@@ -142,7 +142,7 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
       String.sub s 0 i))
    (* check, and just keep OK, sorted, unique years *)
    |> (List.map DateIso8601e.make)
-   |> (List_.filtmap eopToOpt)
+   |> (List_.filtmap resToOpt)
    |> (List.map DateIso8601e.yearOnly)
    |> (List.sort_uniq DateIso8601e.compare)
    (* first and last only *)
@@ -177,9 +177,9 @@ let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =
    |> List.sort (fun a b -> compare (String.length b) (String.length a))
    |> (function
       | first :: _ ->
-         (Oke first)
+         (Ok first)
          |^^= ( (fun _ -> StringT.make "ISBN") , StringT.make )
-         |> eopToOpt
+         |> resToOpt
       | _ -> None)
 
 
@@ -192,23 +192,23 @@ let normaliseString (s:string) : StringT.t option =
       st
       |> (let _MAXLEN = 24 in String_.truncate _MAXLEN)
       |> Utf8filter.filter)
-   |> StringT.make |> eopToOpt
+   |> StringT.make |> resToOpt
 
 
 let normaliseMetadata (trace:bool) (titles:string list) (authors:string list)
    (dates:string list) (isbns:string list) (subtyp:string) (typ:string)
-   : nameStruct eoption =
+   : nameStruct ress =
 
    (* title is mandatory *)
    match normaliseTitle titles with
-   | Erre _ as e -> e
-   | Oke title   ->
+   | Error _ as e -> e
+   | Ok title     ->
       (* type is mandatory *)
       match normaliseString typ with
-      | None     -> Erre "invalid type"
+      | None     -> Error "invalid type"
       | Some typ ->
          (* the rest are optional *)
-         Oke {
+         Ok {
             title  = title ;
             author = normaliseAuthor trace authors ;
             date   = normaliseDate dates ;
@@ -222,30 +222,30 @@ let normaliseMetadata (trace:bool) (titles:string list) (authors:string list)
 (* ---- public functions ---- *)
 
 let makeNameStructFromFileName (trace:bool) (filePathname:string)
-   : nameStruct eoption =
+   : nameStruct ress =
 
    (* redundant with recogniseEpub ... and the others?
    (* check file exists *)
-   match (try close_in (open_in_bin filePathname) ; Oke true
-      with _ -> Erre "cannot open file")
+   match (try close_in (open_in_bin filePathname) ; Ok true
+      with _ -> Error "cannot open file")
    with
-   | Erre _ as e -> e
-   | Oke _       ->
+   | Error _ as e -> e
+   | Ok _         ->
    *)
 
    let rec fileTryer (filePathname:string)
-      (lf:(bool -> string -> (Tadist.nameStructRaw option) eoption) list)
-      : nameStruct eoption =
+      (lf:(bool -> string -> (Tadist.nameStructRaw option) ress) list)
+      : nameStruct ress =
       match lf with
       | f :: rest ->
          begin match f trace filePathname with
-         | Oke None     -> fileTryer filePathname rest
-         | Oke Some nsr ->
+         | Ok None      -> fileTryer filePathname rest
+         | Ok Some nsr  ->
             normaliseMetadata trace nsr.titleRaw nsr.authorRaw nsr.dateRaw
                nsr.idRaw nsr.subtypRaw nsr.typRaw
-         | Erre _ as e  -> e
+         | Error _ as e -> e
          end
-      | [] -> Erre "unrecognised file type"
+      | [] -> Error "unrecognised file type"
    in
 
    fileTryer filePathname [

@@ -132,10 +132,10 @@ sig
    val filter : string -> string
 
    (** Make from string, if valid. *)
-   val make : string -> t HxaGeneral.eoption
+   val make : string -> t HxaGeneral.ress
 
    (** Make from string, by discarding invalid chars. *)
-   val makef : string -> t HxaGeneral.eoption
+   val makef : string -> t HxaGeneral.ress
 
    (** Get string from. *)
    val toString : t -> string
@@ -150,7 +150,7 @@ sig
    type 'a t
 
    (** Make from array, if valid. *)
-   val make : 'a array -> 'a t HxaGeneral.eoption
+   val make : 'a array -> 'a t HxaGeneral.ress
 
    (** Get array from. *)
    val toArray : 'a t -> 'a array
@@ -172,7 +172,7 @@ sig
    type t
 
    (** Make date from string of iso8601, if valid. *)
-   val make : string -> t HxaGeneral.eoption
+   val make : string -> t HxaGeneral.ress
 
    (** Get string of iso8601 from date. *)
    val toString : bool -> t -> string
@@ -225,7 +225,7 @@ val _MAX_NAME_LEN : int
 val isTextform : string -> bool
 
 (** Make name-struct from TADIST string. *)
-val makeNameStruct : string -> nameStruct HxaGeneral.eoption
+val makeNameStruct : string -> nameStruct HxaGeneral.ress
 
 (** Render name-struct to string, in filename style (filename grammar). *)
 val toStringName : nameStruct -> string

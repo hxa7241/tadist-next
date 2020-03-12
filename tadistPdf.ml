@@ -29,19 +29,19 @@ let _TYPE = "pdf"
 (* ---- public functions ---- *)
 
 let extractTadist (_(*trace*):bool) (_(*pdfPathname*):string)
-   : (Tadist.nameStructRaw option) eoption =
+   : (Tadist.nameStructRaw option) ress =
 
-   Erre "not implemented yet"
+   Error "not implemented yet"
 
    (*
-   Oke None -- not recognised
-   Oke Some ... -- recognised, data
+   Ok None -- not recognised
+   Ok Some ... -- recognised, data
 
    ? recognised as a PDF
-      - no: Oke None
+      - no: Ok None
       - yes:
          ? read PDF
-            - fail: Erre ...
+            - fail: Error ...
             - ok:
                - get TAD and pagecount (or not/empty)
                   - get TAD
@@ -55,7 +55,7 @@ let extractTadist (_(*trace*):bool) (_(*pdfPathname*):string)
                   - yes:
                      - lookup data from isbn
                         - openlibrary.org ...
-               - Oke (Some Tadist.( {
+               - Ok (Some Tadist.( {
                   titleRaw  = title ;
                   authorRaw = author ;
                   dateRaw   = date ;

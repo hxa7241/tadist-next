@@ -61,17 +61,17 @@ struct
 
    include Zip
 
-   let withZipfile (filePathname:string) (f:Zip.in_file -> 'a eoption)
-      : 'a eoption =
+   let withZipfile (filePathname:string) (f:Zip.in_file -> 'a ress)
+      : 'a ress =
       (* open file *)
       match
-         try Oke (Zip.open_in filePathname) with
-         | Sys_error s -> Erre s
+         try Ok (Zip.open_in filePathname) with
+         | Sys_error s                             -> Result.Error s
          | Zip.Error (zipName, entryName, message) ->
-            Erre (Printf.sprintf "%s %s: %s" zipName entryName message)
+            Result.Error (Printf.sprintf "%s %s: %s" zipName entryName message)
       with
-      | Erre _ as e -> e
-      | Oke zipfile ->
+      | Result.Error _ as e -> e
+      | Ok zipfile   ->
          try
             let ao = f zipfile in
             (* close file *)
@@ -82,14 +82,14 @@ struct
          with x -> Zip.close_in zipfile ; raise x
 
    let readZippedItem (zipfile:Zip.in_file) (pathname:string)
-      : string eoption =
+      : string ress =
       try
          let a = Zip.find_entry zipfile pathname in
-         Oke (Zip.read_entry zipfile a)
+         Ok (Zip.read_entry zipfile a)
       with
-      | Not_found -> Erre "zip entry not found"
+      | Not_found -> Result.Error "zip entry not found"
       | Zip.Error (zipName, entryName, message) ->
-         Erre (Printf.sprintf "%s %s: %s" zipName entryName message)
+         Result.Error (Printf.sprintf "%s %s: %s" zipName entryName message)
 
 end
 
@@ -98,7 +98,7 @@ end
 
 (* ---- functions ---- *)
 
-let recogniseEpub (epubPathname:string) : bool eoption =
+let recogniseEpub (epubPathname:string) : bool ress =
 
    try
       (* (assuming this can fail) *)
@@ -115,12 +115,12 @@ let recogniseEpub (epubPathname:string) : bool eoption =
       in
 
       close_in_noerr file ;
-      Oke recognised
+      Ok recognised
    with
-   | _ -> Erre ("cannot open/read file: " ^ epubPathname)
+   | _ -> Error ("cannot open/read file: " ^ epubPathname)
 
 
-let getContentOpf (epubPathname:string) : (string * string) eoption =
+let getContentOpf (epubPathname:string) : (string * string) ress =
 
    Zip.withZipfile epubPathname
       (fun zipfile ->
@@ -130,8 +130,8 @@ let getContentOpf (epubPathname:string) : (string * string) eoption =
             (* get pathname of metadata zipped-file, from epub-root
                zipped file *)
             match Zip.readZippedItem zipfile "META-INF/container.xml" with
-            | Erre _ as e      -> e
-            | Oke containerxml ->
+            | Error _ as e    -> e
+            | Ok containerxml ->
                (* find the filepathname string *)
                try
                   (* remove line-ends for easier regexps *)
@@ -140,18 +140,18 @@ let getContentOpf (epubPathname:string) : (string * string) eoption =
                      full-path=[\"']\\([^\"']*\\)[\"']"
                   in
                   let _ = Str.search_forward rx containerxml 0 in
-                  Oke (Str.matched_group 2 containerxml)
+                  Ok (Str.matched_group 2 containerxml)
                with
-               | Not_found -> Erre "content.opf FilePathname not found"
+               | Not_found -> Error "content.opf FilePathname not found"
          with
-         | Erre _ as e                -> e
-         | Oke contentopfFilepathname ->
+         | Error _ as e              -> e
+         | Ok contentopfFilepathname ->
 
             (* read metadata zipped-file *)
             match Zip.readZippedItem zipfile contentopfFilepathname with
-            | Erre _ as e    -> e
-            | Oke contentopf ->
-               Oke ( getFilePath contentopfFilepathname , contentopf )
+            | Error _ as e  -> e
+            | Ok contentopf ->
+               Ok ( getFilePath contentopfFilepathname , contentopf )
       )
 
 
@@ -267,12 +267,12 @@ let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
       match
          Zip.withZipfile epubPathname
             (fun zipfile ->
-               Oke (List.map (fun htmlPathname ->
+               Ok (List.map (fun htmlPathname ->
                   Zip.readZippedItem zipfile (contentopfpath ^ htmlPathname))
                   htmlPathnames))
       with
-      | Oke a  -> a
-      | Erre _ -> []
+      | Ok a    -> a
+      | Error _ -> []
    in
 
    if trace
@@ -281,8 +281,8 @@ let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
    (* filter for ISBN presence *)
    let isbnFiles =
       List_.filtmap (function
-         | Erre _    -> None
-         | Oke html  ->
+         | Error _  -> None
+         | Ok html  ->
             (* for easier searching: coerce to UTF-8; blank-out line-ends,
                tabs, markup; translate en-dashs to hyphens *)
             let text = html
@@ -291,7 +291,7 @@ let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
                |> (Str.global_replace (Str.regexp "<[^>]+>") " ")
                |> (Str.global_replace (Str.regexp_string "\xE2\x80\x93") "-")
             in
-            mapOpt (fun isbn -> (text,isbn)) (findFirstIsbn trace text)
+            optMap (fun isbn -> (text,isbn)) (findFirstIsbn trace text)
          ) htmls
    in
 
@@ -332,16 +332,16 @@ let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
 (* ---- public functions ---- *)
 
 let extractTadist (trace:bool) (epubPathname:string)
-   : (Tadist.nameStructRaw option) eoption =
+   : (Tadist.nameStructRaw option) ress =
 
    match recogniseEpub epubPathname with
-   | Erre _ as e -> e
-   | Oke false   -> Oke None
-   | Oke true    ->
+   | Error _ as e -> e
+   | Ok false     -> Ok None
+   | Ok true      ->
 
       match getContentOpf epubPathname with
-      | Erre _ as e    -> e
-      | Oke (contentopfpath , contentopf) ->
+      | Error _ as e                     -> e
+      | Ok (contentopfpath , contentopf) ->
 
          let titles , authors , dates , isbns =
             getContentopfMetadata contentopf
@@ -367,7 +367,7 @@ let extractTadist (trace:bool) (epubPathname:string)
                isbns
          in
 
-         Oke (Some Tadist.( {
+         Ok (Some Tadist.( {
             titleRaw  = titles ;
             authorRaw = authors ;
             dateRaw   = dates ;

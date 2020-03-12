@@ -31,4 +31,4 @@
  * @param string filepathname
  *)
 val makeNameStructFromFileName : bool -> string ->
-   Tadist.nameStruct HxaGeneral.eoption
+   Tadist.nameStruct HxaGeneral.ress
