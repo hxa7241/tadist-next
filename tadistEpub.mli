@@ -1,11 +1,11 @@
 (*------------------------------------------------------------------------------
 
-   Epub lib (OCaml 4.02)
-   Harrison Ainsworth / HXA7241 : 2015
+   Epub lib (OCaml 4.10)
+   Harrison Ainsworth / HXA7241 : 2015, 2020
 
    http://www.hxa.name/tools/
 
-   License: CC0 -- http://creativecommons.org/publicdomain/zero/1.0/
+   License: AGPL -- https://www.gnu.org/licenses/agpl-3.0.html
 
 ------------------------------------------------------------------------------*)
 

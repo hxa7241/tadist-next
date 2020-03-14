@@ -3,10 +3,10 @@ TADIST tool
 ======================================================================
 
 
-Harrison Ainsworth / HXA7241 : 2015  
+Harrison Ainsworth / HXA7241 : 2015, 2020  
 http://www.hxa.name/tools
 
-2015-05-30  
+2020-03-14  
 
 
 
@@ -57,7 +57,7 @@ Build
 -----
 
 Requirements:
-* OCaml 4.02 (or thereabouts)
+* OCaml 4.10 (or thereabouts)
 * ocamlfind
 
 Library dependencies (other versions *might* suffice):
@@ -107,6 +107,7 @@ DC:`
    title:`TADIST tool 1`
    creator:`Harrison Ainsworth / HXA7241`
 
+   date:`2020-03-14`
    date:`2015-05-30`
    date:`2015-05-23`
 
@@ -115,12 +116,12 @@ DC:`
 
    type:`software`
    language:`en-GB`
-   language:`OCaml 4.02`
+   language:`OCaml 4.10`
    format:`text/ocaml`
 
    relation:`http://www.hxa.name`
    identifier:`http://www.hxa.name/tools/#tadist`
-   rights:`Creative Commons CC0 1.0 Universal License`
+   rights:`GNU Affero General Public License, Version 3`
 
    references:`http://forge.ocamlcore.org/projects/camlzip/`
    references:`http://opam.ocaml.org/packages/camlpdf/camlpdf.2.1.1/`
