@@ -1,7 +1,7 @@
 (*------------------------------------------------------------------------------
 
-   General (OCaml 4.06)
-   Harrison Ainsworth / HXA7241 : 2020
+   General (OCaml 4.10)
+   Harrison Ainsworth / HXA7241 : 2015, 2020
 
    http://www.hxa.name/tools/
 
@@ -38,10 +38,23 @@ let ofList1 (l1:'a list1) : 'a list =
    (fst l1) :: (snd l1)
 
 
-(* -- print, assert, fail -- *)
+let ( @< ) (l:'a list) (a:'a) : 'a list =
+   l @ (a :: [])
+
+
+(* -- print, exception-default, assert, fail -- *)
 
 let print_string_flush (s:string) : unit =
    Printf.printf "%s%!" s
+
+
+let excToDefaultf ~(default:unit -> 'a) ~(f:unit -> 'a) : 'a =
+   try f () with
+   | Out_of_memory | Stack_overflow | Sys.Break as x -> raise x
+   | _                                               -> default ()
+
+let excToDefault (default:'a) (f:unit -> 'a) : 'a =
+   excToDefaultf ~default:(Fun.const default) ~f
 
 
 (* @exceptions: whatever can be raised by Printf.ksprintf *)
@@ -58,533 +71,7 @@ let fail (message:string) : 'a =
    end
 
 
-(* -- filename -- *)
-
-let splitFileNameExt (nameExt:string) : (string * string) =
-   try
-      let extPos = (String.rindex nameExt '.') in
-      let extLen = (String.length nameExt) - extPos in
-      ( String.sub nameExt 0 extPos , String.sub nameExt extPos extLen )
-   with
-   | Not_found -> (nameExt , "")
-
-
-let getFileNameMain (nameExt:string) : string =
-   fst (splitFileNameExt nameExt)
-
-
-let getFileNameExt (nameExt:string) : string =
-   snd (splitFileNameExt nameExt)
-
-
-let splitFilePathName (pathName:string) : (string * string) =
-   try
-      let namePos = (String.rindex pathName '/') + 1 in
-      let nameLen = (String.length pathName) - namePos in
-      ( String.sub pathName 0 namePos , String.sub pathName namePos nameLen )
-   with
-   | Not_found -> (pathName , "")
-
-
-let getFilePath (pathName:string) : string =
-   fst (splitFilePathName pathName)
-
-
-let getFileName (pathName:string) : string =
-   snd (splitFilePathName pathName)
-
-
-(* -- id, not, const, compose, swp -- *)
-
-let id (v:'a) : 'a =
-   v
-
-
-let fNot (f:'a -> bool) : ('a -> bool) =
-   fun p -> not (f p)
-
-
-let fConst (a:'a) (_:'b) : 'a =
-   a
-
-
-let ( % ) f g x =
-   g (f x)
-
-let ( %> ) = ( % )
-
-
-let swp (f:'a -> 'b -> 'c) (a:'a) (b:'b) : 'c =
-   f b a
-
-
-(* -- some fn, ok fn -- *)
-
-let fSome (a:'a) : 'a option =
-   Some a
-
-
-let fOk (o:'o) : ('o ,'e) result =
-   Ok o
-
-
-let hemap2 (f0,f1:('a0 -> 'b0) * ('a1 -> 'b1)) (a0,a1:'a0 * 'a1) : ('b0 * 'b1) =
-   ( f0 a0 , f1 a1 )
-
-
-(* -- result and option conversions and maps -- *)
-
-let resToOpt (r:('o,'e) result) : 'o option =
-   match r with
-   | Ok    o -> Some o
-   | Error _ -> None
-
-
-let optToRes (e:'e) (oo:'o option) : ('o,'e) result =
-   match oo with
-   | Some o -> Ok    o
-   | None   -> Error e
-
-
-let optToResU (oo:'o option) : ('o, unit) result =
-   optToRes () oo
-
-
-let resoptToOptres (resopt:(('o,'e) result) option)
-   : (('o option),'e) result =
-
-   match resopt with
-   | Some res ->
-      begin match res with
-      | Ok o    -> Ok (Some o)
-      | Error e -> Error e
-      end
-   | None -> Ok None
-
-   (*
-   o r -> ro
-   ----+----
-   s o |  os (value)
-   s e |  e
-   n - |  on
-   n - |  on
-   *)
-
-
-let optresToResopt (optres:(('o option),'e) result)
-   : (('o,'e) result) option =
-
-   match optres with
-   | Ok opt ->
-      begin match opt with
-      | Some s -> Some (Ok s)
-      | None   -> None
-      end
-   | Error e -> Some (Error e)
-
-   (*
-   r o -> or
-   ----+----
-   o s |  so (value)
-   o n |  n
-   e - |  se
-   e - |  se
-   *)
-
-
-let optMap (f:'a -> 'b) (o:'a option) : 'b option =
-   match o with
-   | Some v -> Some (f v)
-   | None   -> None
-
-
-let someMap = optMap
-
-
-let optUnify (f:unit -> 'a) (o:'a option) : 'a =
-   match o with
-   | Some v -> v
-   | None   -> f ()
-
-
-let noneDefault = optUnify
-
-
-let optDiverge (o:'a option) : ('a option * unit option) =
-   match o with
-   | Some a -> (Some a , None   )
-   | None   -> (None   , Some ())
-
-
-let optMatch (fs:'a -> 'b) (fn:unit -> 'b) (o:'a option) : 'b =
-   (optMap fs o) |> (noneDefault fn)
-
-let optMapUnify = optMatch
-
-
-let optToBool (o:'a option) : bool =
-   match o with
-   | Some _ -> true
-   | None   -> false
-
-
-let bool_of_option = optToBool
-
-
-let boolToOpt (b:bool) : unit option =
-   if b then Some () else None
-
-
-let option_of_bool = boolToOpt
-
-
-let classifyToOpt (pred:'a -> bool) (a:'a) : 'a option =
-   if pred a then Some a else None
-
-
-(*let bool_of_result (r:('o,'e) result) : bool =
-   match r with
-   | Ok _    -> true
-   | Error _ -> false
-
-
-let result_of_bool (b:bool) : ('o,'e) result =
-   if b then Ok () else Error ()*)
-
-
-let resMap ((fo,fe):('o0 -> 'o1)*('e0 -> 'e1)) (r:('o0,'e0) result)
-   : ('o1,'e1) result =
-   match r with
-   | Ok    o -> Ok    (fo o)
-   | Error e -> Error (fe e)
-
-
-(* won't compile to correct types -- id forces it to ('a -> 'a) *)
-(*let resMap_ ?(ok:('a -> 'c) = id) ?(er:('b -> 'd) = id) (r:('a,'b) result)
-   : ('c,'d) result =
-   match r with
-   | Ok    o -> Ok    (ok o)
-   | Error e -> Error (er e)*)
-
-
-let okMap    (f:('o0 -> 'o1)) (r:('o0,'e) result) : ('o1,'e) result =
-   resMap (f , id) r
-   (*resMap_ ~ok:f r*)
-
-
-let errorMap (f:('e0 -> 'e1)) (r:('o,'e0) result) : ('o,'e1) result =
-   resMap (id , f) r
-   (*resMap ~er:f r*)
-
-
-let resUnify (f:('e0 -> 'o)) (r:('o,'e0) result) : 'o =
-   match r with
-   | Ok o    -> o
-   | Error e -> f e
-
-
-let errorDefault = resUnify
-
-
-let resDiverge (r:('o,'e) result) : ('o option * 'e option) =
-   match r with
-   | Ok    o -> (Some o , None)
-   | Error e -> (None , Some e)
-
-
-let resToExc_x (f:'e -> exn) (r:('o,'e) result) : 'o =
-   match r with
-   | Ok    o -> o
-   | Error e -> raise (f e)
-
-
-let excToRes (f:unit -> 'o) : ('o , exn) result =
-   try Ok (f ()) with
-   | Out_of_memory | Stack_overflow | Sys.Break as x -> raise x
-   | x                                               -> Error x
-
-
-let excToDefaultf ~(default:unit -> 'a) ~(f:unit -> 'a) : 'a =
-   match excToRes f with
-   | Ok o    -> o
-   | Error _ -> default ()
-
-
-let excToDefault (default:'a) (f:unit -> 'a) : 'a =
-   excToDefaultf ~default:(fConst default) ~f
-
-(*let excToDefault (default:'a) (f:unit -> 'a) : 'a =
-   match excToRes f with
-   | Ok o    -> o
-   | Error _ -> default*)
-
-
-let excToRes2 (e:'e) (f:unit -> 'o) : ('o,'e) result =
-   excToDefault (Error e) (f % fOk)
-
-
-let optToExc_x (f:unit -> exn) (o:'a option) : 'a =
-   match o with
-   | Some a -> a
-   | None   -> raise (f ())
-
-
-let excToOpt (f:unit -> 'a) : 'a option =
-   excToDefault None (f % fSome)
-
-
-(*let mergeOpt2 (nul:'a) (sum:'a -> 'a -> 'a) (e0oe1o:'a option * 'a option)
-   : 'a =
-   match e0oe1o with
-   | Some e0 , Some e1 -> sum e0 e1
-   | None    , Some e1 -> e1
-   | Some e0 , None    -> e0
-   | None    , None    -> nul*)
-
-
-let optAnd2
-   (o0:'o0 option)
-   (o1:'o1 option)
-   : ('o0 * 'o1) option =
-
-   match o0 , o1 with
-   | Some s0 , Some s1 -> Some (s0 , s1)
-   | Some _  , None    -> None
-   | None    , Some _  -> None
-   | None    , None    -> None
-
-
-let ressAnd2
-   (joiner:string)
-   (r0:('o0,string) result)
-   (r1:('o1,string) result)
-   : (('o0 * 'o1) , string) result =
-
-   match (r0,r1) with
-   | (Ok o0    , Ok o1   ) -> Ok (o0 , o1)
-   | (Error e0 , Ok _    ) -> Error e0
-   | (Ok _     , Error e1) -> Error e1
-   | (Error e0 , Error e1) -> Error (e0 ^ joiner ^ e1)
-
-
-let ressAnd3
-   (joiner:string)
-   (r0:('o0,string) result)
-   (r1:('o1,string) result)
-   (r2:('o2,string) result)
-   : (('o0 * 'o1 * 'o2) , string) result =
-
-   (ressAnd2 joiner
-      (ressAnd2 joiner r0 r1)
-      r2)
-   |>
-   (okMap (fun ((o1,o2),o3) -> (o1,o2,o3)))
-
-
-(*let ( |>=& ) (r0:('o0,string) result) (r1:('o1,string) result)
-   : (('o1 * 'o0) , string) result =
-
-   match (r0, r1) with
-   | (Ok r0    , Ok r1   ) -> Ok (r1, r0)
-   | (Error r0 , Ok _    ) -> Error r0
-   | (Ok _     , Error r1) -> Error r1
-   | (Error r0 , Error r1) -> Error (r0 ^ ", " ^ r1)*)
-
-
-(*let resAnd (ab:('o0,'e0) result * ('o1,'e1) result)
-   : (('o0 * 'o1) , ('e0 option * 'e1 option)) result =
-
-   match ab with
-   | Ok o0    , Ok o1    -> Ok (o0 , o1)
-   | Error e0 , Ok _     -> Error (Some e0 , None   )
-   | Ok _     , Error e1 -> Error (None    , Some e1)
-   | Error e0 , Error e1 -> Error (Some e0 , Some e1)*)
-
-
-(*let ( &&= ) (a:('o0,'e) result) (b:('o1,'e) result)
-   : (('o1 * 'o0) , 'e list) result =
-
-   match (a,b) with
-   | (Ok o0    , Ok o1   ) -> Ok (o1 , o0)
-   | (Ok _     , Error e1) -> Error [e1]
-   | (Error e0 , Ok _    ) -> Error [e0]
-   | (Error e0 , Error e1) -> Error [e1 ; e0]*)
-
-
-(* -- error-handling pipeline/monad -- *)
-
-let ( ||> ) (o:'a option) (f:unit -> 'a option) : 'a option =
-   match o with
-   | Some _ as a -> a
-   | None        -> f ()
-
-
-let ( &&> ) (o:'a option) (f:unit -> 'a option) : 'a option =
-   match o with
-   | Some _ -> f ()
-   | None   -> None
-
-
-let ( |>- ) (o1:'o1 option) (f:'o1 -> 'o2 option)
-   : 'o2 option =
-
-   match o1 with
-   | Some o -> f o
-   | None   -> None
-
-   (* alternatively, using |>=: *)
-   (*o1
-   |> optToResU
-   |>= (f % optToResU)
-   |> resToOpt*)
-
-
-let ( |>= ) (r1:('o1,'e) result) (f:'o1 -> ('o2,'e) result)
-   : ('o2,'e) result =
-
-   match r1 with
-   | Ok    o      -> f o
-   | Error _ as e -> e
-
-let ( let|>= ) = ( |>= )
-
-
-(*let ( |>>= ) (r1:('o1,'e) result) (f:'o1 -> ('o2,'e) result)
-   : (('o1 * 'o2) , 'e) result =
-
-   r1 |>= (fun o1 ->
-      match f o1 with
-      | Ok    o2     -> Ok (o1 , o2)
-      | Error _ as e -> e)*)
-
-
-(* dependent on List, so moved below that
-
-let ( |^= ) (r:('o1,'e) result) (lf:('o1 -> ('o2,'e) result) list)
-   : ('o2 list , 'e list) result =
-
-   (* : (('o2,'e) result) list *)
-   (List.map ((|>=) r) lf)
-   |>
-   List.resAnd
-*)
-
-
-let optAnd2p
-   (f0:'s0 -> 'o1 option)
-   (f1:'s0 -> 'o2 option)
-   (s0:'s0)
-   : ('o1 * 'o2) option =
-
-   optAnd2 (f0 s0) (f1 s0)
-
-
-let ressAnd2p
-   (joiner:string)
-   (f0:'o0 -> ('o1,string) result)
-   (f1:'o0 -> ('o2,string) result)
-   (o0:'o0)
-   : (('o1 * 'o2) , string) result =
-
-   ressAnd2 joiner (f0 o0) (f1 o0)
-
-
-let ( |^^= )
-   (r1:'o1 ress)
-   (  (f0:'o1 -> 'o2 ress) ,
-      (f1:'o1 -> 'o3 ress) )
-   : ('o2 * 'o3) ress =
-
-   r1 |>= (fun o1 ->
-      match ((f0 o1) , (f1 o1)) with
-      | (Ok o2    , Ok o3   ) -> Ok (o2 , o3)
-      | (Ok _     , Error e1) -> Error e1
-      | (Error e0 , Ok _    ) -> Error e0
-      | (Error e0 , Error e1) -> Error (e0 ^ " && " ^ e1))
-
-
-let ressAnd3p
-   (joiner:string)
-   (f0:'o0 -> ('o1,string) result)
-   (f1:'o0 -> ('o2,string) result)
-   (f2:'o0 -> ('o3,string) result)
-   (o0:'o0)
-   : (('o1 * 'o2 * 'o3) , string) result =
-
-   ressAnd3 joiner (f0 o0) (f1 o0) (f2 o0)
-
-   (*
-   (ressAnd2 joiner
-      (ressAnd2 joiner
-         (f0 o0)
-         (f1 o0))
-      (f2 o0))
-   |>
-   (okMap (fun ((o1,o2),o3) -> (o1,o2,o3)))
-
-   (*let f12 = (fun o0 -> ressAnd2p joiner f1 f2 (Ok o0)) in
-   match (ressAnd2p joiner f0 f12 r) with
-   | Ok (o1 , (o2 , o3)) -> Ok (o1 , o2 , o3)
-   | Error e             -> Error e*)
-
-   (*let f12 = (fun o0 -> ressAnd2p joiner f1 f2 (Ok o0)) in
-   match (ressAnd2p joiner f0 f12 r) with
-   | Ok (o1 , (o2 , o3)) -> Ok (o1 , o2 , o3)
-   | Error e             -> Error e*)
-   *)
-
-
-let ( |^^^= )
-   (r1:('o1,string) result)
-   (  (f0:'o1 -> 'o2 ress) ,
-      (f1:'o1 -> 'o3 ress) ,
-      (f2:'o1 -> 'o4 ress) )
-   : ('o2 * 'o3 * 'o4) ress =
-
-   let f12 = (fun o1 -> (Ok o1) |^^= (f1 , f2)) in
-   match r1 |^^= (f0 , f12) with
-   | Ok (o2 , (o3 , o4)) -> Ok (o2 , o3 , o4)
-   | Error e             -> Error e
-
-   (*r1 |>= (fun o1 ->
-      match ((f0 o1) , (f1 o1) , (f2 o1)) with
-      | (Ok o2 , Ok o3 , Ok o4)          -> Ok (o2 , o3 , o4)
-      | (Error e0 , Ok _ , Ok _)         -> Error e0
-      | (Ok _ , Error e1 , Ok _)         -> Error e1
-      | (Ok _ , Ok _ , Error e2)         -> Error e2
-      | (Error e0 , Error e1 , Ok _)     -> Error (e0 ^ " && " ^ e1)
-      | (Error e0 , Ok _ , Error e2)     -> Error (e0 ^ " && " ^ e2)
-      | (Ok _ , Error e1 , Error e2)     -> Error (e1 ^ " && " ^ e2)
-      | (Error e0 , Error e1 , Error e2) ->
-         Error (e0 ^ " && " ^ e1 ^ " && " ^ e2))*)
-
-
-let ( |>=? ) (r1:('o,'e) result) (f:'e -> ('o,'e) result)
-   : ('o,'e) result =
-
-   match r1 with
-   | Ok _ as o -> o
-   | Error e   -> f e
-
-
-let ( |>=+ ) (o1:'o1) (f:'o1 -> ('o2,'e) result) : ('o2,'e) result =
-   (Ok o1) |>= f
-
-
-let ( |>=- ) (r1:('o1,'e) result) (f:'o1 -> 'o2) : ('o2,'e) result =
-   r1 |>= (fun o1 -> Ok (f o1))
-
-
-let ( |>=> )
-   (f:'o1 -> ('o2,'e) result)
-   (g:'o2 -> ('o3,'e) result)
-   (r:('o1,'e) result)
-   : ('o3,'e) result =
-
-   r |>= f |>= g
-
-
-(* -- string, numerical, etc -- *)
+(* -- string, numerical, timer -- *)
 
 let string_of_char (c:char) : string =
    String.make 1 c
@@ -592,37 +79,6 @@ let string_of_char (c:char) : string =
 
 let string_of_byte (b:int)  : string =
    String.make 1 (char_of_int (b land 0xFF))
-
-
-let blankSpacyCtrlChars : (string -> string) =
-   String.map
-      (function
-      | '\x09' | '\x0A' | '\x0B' | '\x0C' | '\x0D' -> ' '
-      | c                                          -> c)
-
-
-let blankNewlines : (string -> string) =
-   String.map (function | '\n' | '\r' -> ' ' | c -> c)
-
-
-let unifySpaces (s:string) : string =
-   let rx = Str.regexp
-      "\x09\\|\x0A\\|\x0B\\|\x0C\\|\x0D\\|\x20\\|\
-      \xC2\x85\\|\xC2\xA0\\|\
-      \xE1\x9A\x80\\|\xE1\xA0\x8E\\|\
-      \xE2\x80\x80\\|\xE2\x80\x81\\|\xE2\x80\x82\\|\xE2\x80\x83\\|\
-      \xE2\x80\x84\\|\xE2\x80\x85\\|\xE2\x80\x86\\|\
-      \xE2\x80\x87\\|\xE2\x80\x88\\|\
-      \xE2\x80\x89\\|\xE2\x80\x8A\\|\
-      \xE2\x80\x8B\\|\xE2\x80\x8C\\|\xE2\x80\x8D\\|\
-      \xE2\x80\xA8\\|\xE2\x80\xA9\\|\
-      \xE2\x80\xAF\\|\
-      \xE2\x81\x9F\\|\
-      \xE2\x81\xA0\\|\
-      \xE3\x80\x80\\|\
-      \xEF\xBB\xBF"
-   in
-   Str.global_replace rx " " s
 
 
 let clamp ~(lo:'a) ~(up:'a) (n:'a) : 'a =
@@ -644,10 +100,6 @@ let minMaxMean (things:float list) : (float * float * float) =
    (min , max , (sum /. count))
 
 
-let ( @@ ) (l:'a list) (a:'a) : 'a list =
-   l @ (a :: [])
-
-
 let timerWall (f:'a -> 'b) (input:'a) : ('b * float) =
    let timeBegin = Unix.gettimeofday () in
    let output = f input in
@@ -655,21 +107,279 @@ let timerWall (f:'a -> 'b) (input:'a) : ('b * float) =
    ( output , timeEnd -. timeBegin )
 
 
+(* -- function combinators -- *)
+
+let ( % ) f g x =
+   g (f x)
+
+let ( %> ) = ( % )
+
+
+(* -- heterogenous (product) map -- *)
+
+let hemap2 (f0,f1:('a0 -> 'b0) * ('a1 -> 'b1)) (a0,a1:'a0 * 'a1) : ('b0 * 'b1) =
+   ( f0 a0 , f1 a1 )
+
+
 
 
 (* ---- std lib module augmentations ---- *)
 
+module Option_ :
+sig
+   val valuef   : (unit -> 'a) -> 'a option -> 'a
+   val unify    : (unit -> 'a) -> 'a option -> 'a
+   val default  : (unit -> 'a) -> 'a option -> 'a
+   val diverge  : 'a option -> ('a option * unit option)
+   val mapUnify : ('a -> 'b) -> (unit -> 'b) -> 'a option -> 'b
+   val toBool   : 'a option -> bool
+   val fromBool : bool -> unit option
+   val classify : ('a -> bool) -> 'a -> 'a option
+   val toRes    : 'e -> 'o option -> ('o,'e) result
+   val toResU   : 'o option -> ('o, unit) result
+   val resoptToOptres : (('o, 'e) result) option -> ('o option, 'e) result
+   val toExc_x  : (unit -> exn) -> 'a option -> 'a
+   val fromExc  : (unit -> 'a) -> 'a option
+   val and2     : ('a option) -> ('b option) -> (('a * 'b) option)
+   (*val merge2   : 'a -> ('a -> 'a -> 'a) -> ('a option * 'a option) -> 'a*)
+end
+=
+struct
+   let valuef (f:unit -> 'a) (o:'a option) : 'a =
+      match o with
+      | Some v -> v
+      | None   -> f ()
+
+   let unify = valuef
+
+   let default = valuef
+
+   let diverge (o:'a option) : ('a option * unit option) =
+      match o with
+      | Some a -> (Some a , None   )
+      | None   -> (None   , Some ())
+
+   let mapUnify (fs:'a -> 'b) (fn:unit -> 'b) (o:'a option) : 'b =
+      (Option.map fs o) |> (default fn)
+
+   let toBool = Option.is_some
+   (*let toBool (o:'a option) : bool =
+      match o with
+      | Some _ -> true
+      | None   -> false*)
+
+   let fromBool (b:bool) : unit option =
+      if b then Some () else None
+
+   let classify (pred:'a -> bool) (a:'a) : 'a option =
+      if pred a then Some a else None
+
+   let toRes (e:'e) (oo:'o option) : ('o,'e) result =
+      Option.to_result ~none:e oo
+   (*let toRes (e:'e) (oo:'o option) : ('o,'e) result =
+      match oo with
+      | Some o -> Ok    o
+      | None   -> Error e*)
+
+   let toResU (oo:'o option) : ('o, unit) result =
+      toRes () oo
+
+   let resoptToOptres (resopt:(('o,'e) result) option)
+      : (('o option),'e) result =
+
+      match resopt with
+      | Some res ->
+         begin match res with
+         | Ok o    -> Ok (Some o)
+         | Error e -> Error e
+         end
+      | None -> Ok None
+
+      (*
+      o r -> ro
+      ----+----
+      s o |  os (value)
+      s e |  e
+      n - |  on
+      n - |  on
+      *)
+
+   let toExc_x (f:unit -> exn) (o:'a option) : 'a =
+      match o with
+      | Some a -> a
+      | None   -> raise (f ())
+
+   let fromExc (f:unit -> 'a) : 'a option =
+      excToDefaultf ~default:(Fun.const None) ~f:(f % Option.some)
+
+   let and2
+      (o0:'o0 option)
+      (o1:'o1 option)
+      : ('o0 * 'o1) option =
+
+      match o0 , o1 with
+      | Some s0 , Some s1 -> Some (s0 , s1)
+      | Some _  , None    -> None
+      | None    , Some _  -> None
+      | None    , None    -> None
+
+   (*let merge2 (nul:'a) (sum:'a -> 'a -> 'a) (e0oe1o:'a option * 'a option)
+      : 'a =
+      match e0oe1o with
+      | Some e0 , Some e1 -> sum e0 e1
+      | None    , Some e1 -> e1
+      | Some e0 , None    -> e0
+      | None    , None    -> nul*)
+end
+
+
+module Result_ :
+sig
+   val valuef       : ('e0 -> 'o) -> ('o, 'e0) result -> 'o
+   val unify        : ('e0 -> 'o) -> ('o, 'e0) result -> 'o
+   val errorDefault : ('e0 -> 'o) -> ('o, 'e0) result -> 'o
+   val map : (('a -> 'c) * ('b -> 'd)) -> ('a,'b) result -> ('c,'d) result
+   (*val resMap_      : ?ok:('a -> 'c) -> ?er:('b -> 'd) -> ('a,'b) result ->
+      ('c,'d) result*)
+   val okMap        : ('o0 -> 'o1) -> ('o0,'e) result -> ('o1,'e) result
+   val errorMap     : ('e0 -> 'e1) -> ('o,'e0) result -> ('o,'e1) result
+   val diverge      : ('o,'e) result -> ('o option * 'e option)
+   val toOpt        : ('o,'e) result -> 'o option
+   val optresToResopt : ('o option, 'e) result -> (('o, 'e) result) option
+   val toExc_x      : ('e -> exn) -> ('o,'e) result -> 'o
+   val fromExc      : (unit -> 'o) -> ('o , exn) result
+   val fromExc2     : 'e -> (unit -> 'o) -> ('o,'e) result
+   val ressAnd2     :
+      string ->
+      (('o0,string) result) ->
+      (('o1,string) result) ->
+      ((('o0 * 'o1) , string) result)
+   val ressAnd3 :
+      string ->
+      (('o0,string) result) ->
+      (('o1,string) result) ->
+      (('o2,string) result) ->
+      ((('o0 * 'o1 * 'o2) , string) result)
+end
+=
+struct
+   let valuef (f:('e0 -> 'o)) (r:('o,'e0) result) : 'o =
+      match r with
+      | Ok o    -> o
+      | Error e -> f e
+
+   let unify = valuef
+
+   let errorDefault = valuef
+
+   let map ((fo,fe):('o0 -> 'o1)*('e0 -> 'e1)) (r:('o0,'e0) result)
+      : ('o1,'e1) result =
+      match r with
+      | Ok    o -> Ok    (fo o)
+      | Error e -> Error (fe e)
+
+   (* won't compile to correct types -- id forces it to ('a -> 'a) *)
+   (*let resMap_ ?(ok:('a -> 'c) = Fun.id) ?(er:('b -> 'd) = Fun.id)
+      (r:('a,'b) result)
+      : ('c,'d) result =
+      match r with
+      | Ok    o -> Ok    (ok o)
+      | Error e -> Error (er e)*)
+
+   let okMap    = Result.map
+   (*let okMap    (f:('o0 -> 'o1)) (r:('o0,'e) result) : ('o1,'e) result =
+      resMap (f , id) r*)
+
+   let errorMap = Result.map_error
+   (*let errorMap (f:('e0 -> 'e1)) (r:('o,'e0) result) : ('o,'e1) result =
+      resMap (id , f) r*)
+
+   let diverge (r:('o,'e) result) : ('o option * 'e option) =
+      match r with
+      | Ok    o -> (Some o , None)
+      | Error e -> (None , Some e)
+
+   let toOpt = Result.to_option
+   (*let toOpt (r:('o,'e) result) : 'o option =
+      match r with
+      | Ok    o -> Some o
+      | Error _ -> None*)
+
+   let optresToResopt (optres:(('o option),'e) result)
+      : (('o,'e) result) option =
+
+      match optres with
+      | Ok opt ->
+         begin match opt with
+         | Some s -> Some (Ok s)
+         | None   -> None
+         end
+      | Error e -> Some (Error e)
+
+      (*
+      r o -> or
+      ----+----
+      o s |  so (value)
+      o n |  n
+      e - |  se
+      e - |  se
+      *)
+
+   let toExc_x (f:'e -> exn) (r:('o,'e) result) : 'o =
+      match r with
+      | Ok    o -> o
+      | Error e -> raise (f e)
+
+   let fromExc (f:unit -> 'o) : ('o , exn) result =
+      try Ok (f ()) with
+      | Out_of_memory | Stack_overflow | Sys.Break as x -> raise x
+      | x                                               -> Error x
+
+   let fromExc2 (e:'e) (f:unit -> 'o) : ('o,'e) result =
+      excToDefault (Error e) (f % Result.ok)
+
+   (*let bool_of_result (r:('o,'e) result) : bool =
+      match r with
+      | Ok _    -> true
+      | Error _ -> false
+
+   let result_of_bool (b:bool) : ('o,'e) result =
+      if b then Ok () else Error ()*)
+
+   let ressAnd2
+      (joiner:string)
+      (r0:('o0,string) result)
+      (r1:('o1,string) result)
+      : (('o0 * 'o1) , string) result =
+
+      match (r0,r1) with
+      | (Ok o0    , Ok o1   ) -> Ok (o0 , o1)
+      | (Error e0 , Ok _    ) -> Error e0
+      | (Ok _     , Error e1) -> Error e1
+      | (Error e0 , Error e1) -> Error (e0 ^ joiner ^ e1)
+
+   let ressAnd3
+      (joiner:string)
+      (r0:('o0,string) result)
+      (r1:('o1,string) result)
+      (r2:('o2,string) result)
+      : (('o0 * 'o1 * 'o2) , string) result =
+
+      (ressAnd2 joiner
+         (ressAnd2 joiner r0 r1)
+         r2)
+      |>
+      (okMap (fun ((o1,o2),o3) -> (o1,o2,o3)))
+end
+
+
 module Int_ :
 sig
-   (*include module type of Int*)
-
    val digitsDec : int -> int
    val modw      : int -> int -> int
 end
 =
 struct
-   (*include Int*)
-
    let digitsDec (i:int) : int =
       i  |> float_of_int |> abs_float |> (max 1.0)
          |> log10 |> floor |> int_of_float |> succ
@@ -683,8 +393,6 @@ end
 
 module Char_ :
 sig
-   include module type of Char
-
    val isAlpha   : char -> bool
    val isDigit   : char -> bool
    val isSign    : char -> bool
@@ -694,8 +402,6 @@ sig
 end
 =
 struct
-   include Char
-
    let isAlpha (c:char) : bool =
       match c with | 'a'..'z' | 'A'..'Z' -> true | _ -> false
 
@@ -720,8 +426,6 @@ end
 
 module String_ :
 sig
-   include module type of String
-
    val isEmpty     : string -> bool
    val notEmpty    : string -> bool
    val lastPos     : string -> int
@@ -731,11 +435,11 @@ sig
    val leadTrail   : string -> int -> (string * string)
    val last        : string -> char
    val isFirstChar : (char -> bool) -> string -> bool
-   val index_o     : char -> ?start:int -> string -> int option
-   val indexp_o    : (char -> bool) -> ?start:int -> string -> int option
+   val index       : char -> ?start:int -> string -> int option
+   val indexp      : (char -> bool) -> ?start:int -> string -> int option
    val indexl      : char -> ?start:int -> string -> int
    val indexpl     : (char -> bool) -> ?start:int -> string -> int
-   val rindexp_o   : (char -> bool) -> string -> int option
+   val rindexp     : (char -> bool) -> string -> int option
    val filter      : (char -> bool) -> string -> string
    val filterAscii : string -> string
    val check       : (char -> bool) -> string -> bool
@@ -745,13 +449,11 @@ sig
    val split       : (char -> bool) -> string -> string list
    val trimTrunc   : (string * int) -> (string , string) result
    val truncate    : int -> string -> string
-   val toInt    : ?zeroPadded:(bool * int) -> ?widthMaxed:int -> ?signed:bool ->
-                  string -> int option
+   val toInt       : ?zeroPadded:(bool * int) -> ?widthMaxed:int ->
+                     ?signed:bool -> string -> int option
 end
 =
 struct
-   include String
-
    let isEmpty (s:string) : bool =
       (String.length s) = 0
 
@@ -783,11 +485,11 @@ struct
    let isFirstChar (pred:char -> bool) (s:string) : bool =
       ((String.length s) > 0) && pred s.[0]
 
-   let index_o (c:char) ?(start:int = 0) (s:string) : int option =
+   let index (c:char) ?(start:int = 0) (s:string) : int option =
       try Some (String.index_from s start c) with
       | Invalid_argument _ | Not_found -> None
 
-   let indexp_o (pred: char -> bool) ?(start:int = 0) (s:string) : int option =
+   let indexp (pred: char -> bool) ?(start:int = 0) (s:string) : int option =
       let len = String.length s in
       let rec recur (i:int) (s:string) : int option =
          if i < len
@@ -797,12 +499,12 @@ struct
       recur (if start < 0 then len else start) s
 
    let indexl (c:char) ?(start:int = 0) (s:string) : int =
-      noneDefault (fun () -> String.length s) (index_o c ~start s)
+      Option_.default (fun () -> String.length s) (index c ~start s)
 
    let indexpl (pred: char -> bool) ?(start:int = 0) (s:string) : int =
-      noneDefault (fun () -> String.length s) (indexp_o pred ~start s)
+      Option_.default (fun () -> String.length s) (indexp pred ~start s)
 
-   let rindexp_o (pred: char -> bool) (s:string) : int option =
+   let rindexp (pred: char -> bool) (s:string) : int option =
       let rec recur (s:string) (i:int) : int option =
          let i = i - 1 in
          if i >= 0
@@ -823,22 +525,22 @@ struct
       filter Char_.isAscii
 
    let check (pred: char -> bool) (s:string) : bool =
-      match rindexp_o (fNot pred) s with
+      match rindexp (Fun.negate pred) s with
       | Some _ -> false
       | None   -> true
 
    let halve (div:char) (str:string) : (string * string * int) option =
-      optMap
+      Option.map
          (fun pos ->
             (  String.sub str 0 pos ,
                String.sub str (pos + 1) ((String.length str) - (pos + 1)) ,
                pos ))
-         (index_o div str)
+         (index div str)
 
    let rec splitp ?(ls:(string * int) list = []) (pred: char -> bool)
       (s:string)
       : (string * int) list =
-      match rindexp_o pred s with
+      match rindexp pred s with
       | Some pos ->
          let half1 = String.sub s 0 pos
          and half2 = String.sub s (pos + 1) ((String.length s) - (pos + 1)) in
@@ -864,7 +566,9 @@ struct
       (* input-string analysis:
          [prefix: non-digits] [digits: digits only] [suffix: any left] *)
       let digitsPos   = indexpl Char_.isDigit input in
-      let suffixPos   = (indexpl (fNot Char_.isDigit) ~start:digitsPos input) in
+      let suffixPos   =
+         (indexpl (Fun.negate Char_.isDigit) ~start:digitsPos input)
+      in
       let digitsWidth = suffixPos - digitsPos in
 
       if
@@ -900,7 +604,8 @@ struct
          (* Scan %d handles decimal, optional sign, and leading zeros -- OK.
             Scan %d also allows embedded '_'s -- not OK, but these have been
             prohibited in the above checks. *)
-         excToOpt (fun () -> Scanf.sscanf (lead input suffixPos) "%d" id)
+         Option_.fromExc
+            (fun () -> Scanf.sscanf (lead input suffixPos) "%d" Fun.id)
       else
          None
 end
@@ -908,42 +613,38 @@ end
 
 module List_ :
 sig
-   include module type of List
-
-   val isEmpty   : 'a list -> bool
-   val hdo       : 'a list -> 'a option
-   val fto       : 'a list -> 'a option
-   val tlSafe    : 'a list -> 'a list
-   val ntho      : int -> 'a list -> 'a option
-   val bisect    : 'a list -> int -> ('a list * 'a list)
-   val find_o    : ('a -> bool) -> 'a list -> 'a option
-   val filtmap   : ('a -> 'b option) -> 'a list -> 'b list
-   val partmap   : ('a -> ('o, 'e) result) -> 'a list -> ('o list * 'e list)
-   val findmap_o : ('a -> 'b option) -> 'a list -> 'b option
-   val optAnd    : ('a option) list -> ('a list) option
-   val optOr     : ('a option) list -> ('a list) option
-   val resAnd    : (('o,'e) result list) -> ('o list , 'e list) result
-   val unfoldl   : ?list:('a list) -> (int->'a) -> int -> 'a list
-   val unfoldo   : ?list:('a list) -> ?index:int -> (int->'a option) -> 'a list
+   val isEmpty       : 'a list -> bool
+   val hd            : 'a list -> 'a option
+   val ft            : 'a list -> 'a option
+   val tlSafe        : 'a list -> 'a list
+   val nth           : int -> 'a list -> 'a option
+   val bisect        : 'a list -> int -> ('a list * 'a list)
+   val find          : ('a -> bool) -> 'a list -> 'a option
+   val filtmap       : ('a -> 'b option) -> 'a list -> 'b list
+   val partmap       : ('a -> ('o, 'e) result) -> 'a list -> ('o list * 'e list)
+   val findmap       : ('a -> 'b option) -> 'a list -> 'b option
+   val optAnd        : ('a option) list -> ('a list) option
+   val optOr         : ('a option) list -> ('a list) option
+   val resAnd        : (('o,'e) result list) -> ('o list , 'e list) result
+   val unfoldl       : (int->'a) -> int -> 'a list
+   val unfoldo       : (int->'a option) -> 'a list
    val ofStringAscii : string -> char list
    val toStringAscii : (char list) -> string
 end
 =
 struct
-   include List
-
    let isEmpty (l:'a list) : bool =
       (List.length l = 0)
 
-   let hdo (l:'a list) : 'a option =
+   let hd (l:'a list) : 'a option =
       match l with
       | hd :: _ -> Some hd
       | []      -> None
 
-   let rec fto (l:'a list) : 'a option =
+   let rec ft (l:'a list) : 'a option =
       match l with
       | ft :: [] -> Some ft
-      | _  :: tl -> fto tl
+      | _  :: tl -> ft tl
       | []       -> None
 
    let tlSafe (l:'a list) : 'a list =
@@ -951,7 +652,7 @@ struct
       | _ :: tail -> tail
       | []        -> []
 
-   let ntho (index:int) (l:'a list) : 'a option =
+   let nth (index:int) (l:'a list) : 'a option =
       try Some (List.nth l index) with Failure _ -> None
 
    let bisect (l:'a list) (m:int) : ('a list * 'a list) =
@@ -962,8 +663,9 @@ struct
       in
       recur (min m (List.length l)) l []
 
-   let find_o (f:'a -> bool) (l:'a list) : 'a option =
-      try Some (List.find f l) with Not_found -> None
+   let find = List.find_opt
+   (*let findo (f:'a -> bool) (l:'a list) : 'a option =
+      try Some (List.find f l) with Not_found -> None*)
 
    (*
    ?
@@ -975,7 +677,7 @@ struct
                (fun (pred:('a -> bool)) (class_:'a list) : 'a list ->
                    if (pred item) then (item :: class_) else class_)
                preds classes)
-         (List.unfoldl (fConst []) (List.length preds))
+         (List.unfoldl (Fun.const []) (List.length preds))
          l
 
    let classify (f:'out list array -> 'inp -> 'out list array) (l:'inp list)
@@ -994,9 +696,10 @@ struct
       last
    *)
 
-   let filtmap (f:'a -> 'b option) (l:'a list) : 'b list =
+   let filtmap = List.filter_map
+   (*let filtmap (f:'a -> 'b option) (l:'a list) : 'b list =
       List.fold_right (fun a out ->
-         match f a with | Some b -> b :: out | None -> out) l []
+         match f a with | Some b -> b :: out | None -> out) l []*)
 
    let partmap (f:'a -> ('ok,'er) result) (l:'a list) : ('ok list * 'er list) =
       List.fold_right
@@ -1006,44 +709,51 @@ struct
             | Error e -> (     oOut , e :: eOut))
          l ([] , [])
 
-   let rec findmap_o (predmap:'a -> 'b option) (l:'a list) : 'b option =
+   let findmap = List.find_map
+   (*let rec findmap (predmap:'a -> 'b option) (l:'a list) : 'b option =
       match l with
       | a :: tail ->
          begin match predmap a with
-         | None        -> findmap_o predmap tail
+         | None        -> findmap predmap tail
          | Some _ as b -> b
          end
-      | [] -> None
+      | [] -> None*)
 
    let optAnd (lo:('a option) list) : ('a list) option =
-      let la    = filtmap id lo in
+      let la    = filtmap Fun.id lo in
       let laLen = List.length la in
       (* Some if: all Some, or empty *)
       if (laLen = (List.length lo))
       then Some la else None
 
    let optOr (lo:('a option) list) : ('a list) option =
-      match filtmap id lo with
+      match filtmap Fun.id lo with
       | [] -> None
       | la -> Some la
 
    let resAnd (listRes:(('ok,'er) result) list) : ('ok list , 'er list) result =
-      let listOk , listErr = partmap id listRes in
+      let listOk , listErr = partmap Fun.id listRes in
       let listOkLen        = List.length listOk
       and listResLen       = List.length listRes in
       (* Ok if: all Ok, or empty *)
       if (listOkLen = listResLen)
       then (Ok listOk) else (Error listErr)
 
-   let rec unfoldl ?(list = []) (f:int->'a) (size:int) : 'a list =
-      if size > 0
-      then unfoldl ~list:((f (size - 1)) :: list) f (size - 1)
-      else list
+   let unfoldl (f:int->'a) (size:int) : 'a list =
+      let rec recur (list:'a list) (f:int->'a) (size:int) : 'a list =
+         if size > 0
+         then recur ((f (size - 1)) :: list) f (size - 1)
+         else list
+      in
+      recur [] f size
 
-   let rec unfoldo ?(list = []) ?(index = 0) (f:int->'a option) : 'a list =
-      match (f index) with
-      | Some element -> unfoldo ~list:(element :: list) ~index:(index + 1) f
-      | None         -> List.rev list
+   let unfoldo (f:int->'a option) : 'a list =
+      let rec recur (list:'a list) (index:int) (f:int->'a option) : 'a list =
+         match (f index) with
+         | Some element -> recur (element :: list) (index + 1) f
+         | None         -> List.rev list
+      in
+      recur [] 0 f
 
    let ofStringAscii (s:string) : char list =
       unfoldo (fun i -> try Some s.[i] with | Invalid_argument _ -> None)
@@ -1061,26 +771,21 @@ end
 
 module Array_ :
 sig
-   include module type of Array
-
    val isEmpty   : 'a array -> bool
    val lead      : int -> 'a array -> 'a array
    val trail     : int -> 'a array -> 'a array
    val leadTrail : int -> 'a array -> ('a array * 'a array)
-   val forAll    : ('a -> bool) -> 'a array -> bool
    val bisect    : 'a array -> int -> ('a array * 'a array)
-   val bisect_o  : 'a array -> int -> ('a array * 'a array) option
+   val bisecto   : 'a array -> int -> ('a array * 'a array) option
    val partition : ('a -> bool) -> 'a array -> ('a array * 'a array)
-   val printc_x  : ('a -> out_channel -> unit) -> 'a array -> out_channel
-      -> unit
+   val printc_x  : ('a -> out_channel -> unit) -> 'a array -> out_channel ->
+                   unit
    (*
    val printks_x : ('a -> unit -> string) -> 'a array -> unit -> string
    *)
 end
 =
 struct
-   include Array
-
    let isEmpty (a:'a array) : bool =
       Array.length a = 0
 
@@ -1095,9 +800,6 @@ struct
    let leadTrail (pos:int) (a:'a array) : ('a array * 'a array) =
       ( lead pos a , trail pos a )
 
-   let forAll (pred:'a -> bool) (a:'a array) : bool =
-      Array.fold_left (fun b a -> b && pred a) (not (isEmpty a)) a
-
    (* exceptioning (same as Array.sub) *)
    (*let bisect (a:'a array) (i:int) : ('a array * 'a array) =
       let len = Array.length a in
@@ -1108,7 +810,7 @@ struct
       let i   = min (max 0 i) len in
       (Array.sub a 0 i) , (Array.sub a i (len - i))
 
-   let bisect_o (a:'a array) (i:int) : ('a array * 'a array) option =
+   let bisecto (a:'a array) (i:int) : ('a array * 'a array) option =
       let len = Array.length a in
       try
          Some ( (Array.sub a 0 i) , (Array.sub a i (len - i)) )
@@ -1131,11 +833,133 @@ struct
 end
 
 
+module Scanf_ :
+sig
+   val scanExnUnify_x : (unit -> 'a) -> 'a
+   val kscanfErrFn    : Scanf.Scanning.scanbuf -> exn -> ('o , string) result
+   val skipBlank      : Scanf.Scanning.scanbuf -> unit
+end
+=
+struct
+   let scanExnUnify_x (f:unit -> 'a) : 'a =
+      try f () with
+      | Scanf.Scan_failure s | Failure s | Invalid_argument s ->
+         raise (Scanf.Scan_failure s)
+      | End_of_file ->
+         raise (Scanf.Scan_failure "unexpected end-of-file")
+
+      (*match Result_.fromExc (f ()) with
+      | Ok o    -> o
+      | Error e ->
+         let s =
+            match e with
+            | Scanf.Scan_failure s | Failure s | Invalid_argument s -> s
+            | End_of_file -> "unexpected end-of-file"
+            | _           -> "unspecified exception"
+         in
+         raise (Scanf.Scan_failure s)*)
+
+   let (kscanfErrFn : Scanf.Scanning.scanbuf -> exn -> ('o , string) result) =
+      function _ -> function
+      | Scanf.Scan_failure s -> Error ("Scanf.Scan_failure: " ^ s)
+      | Failure s            -> Error ("Number conversion failure: " ^ s)
+      | Invalid_argument s   -> Error ("Invalid format string: " ^ s)
+      | End_of_file          -> Error "Unexpected end-of-file"
+      | _                    -> Error "Unknown exception"
+
+   let skipBlank (inBuffer:Scanf.Scanning.scanbuf) : unit =
+      try
+         Scanf.bscanf inBuffer " " ()
+      with
+      | Scanf.Scan_failure _ | Failure _ | Invalid_argument _
+      | End_of_file                                           -> ()
+end
+
+
 
 
 (* ---- modules ---- *)
 
-module Rx_ :
+module Blanks :
+sig
+   val blankSpacyCtrlChars : string -> string
+   val blankNewlines       : string -> string
+   val unifySpaces         : string -> string
+end
+=
+struct
+   let blankSpacyCtrlChars : (string -> string) =
+      String.map
+         (function
+         | '\x09' | '\x0A' | '\x0B' | '\x0C' | '\x0D' -> ' '
+         | c                                          -> c)
+
+   let blankNewlines : (string -> string) =
+      String.map (function | '\n' | '\r' -> ' ' | c -> c)
+
+   let unifySpaces (s:string) : string =
+      let rx = Str.regexp
+         "\x09\\|\x0A\\|\x0B\\|\x0C\\|\x0D\\|\x20\\|\
+         \xC2\x85\\|\xC2\xA0\\|\
+         \xE1\x9A\x80\\|\xE1\xA0\x8E\\|\
+         \xE2\x80\x80\\|\xE2\x80\x81\\|\xE2\x80\x82\\|\xE2\x80\x83\\|\
+         \xE2\x80\x84\\|\xE2\x80\x85\\|\xE2\x80\x86\\|\
+         \xE2\x80\x87\\|\xE2\x80\x88\\|\
+         \xE2\x80\x89\\|\xE2\x80\x8A\\|\
+         \xE2\x80\x8B\\|\xE2\x80\x8C\\|\xE2\x80\x8D\\|\
+         \xE2\x80\xA8\\|\xE2\x80\xA9\\|\
+         \xE2\x80\xAF\\|\
+         \xE2\x81\x9F\\|\
+         \xE2\x81\xA0\\|\
+         \xE3\x80\x80\\|\
+         \xEF\xBB\xBF"
+      in
+      Str.global_replace rx " " s
+end
+
+
+module FileName :
+sig
+   val splitExt  : string -> (string * string)
+   val getMain   : string -> string
+   val getExt    : string -> string
+   val splitPath : string -> (string * string)
+   val getName   : string -> string
+   val getPath   : string -> string
+end
+=
+struct
+   let splitExt (nameExt:string) : (string * string) =
+      try
+         let extPos = (String.rindex nameExt '.') in
+         let extLen = (String.length nameExt) - extPos in
+         ( String.sub nameExt 0 extPos , String.sub nameExt extPos extLen )
+      with
+      | Not_found -> (nameExt , "")
+
+   let getMain (nameExt:string) : string =
+      fst (splitExt nameExt)
+
+   let getExt (nameExt:string) : string =
+      snd (splitExt nameExt)
+
+   let splitPath (pathName:string) : (string * string) =
+      try
+         let namePos = (String.rindex pathName '/') + 1 in
+         let nameLen = (String.length pathName) - namePos in
+         ( String.sub pathName 0 namePos , String.sub pathName namePos nameLen )
+      with
+      | Not_found -> (pathName , "")
+
+   let getPath (pathName:string) : string =
+      fst (splitPath pathName)
+
+   let getName (pathName:string) : string =
+      snd (splitPath pathName)
+end
+
+
+module Rx :
 sig
    type rx
    type rxmatch
@@ -1222,66 +1046,219 @@ end
 
 
 
-(* ---- more functions -- dependent on module augmentations ---- *)
+(* ---- functions ---- *)
 
-(*let ( |^= ) (r:('o1,'e) result) (lf:('o1 -> ('o2,'e) result) list)
+(* -- error-handling pipeline/monad -- *)
+
+(*let ( |>=& ) (r0:('o0,string) result) (r1:('o1,string) result)
+   : (('o1 * 'o0) , string) result =
+
+   match (r0, r1) with
+   | (Ok r0    , Ok r1   ) -> Ok (r1, r0)
+   | (Error r0 , Ok _    ) -> Error r0
+   | (Ok _     , Error r1) -> Error r1
+   | (Error r0 , Error r1) -> Error (r0 ^ ", " ^ r1)*)
+
+
+(*let resAnd (ab:('o0,'e0) result * ('o1,'e1) result)
+   : (('o0 * 'o1) , ('e0 option * 'e1 option)) result =
+
+   match ab with
+   | Ok o0    , Ok o1    -> Ok (o0 , o1)
+   | Error e0 , Ok _     -> Error (Some e0 , None   )
+   | Ok _     , Error e1 -> Error (None    , Some e1)
+   | Error e0 , Error e1 -> Error (Some e0 , Some e1)*)
+
+
+(*let ( &&= ) (a:('o0,'e) result) (b:('o1,'e) result)
+   : (('o1 * 'o0) , 'e list) result =
+
+   match (a,b) with
+   | (Ok o0    , Ok o1   ) -> Ok (o1 , o0)
+   | (Ok _     , Error e1) -> Error [e1]
+   | (Error e0 , Ok _    ) -> Error [e0]
+   | (Error e0 , Error e1) -> Error [e1 ; e0]*)
+
+
+let ( ||> ) (o:'a option) (f:unit -> 'a option) : 'a option =
+   match o with
+   | Some _ as a -> a
+   | None        -> f ()
+
+
+let ( &&> ) (o:'a option) (f:unit -> 'a option) : 'a option =
+   match o with
+   | Some _ -> f ()
+   | None   -> None
+
+
+let ( |>- ) = Option.bind
+(*let ( |>- ) (o1:'o1 option) (f:'o1 -> 'o2 option)
+   : 'o2 option =
+
+   match o1 with
+   | Some o -> f o
+   | None   -> None*)
+
+(*let ( let|>- ) = ( |>- )*)
+
+
+let ( |>= ) = Result.bind
+(*let ( |>= ) (r1:('o1,'e) result) (f:'o1 -> ('o2,'e) result)
+   : ('o2,'e) result =
+
+   match r1 with
+   | Ok    o      -> f o
+   | Error _ as e -> e*)
+
+let ( let|>= ) = ( |>= )
+
+
+(*let ( |>>= ) (r1:('o1,'e) result) (f:'o1 -> ('o2,'e) result)
+   : (('o1 * 'o2) , 'e) result =
+
+   r1 |>= (fun o1 ->
+      match f o1 with
+      | Ok    o2     -> Ok (o1 , o2)
+      | Error _ as e -> e)*)
+
+
+(* dependent on List, so moved below that
+
+let ( |^= ) (r:('o1,'e) result) (lf:('o1 -> ('o2,'e) result) list)
    : ('o2 list , 'e list) result =
 
    (* : (('o2,'e) result) list *)
    (List.map ((|>=) r) lf)
    |>
-   List.resAnd*)
+   List.resAnd
+*)
 
 
+let optAnd2p
+   (f0:'s0 -> 'o1 option)
+   (f1:'s0 -> 'o2 option)
+   (s0:'s0)
+   : ('o1 * 'o2) option =
+
+   Option_.and2 (f0 s0) (f1 s0)
 
 
-(* ---- IO ---- *)
+let ressAnd2p
+   (joiner:string)
+   (f0:'o0 -> ('o1,string) result)
+   (f1:'o0 -> ('o2,string) result)
+   (o0:'o0)
+   : (('o1 * 'o2) , string) result =
 
-let scanExnUnify_x (f:unit -> 'a) : 'a =
-   try f () with
-   | Scanf.Scan_failure s | Failure s | Invalid_argument s ->
-      raise (Scanf.Scan_failure s)
-   | End_of_file ->
-      raise (Scanf.Scan_failure "unexpected end-of-file")
-
-   (*match excToRes (f ()) with
-   | Ok o    -> o
-   | Error e ->
-      let s =
-         match e with
-         | Scanf.Scan_failure s | Failure s | Invalid_argument s -> s
-         | End_of_file -> "unexpected end-of-file"
-         | _           -> "unspecified exception"
-      in
-      raise (Scanf.Scan_failure s)*)
+   Result_.ressAnd2 joiner (f0 o0) (f1 o0)
 
 
-let (kscanfErrFn : Scanf.Scanning.scanbuf -> exn -> ('o , string) result) =
-   function _ -> function
-   | Scanf.Scan_failure s -> Error ("Scanf.Scan_failure: " ^ s)
-   | Failure s            -> Error ("Number conversion failure: " ^ s)
-   | Invalid_argument s   -> Error ("Invalid format string: " ^ s)
-   | End_of_file          -> Error "Unexpected end-of-file"
-   | _                    -> Error "Unknown exception"
+let ( |^^= )
+   (r1:'o1 ress)
+   (  (f0:'o1 -> 'o2 ress) ,
+      (f1:'o1 -> 'o3 ress) )
+   : ('o2 * 'o3) ress =
 
-let skipBlank (inBuffer:Scanf.Scanning.scanbuf) : unit =
-   try
-      Scanf.bscanf inBuffer " " ()
-   with
-   | Scanf.Scan_failure _ | Failure _ | Invalid_argument _
-   | End_of_file                                           -> ()
+   r1 |>= (fun o1 ->
+      match ((f0 o1) , (f1 o1)) with
+      | (Ok o2    , Ok o3   ) -> Ok (o2 , o3)
+      | (Ok _     , Error e1) -> Error e1
+      | (Error e0 , Ok _    ) -> Error e0
+      | (Error e0 , Error e1) -> Error (e0 ^ " && " ^ e1))
 
 
+let ressAnd3p
+   (joiner:string)
+   (f0:'o0 -> ('o1,string) result)
+   (f1:'o0 -> ('o2,string) result)
+   (f2:'o0 -> ('o3,string) result)
+   (o0:'o0)
+   : (('o1 * 'o2 * 'o3) , string) result =
 
+   Result_.ressAnd3 joiner (f0 o0) (f1 o0) (f2 o0)
+
+   (*
+   (ressAnd2 joiner
+      (ressAnd2 joiner
+         (f0 o0)
+         (f1 o0))
+      (f2 o0))
+   |>
+   (okMap (fun ((o1,o2),o3) -> (o1,o2,o3)))
+
+   (*let f12 = (fun o0 -> ressAnd2p joiner f1 f2 (Ok o0)) in
+   match (ressAnd2p joiner f0 f12 r) with
+   | Ok (o1 , (o2 , o3)) -> Ok (o1 , o2 , o3)
+   | Error e             -> Error e*)
+
+   (*let f12 = (fun o0 -> ressAnd2p joiner f1 f2 (Ok o0)) in
+   match (ressAnd2p joiner f0 f12 r) with
+   | Ok (o1 , (o2 , o3)) -> Ok (o1 , o2 , o3)
+   | Error e             -> Error e*)
+   *)
+
+
+let ( |^^^= )
+   (r1:('o1,string) result)
+   (  (f0:'o1 -> 'o2 ress) ,
+      (f1:'o1 -> 'o3 ress) ,
+      (f2:'o1 -> 'o4 ress) )
+   : ('o2 * 'o3 * 'o4) ress =
+
+   let f12 = (fun o1 -> (Ok o1) |^^= (f1 , f2)) in
+   match r1 |^^= (f0 , f12) with
+   | Ok (o2 , (o3 , o4)) -> Ok (o2 , o3 , o4)
+   | Error e             -> Error e
+
+   (*r1 |>= (fun o1 ->
+      match ((f0 o1) , (f1 o1) , (f2 o1)) with
+      | (Ok o2 , Ok o3 , Ok o4)          -> Ok (o2 , o3 , o4)
+      | (Error e0 , Ok _ , Ok _)         -> Error e0
+      | (Ok _ , Error e1 , Ok _)         -> Error e1
+      | (Ok _ , Ok _ , Error e2)         -> Error e2
+      | (Error e0 , Error e1 , Ok _)     -> Error (e0 ^ " && " ^ e1)
+      | (Error e0 , Ok _ , Error e2)     -> Error (e0 ^ " && " ^ e2)
+      | (Ok _ , Error e1 , Error e2)     -> Error (e1 ^ " && " ^ e2)
+      | (Error e0 , Error e1 , Error e2) ->
+         Error (e0 ^ " && " ^ e1 ^ " && " ^ e2))*)
+
+
+let ( |>=? ) (r1:('o,'e) result) (f:'e -> ('o,'e) result)
+   : ('o,'e) result =
+
+   match r1 with
+   | Ok _ as o -> o
+   | Error e   -> f e
+
+
+let ( |>=+ ) (o1:'o1) (f:'o1 -> ('o2,'e) result) : ('o2,'e) result =
+   (Ok o1) |>= f
+
+
+let ( |>=- ) (r1:('o1,'e) result) (f:'o1 -> 'o2) : ('o2,'e) result =
+   r1 |>= (fun o1 -> Ok (f o1))
+
+
+let ( |>=> )
+   (f:'o1 -> ('o2,'e) result)
+   (g:'o2 -> ('o3,'e) result)
+   (r:('o1,'e) result)
+   : ('o3,'e) result =
+
+   r |>= f |>= g
+
+
+(* -- file read/write -- *)
 
 let useFile (filePathname:string)
    (opener:string -> 'c) (closer:'c -> unit) (use:'c -> 'i)
    : ('i , exn) result =
 
-   excToRes (fun () : 'c -> opener filePathname)
+   Result_.fromExc (fun () : 'c -> opener filePathname)
    |>=
    (fun (channel:'c) : ('i , exn) result ->
-      let result = excToRes (fun () : 'i -> use channel) in
+      let result = Result_.fromExc (fun () : 'i -> use channel) in
       closer channel ;
       result)
 

@@ -100,7 +100,7 @@ struct
 
    let make (s:string) : t ress =
 
-      (errorMap (fun e -> "date " ^ e) (String_.trimTrunc (s, 11)))
+      (Result_.errorMap (fun e -> "date " ^ e) (String_.trimTrunc (s, 11)))
 
       |>=
 
@@ -244,7 +244,7 @@ let isTextform (s:string) : bool =
 let extractNameHalfs (name:string) (isText:bool) (metaSep:char) :
    (string * string) ress =
 
-   match String_.index_o metaSep name with
+   match String_.index metaSep name with
    | Some pos ->
       Ok (
          let p , m = (String.sub name 0 pos ,
@@ -284,7 +284,7 @@ let extractPlainParts (plain:string) (isText:bool) (partSep:char)
       let f parts index delQuotes subpartSep filterEmpty trimSubparts negLead
          maker =
 
-         match List_.ntho index parts with
+         match List_.nth index parts with
          | Some part ->
             (* remove quotes *)
             begin match delQuotes with
@@ -327,14 +327,14 @@ let extractPlainParts (plain:string) (isText:bool) (partSep:char)
                      lt
                   in
                   (* remove padding/blanks *)
-                  List_.filtmap id lm
+                  List_.filtmap Fun.id lm
                else subparts)
 
             |>=-
 
             (fun (subparts:string list) ->
                if filterEmpty
-               then List.filter (fNot String_.isEmpty) subparts
+               then List.filter (Fun.negate String_.isEmpty) subparts
                else subparts)
 
             |>=-
@@ -355,12 +355,12 @@ let extractPlainParts (plain:string) (isText:bool) (partSep:char)
                (* make subparts *)
                let lmo = List.map maker subparts in
                (* if any errors, just get first one *)
-               match List_.find_o
-                  (function | Error _ -> true | Ok _ -> false) lmo
+               match
+                  List_.find (function | Error _ -> true | Ok _ -> false) lmo
                with
                | Some (Error _ as e)  -> e
                | Some (Ok _) | None   ->
-                  let lm = List_.filtmap resToOpt lmo in
+                  let lm = List_.filtmap Result_.toOpt lmo in
                   Ok (Array.of_list lm))
 
          | None -> Ok [||]
@@ -374,11 +374,11 @@ let extractPlainParts (plain:string) (isText:bool) (partSep:char)
          (fun (parts:string list) ->
             (f parts 0 oQuo subSep.(0) isText false false StringT.make)
             |>= ArrayNe.make
-            |> errorMap (fun e -> ("title " ^ e)))
+            |> Result_.errorMap (fun e -> ("title " ^ e)))
          ,
          (fun (parts:string list) ->
             (f parts 1 None subSep.(1) false isText false StringT.make)
-            |> errorMap (fun e -> ("author " ^ e)))
+            |> Result_.errorMap (fun e -> ("author " ^ e)))
          ,
          (fun (parts:string list) ->
             f parts 2 None subSep.(2) false isText (not isText)
@@ -458,7 +458,7 @@ let extractMetaParts (meta:string) (isText:bool) (metaSep:char) :
       )
       ,
       (fun ((_:string option) , (_:string option) , (typ:string)) ->
-         errorMap (fun e -> "type " ^ e) (StringT.make typ))
+         Result_.errorMap (fun e -> "type " ^ e) (StringT.make typ))
    end
 
 

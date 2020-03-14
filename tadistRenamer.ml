@@ -28,7 +28,7 @@ let nonEmpties (ls:string list) : (string list) =
 
    ls
    |> (List.map StringT.filter)
-   |> (List.filter (fNot String_.isEmpty))
+   |> (List.filter (Fun.negate String_.isEmpty))
 
 
 (* NB: truncates according to byte-length, not necessarily char-length *)
@@ -57,7 +57,7 @@ let normaliseTitle (titles:string list) : StringT.t ArrayNe.t ress =
    | []         -> Error "no title found"
    | first :: _ ->
       first
-      |> Utf8filter.replace |> blankSpacyCtrlChars
+      |> Utf8filter.replace |> Blanks.blankSpacyCtrlChars
       (* truncate after ':', if more than 7 chars before *)
       |> (fun title ->
          try
@@ -68,16 +68,16 @@ let normaliseTitle (titles:string list) : StringT.t ArrayNe.t ress =
       |> String.trim |> (String_.split ((=) ' ')) |> (List.map String.trim)
       (* constrain (non-empties, max length, StringT) *)
       |> nonEmpties |> (truncateWords 48)
-      |> (List_.filtmap (StringT.make % resToOpt))
+      |> (List_.filtmap (StringT.make % Result_.toOpt))
       (* convert to (non-empty) array *)
       |> Array.of_list |> ArrayNe.make
-      |> errorMap (fun _ -> "no valid title")
+      |> Result_.errorMap (fun _ -> "no valid title")
 
 
 let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
 
    authors
-   |> (List.map (Utf8filter.replace % blankSpacyCtrlChars))
+   |> (List.map (Utf8filter.replace % Blanks.blankSpacyCtrlChars))
    (* unified list of all names *)
    |> (fun authors ->
       authors
@@ -100,7 +100,7 @@ let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
       |> List.flatten
       (* clean-up *)
       |> (List.map String.trim)
-      |> (List.filter (fNot String_.isEmpty)))
+      |> (List.filter (Fun.negate String_.isEmpty)))
    |> (fun names ->
       if trace
       then print_endline ("* names:      " ^ (String.concat " | " names)) ;
@@ -122,14 +122,14 @@ let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
       lastNames)
    (* constrain *)
    |> nonEmpties |> (truncateWords 32)
-   |> (List_.filtmap (StringT.make % resToOpt))
+   |> (List_.filtmap (StringT.make % Result_.toOpt))
    |> Array.of_list
 
 
 let normaliseDate (dates:string list) : DateIso8601e.t array =
 
    dates
-   |> List.map (Utf8filter.replace % unifySpaces)
+   |> List.map (Utf8filter.replace % Blanks.unifySpaces)
    (* truncate time from presumed iso8601 dateTtime *)
    |> (List.map (fun s ->
       let s = String.trim s in
@@ -142,7 +142,7 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
       String.sub s 0 i))
    (* check, and just keep OK, sorted, unique years *)
    |> (List.map DateIso8601e.make)
-   |> (List_.filtmap resToOpt)
+   |> (List_.filtmap Result_.toOpt)
    |> (List.map DateIso8601e.yearOnly)
    |> (List.sort_uniq DateIso8601e.compare)
    (* first and last only *)
@@ -157,7 +157,7 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
 let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =
 
    isbns
-   |> List.map (Utf8filter.filter % unifySpaces)
+   |> List.map (Utf8filter.filter % Blanks.unifySpaces)
    (* to machine-readable form *)
    |> List.map (String_.filter (function | ' ' | '-' -> false | _ -> true))
    (* remove bad ones *)
@@ -179,20 +179,20 @@ let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =
       | first :: _ ->
          (Ok first)
          |^^= ( (fun _ -> StringT.make "ISBN") , StringT.make )
-         |> resToOpt
+         |> Result_.toOpt
       | _ -> None)
 
 
 let normaliseString (s:string) : StringT.t option =
 
    s
-   |> Utf8filter.replace |> blankSpacyCtrlChars |> StringT.filter
+   |> Utf8filter.replace |> Blanks.blankSpacyCtrlChars |> StringT.filter
    (* truncate utf8 chars to max byte length *)
    |> (fun st ->
       st
       |> (let _MAXLEN = 24 in String_.truncate _MAXLEN)
       |> Utf8filter.filter)
-   |> StringT.make |> resToOpt
+   |> StringT.make |> Result_.toOpt
 
 
 let normaliseMetadata (trace:bool) (titles:string list) (authors:string list)

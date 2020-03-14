@@ -135,7 +135,7 @@ let getContentOpf (epubPathname:string) : (string * string) ress =
                (* find the filepathname string *)
                try
                   (* remove line-ends for easier regexps *)
-                  let containerxml = blankNewlines containerxml
+                  let containerxml = Blanks.blankNewlines containerxml
                   and rx = Str.regexp "<rootfile[ \t]+\\(.+\\)?\
                      full-path=[\"']\\([^\"']*\\)[\"']"
                   in
@@ -151,7 +151,7 @@ let getContentOpf (epubPathname:string) : (string * string) ress =
             match Zip.readZippedItem zipfile contentopfFilepathname with
             | Error _ as e  -> e
             | Ok contentopf ->
-               Ok ( getFilePath contentopfFilepathname , contentopf )
+               Ok ( FileName.getPath contentopfFilepathname , contentopf )
       )
 
 
@@ -159,7 +159,7 @@ let getContentopfMetadata (contentopf:string)
    : (string list * string list * string list * string list) =
 
    (* remove line-ends for easier regexps *)
-   let contentopf = blankNewlines contentopf in
+   let contentopf = Blanks.blankNewlines contentopf in
    let matcher tag attr : string list =
       let rx = Str.regexp_case_fold ("<dc:" ^ tag ^ attr ^
          "[^>]*>\\([^<]*\\)</dc:" ^ tag ^ ">")
@@ -177,7 +177,7 @@ let getHtmlPathnames (contentopf:string) : string list =
 
    let manifest =
       (* remove line-ends for easier regexps *)
-      let contentopf = blankNewlines contentopf in
+      let contentopf = Blanks.blankNewlines contentopf in
       try
          let rx = Str.regexp "<manifest[^<>]*>\\(.+\\)</manifest>" in
          let _ = Str.search_forward rx contentopf 0 in
@@ -287,11 +287,11 @@ let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
                tabs, markup; translate en-dashs to hyphens *)
             let text = html
                |> Utf8filter.filter
-               |> unifySpaces
+               |> Blanks.unifySpaces
                |> (Str.global_replace (Str.regexp "<[^>]+>") " ")
                |> (Str.global_replace (Str.regexp_string "\xE2\x80\x93") "-")
             in
-            optMap (fun isbn -> (text,isbn)) (findFirstIsbn trace text)
+            Option.map (fun isbn -> (text,isbn)) (findFirstIsbn trace text)
          ) htmls
    in
 

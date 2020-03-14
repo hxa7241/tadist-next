@@ -216,7 +216,7 @@ let suggestRename ~(rename:bool) ?(quiet:bool = false) ?(verbose:bool = false)
 
    (* get old name *)
    let filePathnameOld = readInput input in
-   let path , nameOld = HxaGeneral.splitFilePathName filePathnameOld in
+   let path , nameOld = FileName.splitPath filePathnameOld in
 
    (* get new name *)
    let nameNew , textNew =
