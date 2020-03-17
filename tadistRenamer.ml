@@ -195,25 +195,23 @@ let normaliseString (s:string) : StringT.t option =
    |> StringT.make |> Result_.toOpt
 
 
-let normaliseMetadata (trace:bool) (titles:string list) (authors:string list)
-   (dates:string list) (isbns:string list) (subtyp:string) (typ:string)
-   : nameStruct ress =
+let normaliseMetadata (trace:bool) (nsr:nameStructRaw) : nameStruct ress =
 
    (* title is mandatory *)
-   match normaliseTitle titles with
+   match normaliseTitle nsr.titleRaw with
    | Error _ as e -> e
    | Ok title     ->
       (* type is mandatory *)
-      match normaliseString typ with
+      match normaliseString nsr.typRaw with
       | None     -> Error "invalid type"
       | Some typ ->
          (* the rest are optional *)
          Ok {
             title  = title ;
-            author = normaliseAuthor trace authors ;
-            date   = normaliseDate dates ;
-            id     = normaliseIsbn isbns ;
-            subtyp = normaliseString subtyp ;
+            author = normaliseAuthor trace nsr.authorRaw ;
+            date   = normaliseDate nsr.dateRaw ;
+            id     = normaliseIsbn nsr.idRaw ;
+            subtyp = normaliseString nsr.subtypRaw ;
             typ    = typ }
 
 
@@ -240,9 +238,7 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
       | f :: rest ->
          begin match f trace filePathname with
          | Ok None      -> fileTryer filePathname rest
-         | Ok Some nsr  ->
-            normaliseMetadata trace nsr.titleRaw nsr.authorRaw nsr.dateRaw
-               nsr.idRaw nsr.subtypRaw nsr.typRaw
+         | Ok Some nsr  -> normaliseMetadata trace nsr
          | Error _ as e -> e
          end
       | [] -> Error "unrecognised file type"
