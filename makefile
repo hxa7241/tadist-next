@@ -3,7 +3,7 @@
 
 
 EXE=tadist
-SRC=hxaGeneral.mli hxaGeneral.ml tadist.mli tadist.ml tadistEpub.mli tadistEpub.ml tadistPdf.mli tadistPdf.ml tadistRenamer.mli tadistRenamer.ml tadistTool.mli tadistTool.ml
+SRC=hxaGeneral.mli hxaGeneral.ml tadist.mli tadist.ml tadistEpub.mli tadistEpub.ml tadistPdf.mli tadistPdf.ml tadistExtractor.mli tadistExtractor.ml tadistTool.mli tadistTool.ml
 LIBSN=unix.cmxa str.cmxa utf8filter.cmxa camlpdf.cmxa zip.cmxa
 LIBSB=unix.cma  str.cma  utf8filter.cma  camlpdf.cma  zip.cma
 OPTS=-principal -strict-sequence -strict-formats -w +A
