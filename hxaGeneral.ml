@@ -981,11 +981,8 @@ struct
    (*type rx      = Re.re
    type rxmatch = string array option*)
 
-   let compile (rxs:string) : rx =
-      Str.regexp rxs
-      (*Re.compile (Re_perl.re rxs)*)
-
-   let oneMatch (query:bool) (content:string) (message:string)
+   (* private *)
+   let expressOneMatch (query:bool) (content:string) (message:string)
       : (rxmatch,string) result =
       if query
       then
@@ -1011,10 +1008,18 @@ struct
       (*try Ok (Re.get_all (Re.exec rx content)) with
       | Not_found -> Error message*)
 
+   let compile (rxs:string) : rx =
+      Str.regexp rxs
+      (*Re.compile (Re_perl.re rxs)*)
+
    let apply (rx:rx) (content:string) (message:string)
       : (rxmatch,string) result =
       let query = Str.string_match rx content 0 in
-      oneMatch query content message
+      expressOneMatch query content message
+
+   let regex (rxs:string) (content:string) (message:string)
+      : (rxmatch,string) result =
+      apply (compile rxs) content message
 
    let seekFirst (rx:rx) (content:string) (message:string)
       : (rxmatch,string) result =
@@ -1022,11 +1027,7 @@ struct
          try ignore(Str.search_forward rx content 0) ; true with
          | Not_found -> false
       in
-      oneMatch query content message
-
-   let regex (rxs:string) (content:string) (message:string)
-      : (rxmatch,string) result =
-      apply (compile rxs) content message
+      expressOneMatch query content message
 
    let allMatches (rx:rx) (content:string) : string list =
       (Str.full_split rx content)
@@ -1038,7 +1039,6 @@ struct
    let wholeFound (rxmatch:rxmatch) : string =
       rxmatch.whole
 
-   (* (group index starts at 1) *)
    let groupFound (rxmatch:rxmatch) (index:int) : string option =
       rxmatch.groups.(index)
 end
