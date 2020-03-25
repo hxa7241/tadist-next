@@ -136,6 +136,9 @@ val hemap2 : (('a0 -> 'b0) * ('a1 -> 'b1)) -> ('a0 * 'a1) -> ('b0 * 'b1)
 
 (* ---- std lib module augmentations ---- *)
 
+(**
+ * Augmentation of standard Option module.
+ *)
 module Option_ :
 sig
    (** Unify an option with a default for None. *)
@@ -187,6 +190,9 @@ sig
 end
 
 
+(**
+ * Augmentation of standard Result module.
+ *)
 module Result_ :
 sig
    (** Unify a result with a default for Error. *)
@@ -246,6 +252,9 @@ sig
 end
 
 
+(**
+ * Augmentation of standard Int module.
+ *)
 module Int_ :
 sig
    (** Number of decimal digits a number has. *)
@@ -262,6 +271,9 @@ sig
 end
 
 
+(**
+ * Augmentation of standard Char module.
+ *)
 module Char_ :
 sig
    (** Is a-z or A-Z ?. *)
@@ -284,6 +296,9 @@ sig
 end
 
 
+(**
+ * Augmentation of standard String module.
+ *)
 module String_ :
 sig
    (** Is string empty?. *)
@@ -363,6 +378,9 @@ sig
 end
 
 
+(**
+ * Augmentation of standard List module.
+ *)
 module List_ :
 sig
    (** Is list empty?. *)
@@ -427,6 +445,9 @@ sig
 end
 
 
+(**
+ * Augmentation of standard Array module.
+ *)
 module Array_ :
 sig
    (** Is array empty?. *)
@@ -464,6 +485,9 @@ sig
 end
 
 
+(**
+ * Augmentation of standard Scanf module.
+ *)
 module Scanf_ :
 sig
    val scanExnUnify_x : (unit -> 'a) -> 'a
@@ -478,6 +502,9 @@ end
 
 (* ---- modules ---- *)
 
+(**
+ * Functionality for handling blank chars in strings.
+ *)
 module Blanks :
 sig
    (** Replace \n, \r, \t, \v, \f with space. *)
@@ -525,6 +552,9 @@ sig
 end
 
 
+(**
+ * Functionality for manipulating file names.
+ *)
 module FileName :
 sig
    (** Return "name" and ".ext". *)
@@ -547,6 +577,9 @@ sig
 end
 
 
+(**
+ * Convenience wrapper for standard Str module regex functionality.
+ *)
 module Rx :
 sig
    type rx
