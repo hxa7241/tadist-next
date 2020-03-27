@@ -320,7 +320,8 @@ sig
    (** First n chars, and rest of chars from pos, with clamped pos. *)
    val leadTrail : string -> int -> (string * string)
 
-   (** Last char. *)
+   (** Last char.
+       @exceptions: on empty string: Invalid_argument "index out of bounds" *)
    val last : string -> char
 
    (** Test first char. *)
