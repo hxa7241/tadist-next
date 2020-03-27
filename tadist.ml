@@ -205,6 +205,70 @@ struct
 end
 
 
+module Isbn :
+sig
+   type t
+
+   val make : string -> t ress
+
+   val length       : t -> int
+   val toString     : t -> string
+   val toStringBare : t -> string
+   val toStringFull : t -> string
+end
+=
+struct
+   type t = string
+
+   let checkChars (s:string) : string ress =
+      (* 13: all must be digits *)
+      if (String_.check Char_.isDigit s)
+         ||
+         (* 10: last digit may be 'X' *)
+         (  ((String.length s) = 10) &&
+            ((String_.last s) = 'X') &&
+            (String_.check Char_.isDigit (String_.lead s 9))  )
+      then Ok s
+      else Error "ISBN chars invalid"
+
+   let checkLength (s:string) : string ress =
+      match String.length s with
+      | 13 | 10 -> Ok s
+      | _       -> Error "ISBN length invalid"
+
+   let make (s:string) : t ress =
+      (* trim possible "ISBN" prefix *)
+      let s =
+         if (String_.lead s 4) = "ISBN"
+         then (String_.trail s 4)
+         else s
+      in
+      (* remove any spaces or hyphens *)
+      let s = String_.filter (fun c -> not ((c = ' ') || (c = '-'))) s in
+      (* check content *)
+      s |> checkChars |>= checkLength
+
+   let length (isbn:t) : int =
+      String.length isbn
+
+   let toString (isbn:t) : string =
+      isbn
+
+   let toStringBare = toString
+
+   let toStringFull (isbn:t) : string =
+      match length isbn with
+      (* 13: ISBN 3 digits - 9 digits - 1 digits *)
+      | 13 ->
+         "ISBN "
+         ^ (String.sub isbn  0 3) ^ "-"
+         ^ (String.sub isbn  3 9) ^ "-"
+         ^ (String.sub isbn 12 1)
+      (* 10: ISBN 9 digits digit/X *)
+      | _  -> "ISBN " ^ isbn
+end
+
+
 
 
 (* ---- types ---- *)

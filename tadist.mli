@@ -185,6 +185,28 @@ sig
 end
 
 
+(**
+ * A 13 digit or 10 digit/X string -- the basic syntax only.
+ *)
+module Isbn :
+sig
+   type t
+
+   (** Induct bare digits, or with "ISBN" prefix and spaces/hyphens. *)
+   val make : string -> t HxaGeneral.ress
+
+   (** ISBN type: only 13 or 10. *)
+   val length       : t -> int
+
+   (** String of digits only (possibly last one an 'X'). *)
+   val toString     : t -> string
+
+   (** String of digits only (possibly last one an 'X'). *)
+   val toStringBare : t -> string
+
+   (** String of form 'ISBN 012-345678901-2' or 'ISBN 012345678X'. *)
+   val toStringFull : t -> string
+end
 
 
 (* ---- types ---- *)
