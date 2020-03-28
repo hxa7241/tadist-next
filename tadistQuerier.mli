@@ -28,7 +28,7 @@ open Tadist
  *
  * @param  bool whether to print extra tracing
  * @param  isbn
- * @return title, author, date
+ * @return title, authors, dates
  *)
 val getBasicTadForIsbn : bool -> Tadist.Isbn.t ->
-   (StringT.t option * StringT.t array * DateIso8601e.t array)
+   (string option * string list * string option) HxaGeneral.ress
