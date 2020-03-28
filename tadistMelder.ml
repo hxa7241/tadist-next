@@ -15,6 +15,7 @@
 
 open HxaGeneral
 open Tadist
+(* using TadistQuerier *)
 (* using TadistEpub *)
 (* using TadistPdf *)
 (* (using Djvu) *)

@@ -15,7 +15,7 @@
 
 open HxaGeneral
 (* using Tadist *)
-(* using TadistExtractor *)
+(* using TadistMelder *)
 
 
 
@@ -221,7 +221,7 @@ let suggestRename ~(rename:bool) ?(quiet:bool = false) ?(verbose:bool = false)
    (* get new name *)
    let nameNew , textNew =
       match
-         TadistExtractor.makeNameStructFromFileName verbose filePathnameOld
+         TadistMelder.makeNameStructFromFileName verbose filePathnameOld
       with
       | Ok ns   -> ( Tadist.toStringName ns , Tadist.toStringText ns )
       | Error s -> fail s
