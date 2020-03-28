@@ -1,6 +1,6 @@
 (*------------------------------------------------------------------------------
 
-   TADIST tool (OCaml 4.10)
+   HXA General Library (OCaml 4.10)
    Harrison Ainsworth / HXA7241 : 2015, 2020
 
    http://www.hxa.name/tools/
