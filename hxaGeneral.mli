@@ -588,28 +588,28 @@ sig
 
 
    (* Prepare a regex. *)
-   val compile    : string -> rx
+   val compile : string -> rx
 
    (**
     * Check if start of string matches regex.
     *
-    * @params compiled regex, string to inspect, non-match message
+    * @params compiled regex, string to inspect
     *)
-   val apply      : rx -> string -> string -> ((rxmatch,string) result)
+   val apply : rx -> string -> rxmatch option
 
    (**
     * Compile and apply regex.
     *
-    * @params regex string, string to inspect, non-match message
+    * @params regex string, string to inspect
     *)
-   val regex      : string -> string -> string -> ((rxmatch,string) result)
+   val regex : string -> string -> rxmatch option
 
    (**
     * Find first substring in string that matches regex.
     *
-    * @params compiled regex, string to inspect, non-match message
+    * @params compiled regex, string to inspect
     *)
-   val seekFirst  : rx -> string -> string -> ((rxmatch,string) result)
+   val seekFirst : rx -> string -> rxmatch option
 
    (**
     * Find all substrings in string that match regex.
@@ -622,7 +622,7 @@ sig
    val wholeFound : rxmatch -> string
 
    (** Get a group (index starts at 1) from a match. *)
-   val groupFound : rxmatch -> int -> (string option)
+   val groupFound : rxmatch -> int -> string option
 end
 
 

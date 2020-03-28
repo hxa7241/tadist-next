@@ -965,9 +965,9 @@ sig
    type rxmatch
 
    val compile    : string -> rx
-   val apply      : rx -> string -> string -> ((rxmatch,string) result)
-   val seekFirst  : rx -> string -> string -> ((rxmatch,string) result)
-   val regex      : string -> string -> string -> ((rxmatch,string) result)
+   val apply      : rx     -> string -> rxmatch option
+   val regex      : string -> string -> rxmatch option
+   val seekFirst  : rx -> string -> rxmatch option
    val allMatches : rx -> string -> string list
    val wholeFound : rxmatch -> string
    val groupFound : rxmatch -> int -> (string option)
@@ -982,17 +982,16 @@ struct
    type rxmatch = string array option*)
 
    (* private *)
-   let expressOneMatch (query:bool) (content:string) (message:string)
-      : (rxmatch,string) result =
+   let expressOneMatch (query:bool) (content:string) : rxmatch option =
       if query
       then
          match
             (* should not fail, since the matching query succeeded
                (but if it does, abort the whole result) *)
-            try Ok (Str.matched_string content) with
-            | Not_found | Invalid_argument _ -> Error message
+            try Some (Str.matched_string content) with
+            | Not_found | Invalid_argument _ -> None
          with
-         | Ok wholeMatch ->
+         | Some wholeMatch ->
             let groups : (string option) list =
                List_.unfoldo
                   (fun index : (string option) option ->
@@ -1000,34 +999,30 @@ struct
                      | Not_found          -> Some None
                      | Invalid_argument _ -> None)
             in
-            Ok { whole = wholeMatch ; groups = Array.of_list groups }
-         | Error _ as e ->
-            e
+            Some { whole = wholeMatch ; groups = Array.of_list groups }
+         | None -> None
       else
-         Error message
+         None
       (*try Ok (Re.get_all (Re.exec rx content)) with
-      | Not_found -> Error message*)
+      | Not_found -> None*)
 
    let compile (rxs:string) : rx =
       Str.regexp rxs
       (*Re.compile (Re_perl.re rxs)*)
 
-   let apply (rx:rx) (content:string) (message:string)
-      : (rxmatch,string) result =
+   let apply (rx:rx) (content:string) : rxmatch option =
       let query = Str.string_match rx content 0 in
-      expressOneMatch query content message
+      expressOneMatch query content
 
-   let regex (rxs:string) (content:string) (message:string)
-      : (rxmatch,string) result =
-      apply (compile rxs) content message
+   let regex (rxs:string) (content:string) : rxmatch option =
+      apply (compile rxs) content
 
-   let seekFirst (rx:rx) (content:string) (message:string)
-      : (rxmatch,string) result =
+   let seekFirst (rx:rx) (content:string) : rxmatch option =
       let query =
          try ignore(Str.search_forward rx content 0) ; true with
          | Not_found -> false
       in
-      expressOneMatch query content message
+      expressOneMatch query content
 
    let allMatches (rx:rx) (content:string) : string list =
       (Str.full_split rx content)
