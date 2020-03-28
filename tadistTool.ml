@@ -24,8 +24,8 @@ open HxaGeneral
 
 let _HELP =
 {|
-  TADIST tool 1 (OCaml 4.02)
-  Harrison Ainsworth / HXA7241 : 2015-05-30
+  TADIST tool 1 (OCaml 4.10) ***UNFINISHED***
+  Harrison Ainsworth / HXA7241 : 2015, 2020
   http://www.hxa.name
 
 Does one of three things:
