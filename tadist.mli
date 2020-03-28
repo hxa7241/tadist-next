@@ -239,7 +239,31 @@ val _MAX_NAME_LEN : int
 
 
 
-(* ---- functions ---- *)
+(* ---- normalisers ---- *)
+
+(** Remove empty strings. *)
+val nonEmpties : string list -> string list
+
+(** Truncate word list to a maximum.
+ *  NB: truncates according to byte-length, not necessarily char-length *)
+val truncateWords : int -> string list -> string list
+
+val normaliseTitle : string list -> StringT.t ArrayNe.t HxaGeneral.ress
+
+val normaliseAuthor : bool -> string list -> StringT.t array
+
+val normaliseDate : string list -> DateIso8601e.t array
+
+val normaliseIsbn : string list -> (StringT.t * StringT.t) option
+
+val normaliseString : string -> StringT.t option
+
+val normaliseMetadata : bool -> nameStructRaw -> nameStruct HxaGeneral.ress
+
+
+
+
+(* ---- outer functions ---- *)
 
 (* nameStruct related *)
 
