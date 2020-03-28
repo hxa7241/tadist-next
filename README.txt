@@ -6,7 +6,7 @@ TADIST tool ***UNFINISHED***
 Harrison Ainsworth / HXA7241 : 2015, 2020  
 http://www.hxa.name/tools
 
-2020-03-14  
+2020-03-28
 
 
 
@@ -58,12 +58,14 @@ Build
 
 Requirements:
 * OCaml 4.10 (or thereabouts)
-* ocamlfind
 
-Library dependencies (other versions *might* suffice):
-* camlzip 1.05 -- installed so as to be accessible to ocamlfind
-* camlpdf 2.1.1 -- installed so as to be accessible to ocamlfind
-* utf8filter 3 -- put files into libs/ directory
+Library dependencies (other versions might suffice):
+* camlzip 1.10
+* camlpdf 2.3.1
+* utf8filter 3
+
+Runtime dependencies:
+* http://openlibrary.org/api/books
 
 Run make, to produce:
 * tadist  -- native executable
@@ -74,11 +76,11 @@ Run make, to produce:
 Changes
 -------
 
-### Version 1.1 : 2015-05-30 ###
+### Version 1.1 : ... ###
 
 Supports PDF files.
 
-(OCaml 4.02)
+(OCaml 4.10)
 
 
 ### Version 1 : 2015-05-23 ###
@@ -93,9 +95,17 @@ Acknowledgements
 ----------------
 
 Uses:
-* CamlZip 1.05 -- http://forge.ocamlcore.org/projects/camlzip/
-* CamlPDF 2.1.1 -- http://opam.ocaml.org/packages/camlpdf/camlpdf.2.1.1/
-* Utf8filter 3 -- http://www.hxa.name/tools/index.html#utf8filter
+
+* OpenLibrary
+   * https://openlibrary.org/dev/docs/api/books
+* CamlZip 1.10
+   * https://opam.ocaml.org/packages/camlzip/
+   * https://github.com/xavierleroy/camlzip
+* CamlPDF 2.3.1
+   * https://opam.ocaml.org/packages/camlpdf/
+   * https://github.com/johnwhitington/camlpdf
+* Utf8filter 3
+   * http://www.hxa.name/tools/index.html#utf8filter
    * https://github.com/hxa7241/utf8filter
 
 
