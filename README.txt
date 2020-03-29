@@ -6,7 +6,7 @@ TADIST tool ***UNFINISHED***
 Harrison Ainsworth / HXA7241 : 2015, 2020  
 http://www.hxa.name/tools
 
-2020-03-28
+2020-03-29
 
 
 
@@ -114,10 +114,10 @@ Metadata
 --------
 
 DC:`
-   title:`TADIST tool 1`
+   title:`TADIST tool ***UNFINISHED***`
    creator:`Harrison Ainsworth / HXA7241`
 
-   date:`2020-03-14`
+   date:`2020-03-29`
    date:`2015-05-30`
    date:`2015-05-23`
 
@@ -133,7 +133,8 @@ DC:`
    identifier:`http://www.hxa.name/tools/#tadist`
    rights:`GNU Affero General Public License, Version 3`
 
-   references:`http://forge.ocamlcore.org/projects/camlzip/`
-   references:`http://opam.ocaml.org/packages/camlpdf/camlpdf.2.1.1/`
+   references:`https://openlibrary.org/dev/docs/api/books`
+   references:`https://opam.ocaml.org/packages/camlzip/`
+   references:`https://opam.ocaml.org/packages/camlpdf/`
    references:`http://www.hxa.name/tools/index.html#utf8filter`
 `
