@@ -68,7 +68,11 @@ type 'a list1 = ('a * 'a list)
 (* -- data -- *)
 
 (** Convert list1 to list. *)
-val ofList1 : 'a list1 -> 'a list
+val ofList1  : 'a list1 -> 'a list
+val ofList1o : 'a list1 option -> 'a list
+
+(** Convert list to list1 option. *)
+val toList1 : 'a list -> 'a list1 option
 
 (** Reverse cons - append at foot. *)
 val ( @< ) : 'a list -> 'a -> 'a list

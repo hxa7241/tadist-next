@@ -38,6 +38,18 @@ let ofList1 (l1:'a list1) : 'a list =
    (fst l1) :: (snd l1)
 
 
+let ofList1o (l1o:'a list1 option) : 'a list =
+   match l1o with
+   | Some l1 -> ofList1 l1
+   | None    -> []
+
+
+let toList1 (l:'a list) : 'a list1 option =
+   match l with
+   | []     -> None
+   | h :: t -> Some (h , t)
+
+
 let ( @< ) (l:'a list) (a:'a) : 'a list =
    l @ (a :: [])
 
