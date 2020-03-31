@@ -185,6 +185,9 @@ sig
    (** And-merge double heterogeneous options. *)
    val and2 : ('a option) -> ('b option) -> (('a * 'b) option)
 
+   (** Convert to list of zero of one item. *)
+   val toList : 'a option -> 'a list
+
    (*(**
     * Not sure about this ... .
     * @param null-form of type

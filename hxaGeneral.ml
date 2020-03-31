@@ -153,6 +153,7 @@ sig
    val toExc_x  : (unit -> exn) -> 'a option -> 'a
    val fromExc  : (unit -> 'a) -> 'a option
    val and2     : ('a option) -> ('b option) -> (('a * 'b) option)
+   val toList   : 'a option -> 'a list
    (*val merge2   : 'a -> ('a -> 'a -> 'a) -> ('a option * 'a option) -> 'a*)
 end
 =
@@ -234,6 +235,11 @@ struct
       | Some _  , None    -> None
       | None    , Some _  -> None
       | None    , None    -> None
+
+   let toList (o:'a option) : 'a list =
+      match o with
+      | Some i -> [i]
+      | None   -> []
 
    (*let merge2 (nul:'a) (sum:'a -> 'a -> 'a) (e0oe1o:'a option * 'a option)
       : 'a =
