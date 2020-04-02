@@ -417,6 +417,7 @@ sig
    val isAscii   : char -> bool
    val isBlank   : char -> bool
    val isNewline : char -> bool
+   val isCrOrLf : char -> bool
 end
 =
 struct
@@ -439,6 +440,9 @@ struct
 
    let isNewline (c:char) : bool =
       c = '\n'
+
+   let isCrOrLf (c:char) : bool =
+      (c = '\r') || (c = '\n')
 end
 
 

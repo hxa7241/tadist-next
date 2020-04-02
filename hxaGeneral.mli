@@ -300,6 +300,9 @@ sig
 
    (** Is \n ?. *)
    val isNewline : char -> bool
+
+   (** Is \r or \n ?. *)
+   val isCrOrLf : char -> bool
 end
 
 
