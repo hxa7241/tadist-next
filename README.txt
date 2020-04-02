@@ -6,7 +6,7 @@ TADIST tool ***UNFINISHED***
 Harrison Ainsworth / HXA7241 : 2015, 2020  
 http://www.hxa.name/tools
 
-2020-03-29
+2020-04-02
 
 
 
@@ -76,9 +76,16 @@ Run make, to produce:
 Changes
 -------
 
-### Version 1.1 : ... ###
+### Version 1.2 : ... ###
 
 Supports PDF files.
+
+(OCaml 4.10)
+
+
+### Version 1.1 : 2020 ###
+
+OpenLibrary.org ISBN query data
 
 (OCaml 4.10)
 
@@ -117,7 +124,7 @@ DC:`
    title:`TADIST tool ***UNFINISHED***`
    creator:`Harrison Ainsworth / HXA7241`
 
-   date:`2020-03-29`
+   date:`2020-04-02`
    date:`2015-05-30`
    date:`2015-05-23`
 
