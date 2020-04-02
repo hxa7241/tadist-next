@@ -633,7 +633,9 @@ module List_ :
 sig
    val isEmpty       : 'a list -> bool
    val hd            : 'a list -> 'a option
+   val first         : 'a list -> 'a option
    val ft            : 'a list -> 'a option
+   val last          : 'a list -> 'a option
    val tlSafe        : 'a list -> 'a list
    val nth           : int -> 'a list -> 'a option
    val bisect        : 'a list -> int -> ('a list * 'a list)
@@ -659,11 +661,15 @@ struct
       | hd :: _ -> Some hd
       | []      -> None
 
+   let first = hd
+
    let rec ft (l:'a list) : 'a option =
       match l with
       | ft :: [] -> Some ft
       | _  :: tl -> ft tl
       | []       -> None
+
+   let last = ft
 
    let tlSafe (l:'a list) : 'a list =
       match l with

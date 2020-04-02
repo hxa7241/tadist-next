@@ -395,10 +395,12 @@ sig
    val isEmpty : 'a list -> bool
 
    (** Like hd, but with option instead of exception. *)
-   val hd : 'a list -> 'a option
+   val hd    : 'a list -> 'a option
+   val first : 'a list -> 'a option
 
    (** Last element (foot) - opposite end to head. *)
-   val ft : 'a list -> 'a option
+   val ft   : 'a list -> 'a option
+   val last : 'a list -> 'a option
 
    (** Like tl, but return empty list if list is empty. *)
    val tlSafe : 'a list -> 'a list
