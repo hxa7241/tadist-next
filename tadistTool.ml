@@ -24,19 +24,19 @@ open HxaGeneral
 
 let _HELP =
 {|
-  TADIST tool 1 (OCaml 4.10) ***UNFINISHED***
+  TADIST tool 1.1 (OCaml 4.10) ***UNFINISHED***
   Harrison Ainsworth / HXA7241 : 2015, 2020
   http://www.hxa.name
 
 Does one of three things:
-* suggests a name for a file, from examined file data/metadata
-* renames a file, from examined file data/metadata
+* suggests a name for a file, from file metadata and internet query
+* renames a file, from examined file metadata and internet query
 * converts a string between 'name-form' and 'text-form'
 
 ... according to the TADIST format definition:
 http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
 
-File-types supported: Epub, PDF.
+File-types supported: Epub.
 
 Usage:
   tadist [-?|--help]
