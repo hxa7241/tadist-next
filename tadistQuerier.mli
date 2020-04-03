@@ -21,14 +21,12 @@
 
 (* ---- functions ---- *)
 
-open Tadist
-
 (**
- * Get basic TADIST data (title, author, date) from an internet query.
+ * Get basic TADIST data (title, author, date) from an internet ISBN query.
  *
  * @param  bool whether to print extra tracing
  * @param  isbn
- * @return title, authors, dates
+ * @return title, authors, date
  *)
 val getBasicTadForIsbn : bool -> Tadist.Isbn.t ->
-   (string option * string list * string option) HxaGeneral.ress
+   Tadist.nameStructRaw HxaGeneral.ress
