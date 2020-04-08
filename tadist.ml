@@ -429,12 +429,8 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
    |> (List.map DateIso8601e.yearOnly)
    |> (List.sort_uniq DateIso8601e.compare)
    (* first and last only *)
-   |> (function
-      | []            -> [||]
-      | [single]      -> [| single |]
-      | first :: tail ->
-         let last = List.hd (List.rev tail) in
-         [| first ; last |])
+   |> List_.hdft
+   |> Array.of_list
 
 
 let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =

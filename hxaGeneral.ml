@@ -642,6 +642,7 @@ sig
    val last          : 'a list -> 'a option
    val tlSafe        : 'a list -> 'a list
    val nth           : int -> 'a list -> 'a option
+   val hdft          : 'a list -> 'a list
    val bisect        : 'a list -> int -> ('a list * 'a list)
    val find          : ('a -> bool) -> 'a list -> 'a option
    val filtmap       : ('a -> 'b option) -> 'a list -> 'b list
@@ -682,6 +683,12 @@ struct
 
    let nth (index:int) (l:'a list) : 'a option =
       try Some (List.nth l index) with Failure _ -> None
+
+   let hdft (l:'a list) : 'a list =
+      match l with
+      | []         -> []
+      | [single]   -> [single]
+      | hd :: tail -> [ hd ; (List.rev tail) |> List.hd ]
 
    let bisect (l:'a list) (m:int) : ('a list * 'a list) =
       let rec recur (i:int) (l:'a list) (body:'a list) : ('a list * 'a list) =

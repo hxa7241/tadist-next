@@ -83,12 +83,9 @@ let meldExtractedAndQueried
       (List.sort_uniq DateIso8601e.compare)
       |>
       (* take first and last only *)
-      (function
-         | []            -> [||]
-         | [single]      -> [| single |]
-         | first :: tail ->
-            let last = List.hd (List.rev tail) in
-            [| first ; last |])
+      List_.hdft
+      |>
+      Array.of_list
    in
 
    (* DEBUG *)

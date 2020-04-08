@@ -411,6 +411,9 @@ sig
    (** Like nth, but with option instead of exception. *)
    val nth : int -> 'a list -> 'a option
 
+   (** Get first and last only, or single item, or empty. *)
+   val hdft : 'a list -> 'a list
+
    (** Break into two: first n and last (len - n) elements.
        (out-of-range bisect point is clamped) *)
    val bisect : 'a list -> int -> ('a list * 'a list)
