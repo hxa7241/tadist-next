@@ -58,6 +58,12 @@ let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
    * https://openlibrary.org/dev/docs/restful_api
    *)
 
+   (*
+   Example response body:
+
+   {"ISBN:9781786635167": {"publishers": [{"name": "Verso"}], "identifiers": {"isbn_13": ["9781786635167"], "openlibrary": ["OL27613422M"]}, "subtitle": "How the World's Biggest Corporations are Laying the Foundation for Socialism", "weight": "9.9 ounces", "title": "The People's Republic of Walmart", "url": "http://openlibrary.org/books/OL27613422M/The_People's_Republic_of_Walmart", "number_of_pages": 256, "cover": {"small": "https://covers.openlibrary.org/b/id/9063092-S.jpg", "large": "https://covers.openlibrary.org/b/id/9063092-L.jpg", "medium": "https://covers.openlibrary.org/b/id/9063092-M.jpg"}, "publish_date": "1819", "key": "/books/OL27613422M", "authors": [{"url": "blah", "name": "Foo Bar"}, {"url": "http://openlibrary.org/authors/OL7730842A/Leigh_Phillips", "name": "Leigh Phillips"}]}}
+   *)
+
    let requestHost = "openlibrary.org" in
    (* constant except for 'isbn' *)
    let request     =
@@ -243,8 +249,6 @@ let getBasicTadForIsbn (trace:bool) (isbn:Isbn.t) : nameStructRaw ress =
 
    (* : string ress *)
    (requestOpenLib trace isbn)
-   (* DEBUG *)
-   (*(Ok {|{"ISBN:9781786635167": {"publishers": [{"name": "Verso"}], "identifiers": {"isbn_13": ["9781786635167"], "openlibrary": ["OL27613422M"]}, "subtitle": "How the World's Biggest Corporations are Laying the Foundation for Socialism", "weight": "9.9 ounces", "title": "The People's Republic of Walmart", "url": "http://openlibrary.org/books/OL27613422M/The_People's_Republic_of_Walmart", "number_of_pages": 256, "cover": {"small": "https://covers.openlibrary.org/b/id/9063092-S.jpg", "large": "https://covers.openlibrary.org/b/id/9063092-L.jpg", "medium": "https://covers.openlibrary.org/b/id/9063092-M.jpg"}, "publish_date": "1819", "key": "/books/OL27613422M", "authors": [{"url": "blah", "name": "Foo Bar"}, {"url": "http://openlibrary.org/authors/OL7730842A/Leigh_Phillips", "name": "Leigh Phillips"}]}}|})*)
    |>=
    (* : TAD tuple ress *)
    (parseOpenLib trace)
