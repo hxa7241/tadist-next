@@ -15,10 +15,123 @@
 
 open HxaGeneral
 open Tadist
-(* using TadistQuerier *)
 (* using TadistEpub *)
 (* using TadistPdf *)
-(* (using Djvu) *)
+(* using TadistQuerier *)
+
+
+
+
+let extractMetadata (trace:bool) (filePathname:string) : nameStructRaw ress =
+
+   let rec fileTryer (filePathname:string)
+      (extractors:(bool -> string -> (Tadist.nameStructRaw option) ress) list)
+      : nameStructRaw ress =
+      match extractors with
+      | extractor :: rest ->
+         begin match extractor trace filePathname with
+         (* recurse to try next extractor *)
+         | Ok None      -> fileTryer filePathname rest
+         (* return the extracted data *)
+         | Ok Some nsr  -> Ok nsr
+         | Error _ as e -> e
+         end
+      | [] -> Error "unrecognised file type"
+   in
+
+   fileTryer filePathname [
+      TadistEpub.extractTadist ;
+      TadistPdf.extractTadist ; ]
+
+
+let meldExtractedAndQueried
+   (trace:bool) (metadata:nameStruct) (querydata:nameStruct)
+   : nameStruct ress =
+
+   let authorSetUnion =
+      (* Build a set, by alternately adding the next item from each list.
+       * (So the merge is an interleaving of two ordered lists,
+       * but for any duplicate, only the first is kept.)
+       * (Using asymptotically slow algo, but the lists are very small.) *)
+      let rec merge (result:StringT.t list) (a:StringT.t list) (b:StringT.t list)
+         : StringT.t list =
+         (* append only if not already there -- like a set *)
+         let setAppend (l:StringT.t list) (x:StringT.t) : StringT.t list =
+            if (List.mem x l) then l else x :: l
+         in
+         (* interleave two unequal length lists *)
+         match (a , b) with
+         | ([]         , []        ) -> result
+         | (hda :: tla , []        ) -> merge (setAppend result hda) tla []
+         | ([]         , hdb :: tlb) -> merge (setAppend result hdb) [] tlb
+         | (hda :: tla , hdb :: tlb) ->
+            merge (setAppend (setAppend result hda) hdb) tla tlb
+      in
+      let interleavedSet =
+         merge
+            []
+            (Array.to_list metadata.author)
+            (Array.to_list querydata.author)
+      in
+      interleavedSet |> List.rev |> Array.of_list
+
+   and dateSetUnionEnds =
+      (* lump them together *)
+      ( (Array.append metadata.date querydata.date) |> Array.to_list )
+      |>
+      (* sort all *)
+      (List.sort_uniq DateIso8601e.compare)
+      |>
+      (* take first and last only *)
+      (function
+         | []            -> [||]
+         | [single]      -> [| single |]
+         | first :: tail ->
+            let last = List.hd (List.rev tail) in
+            [| first ; last |])
+   in
+
+   (* DEBUG *)
+   if trace
+   then begin
+      print_endline "" ;
+      print_endline ("* M-title:   " ^
+         (  querydata.title
+            |> ArrayNe.toArray |> Array.to_list
+            |> (List.map StringT.toString)
+            |> (String.concat " ")  )) ;
+      print_endline ("* M-authors: " ^
+         (  authorSetUnion
+            |> Array.to_list
+            |> (List.map StringT.toString)
+            |> (String.concat " | ")  )) ;
+      print_endline ("* M-date:    " ^
+         (  dateSetUnionEnds
+            |> Array.to_list
+            |> (List.map (DateIso8601e.toString false))
+            |> (String.concat " | ")  )) ;
+      end ;
+
+   Ok {
+      title  = querydata.title ;
+      author = authorSetUnion ;
+      date   = dateSetUnionEnds ;
+      id     = metadata.id ;
+      subtyp = metadata.subtyp ;
+      typ    = metadata.typ    ; }
+
+
+let getIsbn (ns:nameStruct) : Isbn.t ress =
+
+   (Option_.toRes "no isbn" ns.id)
+   |>=
+   (snd %> StringT.toString %> Isbn.make)
+
+   (*
+   match ns.id with
+   | None          -> Error "no isbn"
+   | Some (_ , id) -> id |> StringT.toString |> Isbn.make
+   *)
 
 
 
@@ -28,29 +141,25 @@ open Tadist
 let makeNameStructFromFileName (trace:bool) (filePathname:string)
    : nameStruct ress =
 
-   (* redundant with recogniseEpub ... and the others?
-   (* check file exists *)
-   match (try close_in (open_in_bin filePathname) ; Ok true
-      with _ -> Error "cannot open file")
-   with
-   | Error _ as e -> e
-   | Ok _         ->
-   *)
+   (* get basic metadata *)
+   (* : nameStructRaw ress *)
+   (extractMetadata trace filePathname)
+   |>=
+   (* : nameStruct ress *)
+   (Tadist.normaliseMetadata trace)
+   |>=
 
-   let rec fileTryer (filePathname:string)
-      (lf:(bool -> string -> (Tadist.nameStructRaw option) ress) list)
-      : nameStruct ress =
-      match lf with
-      | f :: rest ->
-         begin match f trace filePathname with
-         | Ok None      -> fileTryer filePathname rest
-         | Ok Some nsr  -> Tadist.normaliseMetadata trace nsr
-         | Error _ as e -> e
-         end
-      | [] -> Error "unrecognised file type"
-   in
-
-   fileTryer filePathname [
-      TadistEpub.extractTadist ;
-      TadistPdf.extractTadist ;
-      (*Djvu.extractTadist*) ]
+   (* get and meld isbn query data *)
+   (* : nameStruct ress *)
+   (fun metadata ->
+      (* : Isbn.t ress *)
+      (getIsbn metadata)
+      |>=
+      (* : nameStructRaw ress *)
+      (TadistQuerier.getBasicTadForIsbn trace)
+      |>=
+      (* : nameStruct ress *)
+      (Tadist.normaliseMetadata trace)
+      |>=
+      (* : nameStruct ress *)
+      (meldExtractedAndQueried trace metadata))
