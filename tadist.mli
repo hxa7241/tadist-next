@@ -139,6 +139,9 @@ sig
 
    (** Get string from. *)
    val toString : t -> string
+
+   (** Std comparison *)
+   val compare : t -> t -> int
 end
 
 

@@ -30,6 +30,7 @@ sig
    val make     : string -> t ress
    val makef    : string -> t ress
    val toString : t -> string
+   val compare  : t -> t -> int
 end
 =
 struct
@@ -65,6 +66,9 @@ struct
 
    let toString (st:t) : string =
       st
+
+   let compare (a:t) (b:t) : int =
+      compare (toString a) (toString b)
 end
 
 
