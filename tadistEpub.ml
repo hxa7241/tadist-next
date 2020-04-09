@@ -199,7 +199,7 @@ let getHtmlPathnames (contentopf:string) : string list =
    Str.allMatches rx htmlItems (Str.matched_group 1)
 
 
-let findFirstIsbn (trace:bool) (text:string) : (string option) =
+let findFirstIsbn (text:string) : (string option) =
 
    match
       (* find 'ISBN' (yield pos of last char) *)
@@ -213,7 +213,7 @@ let findFirstIsbn (trace:bool) (text:string) : (string option) =
    | Some pos ->
       (* find number *)
 
-      if trace then print_endline ("   'isbn' pos: " ^ (string_of_int pos)) ;
+      (*print_endline ("   'isbn' pos: " ^ (string_of_int pos)) ;*)
 
       let matchIsbnNum (txt:string) (pos:int) : (string option) =
          let matchIsbnH13 , matchIsbnH10 , matchIsbnM13 , matchIsbnM10 =
@@ -250,7 +250,7 @@ let findFirstIsbn (trace:bool) (text:string) : (string option) =
       searchForward 0 (min 15 ((String.length text) - pos))
 
 
-let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
+let getIsbns (epubPathname:string) (contentopfpath:string)
    (htmlPathnames:string list)
    : string list =
 
@@ -275,8 +275,7 @@ let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
       | Error _ -> []
    in
 
-   if trace
-   then print_endline ("html files: " ^ (string_of_int (List.length htmls))) ;
+   (*print_endline ("html files: " ^ (string_of_int (List.length htmls))) ;*)
 
    (* filter for ISBN presence *)
    let isbnFiles =
@@ -291,13 +290,11 @@ let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
                |> (Str.global_replace (Str.regexp "<[^>]+>") " ")
                |> (Str.global_replace (Str.regexp_string "\xE2\x80\x93") "-")
             in
-            Option.map (fun isbn -> (text,isbn)) (findFirstIsbn trace text)
+            Option.map (fun isbn -> (text,isbn)) (findFirstIsbn text)
          ) htmls
    in
 
-   if trace
-   then print_endline ("isbn files: " ^
-      (string_of_int (List.length isbnFiles))) ;
+   (*print_endline ("isbn files: " ^ (string_of_int (List.length isbnFiles))) ;*)
 
    match isbnFiles with
    | [] as empty        -> empty
@@ -313,12 +310,11 @@ let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
          ) ambiguous
       in
 
-      if trace
-      then begin
+      (*begin
          print_endline ("isbn ambiguous (" ^
          (string_of_int (List.length loc)) ^ ")") ;
          List.iter (fun (_,isbn) -> print_endline ("   loc: " ^ isbn)) loc
-         end ;
+      end ;*)
 
       begin match loc with
       | (_ , unique) :: [] -> [unique]
@@ -331,7 +327,7 @@ let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
 
 (* ---- public functions ---- *)
 
-let extractTadist (trace:bool) (epubPathname:string)
+let extractTadist (epubPathname:string)
    : (Tadist.nameStructRaw option) ress =
 
    match recogniseEpub epubPathname with
@@ -347,23 +343,12 @@ let extractTadist (trace:bool) (epubPathname:string)
             getContentopfMetadata contentopf
          in
 
-         if trace
-         then begin
-            print_endline "" ;
-            print_endline ("* titles:  " ^ (String.concat " | " titles)) ;
-            print_endline ("* authors: " ^ (String.concat " | " authors)) ;
-            print_endline ("* dates:   " ^ (String.concat " | " dates)) ;
-            print_endline ("* isbns:   " ^ (String.concat " | " isbns))
-            end ;
-
          (* maybe look for ISBN elsewhere *)
          let isbns = if isbns <> []
             then isbns
             else let htmlPathnames = getHtmlPathnames contentopf in
-               let isbns = getIsbns trace epubPathname contentopfpath
+               let isbns = getIsbns epubPathname contentopfpath
                   htmlPathnames in
-               if trace then print_endline ("* isbns (b): " ^
-                  (String.concat " | " isbns)) ;
                isbns
          in
 

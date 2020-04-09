@@ -22,14 +22,14 @@ open Tadist
 
 
 
-let extractMetadata (trace:bool) (filePathname:string) : nameStructRaw ress =
+let extractMetadata (filePathname:string) : nameStructRaw ress =
 
    let rec fileTryer (filePathname:string)
-      (extractors:(bool -> string -> (Tadist.nameStructRaw option) ress) list)
+      (extractors:(string -> (Tadist.nameStructRaw option) ress) list)
       : nameStructRaw ress =
       match extractors with
       | extractor :: rest ->
-         begin match extractor trace filePathname with
+         begin match extractor filePathname with
          (* recurse to try next extractor *)
          | Ok None      -> fileTryer filePathname rest
          (* return the extracted data *)
@@ -140,10 +140,10 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
 
    (* get basic metadata *)
    (* : nameStructRaw ress *)
-   (extractMetadata trace filePathname)
+   (extractMetadata filePathname)
    |>=
    (* : nameStruct ress *)
-   (Tadist.normaliseMetadata trace)
+   Tadist.normaliseMetadata
    |>=
 
    (* get and meld isbn query data *)
@@ -153,10 +153,10 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
       (getIsbn metadata)
       |>=
       (* : nameStructRaw ress *)
-      (TadistQuerier.getBasicTadForIsbn trace)
+      TadistQuerier.getBasicTadForIsbn
       |>=
       (* : nameStruct ress *)
-      (Tadist.normaliseMetadata trace)
+      Tadist.normaliseMetadata
       |>=
       (* : nameStruct ress *)
       (meldExtractedAndQueried trace metadata))

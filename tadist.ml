@@ -357,7 +357,7 @@ let normaliseTitle (titles:string list) : StringT.t ArrayNe.t ress =
       |> Result_.errorMap (fun _ -> "no valid title")
 
 
-let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
+let normaliseAuthor (authors:string list) : StringT.t array =
 
    authors
    |> (List.map (Utf8filter.replace % Blanks.blankSpacyCtrlChars))
@@ -384,10 +384,6 @@ let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
       (* clean-up *)
       |> (List.map String.trim)
       |> (List.filter (Fun.negate String_.isEmpty)))
-   |> (fun names ->
-      if trace
-      then print_endline ("* names:      " ^ (String.concat " | " names)) ;
-      names)
    (* extract last names *)
    |> (List.map (fun s ->
          String.trim
@@ -399,10 +395,6 @@ let normaliseAuthor (trace:bool) (authors:string list) : StringT.t array =
             with Not_found ->
                let i = try String.rindex s ' ' with Not_found -> 0 in
                String.sub s i ((String.length s) - i))))
-   |> (fun lastNames ->
-      if trace
-      then print_endline ("* last-names: " ^ (String.concat " | " lastNames)) ;
-      lastNames)
    (* constrain *)
    |> nonEmpties |> (truncateWords 32)
    |> (List_.filtmap (StringT.make % Result_.toOpt))
@@ -474,7 +466,7 @@ let normaliseString (s:string) : StringT.t option =
    |> StringT.make |> Result_.toOpt
 
 
-let normaliseMetadata (trace:bool) (nsr:nameStructRaw) : nameStruct ress =
+let normaliseMetadata (nsr:nameStructRaw) : nameStruct ress =
 
    (* title is mandatory *)
    match normaliseTitle nsr.titleRaw with
@@ -487,7 +479,7 @@ let normaliseMetadata (trace:bool) (nsr:nameStructRaw) : nameStruct ress =
          (* the rest are optional *)
          Ok {
             title  = title ;
-            author = normaliseAuthor trace nsr.authorRaw ;
+            author = normaliseAuthor nsr.authorRaw ;
             date   = normaliseDate nsr.dateRaw ;
             id     = normaliseIsbn nsr.idRaw ;
             subtyp = normaliseString nsr.subtypRaw ;

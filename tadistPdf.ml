@@ -28,8 +28,7 @@ let _TYPE = "pdf"
 
 (* ---- public functions ---- *)
 
-let extractTadist (_(*trace*):bool) (_(*pdfPathname*):string)
-   : (Tadist.nameStructRaw option) ress =
+let extractTadist (_(*pdfPathname*):string) : (Tadist.nameStructRaw option) ress =
 
    Error "not implemented yet"
 

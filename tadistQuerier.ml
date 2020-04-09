@@ -59,7 +59,7 @@ let httpStatusCode (statusLine:string) : string =
  *
  * {"ISBN:9781786635167": {"publishers": [{"name": "Verso"}], "identifiers": {"isbn_13": ["9781786635167"], "openlibrary": ["OL27613422M"]}, "subtitle": "How the World's Biggest Corporations are Laying the Foundation for Socialism", "weight": "9.9 ounces", "title": "The People's Republic of Walmart", "url": "http://openlibrary.org/books/OL27613422M/The_People's_Republic_of_Walmart", "number_of_pages": 256, "cover": {"small": "https://covers.openlibrary.org/b/id/9063092-S.jpg", "large": "https://covers.openlibrary.org/b/id/9063092-L.jpg", "medium": "https://covers.openlibrary.org/b/id/9063092-M.jpg"}, "publish_date": "1819", "key": "/books/OL27613422M", "authors": [{"url": "blah", "name": "Foo Bar"}, {"url": "http://openlibrary.org/authors/OL7730842A/Leigh_Phillips", "name": "Leigh Phillips"}]}}
  *)
-let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
+let requestOpenLib (isbn:Isbn.t) : string ress =
 
    let requestHost = "openlibrary.org" in
    (* constant except for 'isbn' *)
@@ -82,8 +82,6 @@ let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
          (* connect *)
          begin
             let address =
-               (* DEBUG *)
-               (*let ip = Unix.inet_addr_of_string "207.241.232.201" in*)
                let ip = Unix.((gethostbyname requestHost).h_addr_list.(0)) in
                Unix.ADDR_INET (ip, 80)
             in
@@ -102,8 +100,7 @@ let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
             let inCount = Unix.read socket byteBuf 0 bufLen in
             Bytes.sub_string byteBuf 0 inCount
          in
-         (* DEBUG *)
-         if trace then print_endline ("* ISBN query response:\n" ^ response) ;
+         (*print_endline ("* ISBN query response:\n" ^ response) ;*)
 
          (* basic check of http response *)
          let body =
@@ -120,8 +117,7 @@ let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
                else
                   begin
                      let body = List.hd body in
-                     (* DEBUG *)
-                     if trace then print_endline ("* ISBN query body:\n" ^ body) ;
+                     (*print_endline ("* ISBN query body:\n" ^ body) ;*)
 
                      body
                   end
@@ -171,7 +167,7 @@ let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
  *    ],
  * * "publish_date" : "___"
  *)
-let parseOpenLib (trace:bool) (json:string)
+let parseOpenLib (json:string)
    : (string option * string list * string option) ress =
 
    let extractElement (json:string) (name:string) (form:string)
@@ -186,21 +182,18 @@ let parseOpenLib (trace:bool) (json:string)
       (* get authors json array : string option *)
       (extractElement json "authors" "\\[\\(.*\\)\\]" )
       |>-
-      (* DEBUG *)
-      (fun s ->
-         if trace then print_endline ("* Q-authsjson: " ^ s) ;
+      (*(fun s ->
+         print_endline ("* Q-authsjson: " ^ s) ;
          Some s)
-      |>-
+      |>-*)
       (* get all 'name' sub elements (name-value pairs) : string list1 option *)
       (fun s -> (Rx.allMatches rx s) |> toList1)
       |>-
-      (* DEBUG *)
-      (fun l1s ->
-         if trace
-         then print_endline ("* Q-authsnames: "
+      (*(fun l1s ->
+         print_endline ("* Q-authsnames: "
             ^ (String.concat " | " (ofList1 l1s))) ;
          Some l1s)
-      |>-
+      |>-*)
       (* from the name-value pairs, extract just the value strings *)
       (ofList1
          %>
@@ -221,14 +214,6 @@ let parseOpenLib (trace:bool) (json:string)
    and authors = extractAuthors json
    and dateo   = extractElement json "publish_date" stringValueRx in
 
-   (* DEBUG *)
-   if trace
-   then begin
-      print_endline ("* Q-title:   " ^(Option.value ~default:"[empty]" titleo)) ;
-      print_endline ("* Q-authors: " ^ (String.concat " | " authors)) ;
-      print_endline ("* Q-date:    " ^ (Option.value ~default:"[empty]" dateo)) ;
-      end ;
-
    Ok ( titleo , authors, dateo )
 
 
@@ -236,16 +221,13 @@ let parseOpenLib (trace:bool) (json:string)
 
 (* ---- public functions ---- *)
 
-let getBasicTadForIsbn (trace:bool) (isbn:Isbn.t) : nameStructRaw ress =
-
-   (* DEBUG *)
-   if trace then print_endline "" ;
+let getBasicTadForIsbn (isbn:Isbn.t) : nameStructRaw ress =
 
    (* : string ress *)
-   (requestOpenLib trace isbn)
+   (requestOpenLib isbn)
    |>=
    (* : TAD tuple ress *)
-   (parseOpenLib trace)
+   parseOpenLib
    |>=
    (* : nameStructRaw ress *)
    (fun (titleo , authors , dateo) ->

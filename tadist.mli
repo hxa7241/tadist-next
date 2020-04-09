@@ -253,7 +253,7 @@ val truncateWords : int -> string list -> string list
 
 val normaliseTitle : string list -> StringT.t ArrayNe.t HxaGeneral.ress
 
-val normaliseAuthor : bool -> string list -> StringT.t array
+val normaliseAuthor : string list -> StringT.t array
 
 val normaliseDate : string list -> DateIso8601e.t array
 
@@ -261,7 +261,7 @@ val normaliseIsbn : string list -> (StringT.t * StringT.t) option
 
 val normaliseString : string -> StringT.t option
 
-val normaliseMetadata : bool -> nameStructRaw -> nameStruct HxaGeneral.ress
+val normaliseMetadata : nameStructRaw -> nameStruct HxaGeneral.ress
 
 
 

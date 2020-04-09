@@ -34,8 +34,7 @@ val _TYPE : string
  * An ISBN often must be sought in the body of the text, then used to
  * lookup the metadata remotely.).
  *
- * @param bool whether to print extra tracing
  * @param string PDF filepathname
  *)
-val extractTadist : bool -> string ->
+val extractTadist : string ->
    (Tadist.nameStructRaw option) HxaGeneral.ress
