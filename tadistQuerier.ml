@@ -168,7 +168,7 @@ let requestOpenLib (isbn:Isbn.t) : string ress =
  * * "publish_date" : "___"
  *)
 let parseOpenLib (json:string)
-   : (string option * string list * string option) ress =
+   : (string option * string list * string option) =
 
    let extractElement (json:string) (name:string) (form:string)
       : string option =
@@ -214,7 +214,7 @@ let parseOpenLib (json:string)
    and authors = extractAuthors json
    and dateo   = extractElement json "publish_date" stringValueRx in
 
-   Ok ( titleo , authors, dateo )
+   ( titleo , authors, dateo )
 
 
 
@@ -225,14 +225,13 @@ let getBasicTadForIsbn (isbn:Isbn.t) : nameStructRaw ress =
 
    (* : string ress *)
    (requestOpenLib isbn)
-   |>=
-   (* : TAD tuple ress *)
+   |>=-
+   (* : TAD tuple *)
    parseOpenLib
-   |>=
-   (* : nameStructRaw ress *)
+   |>=-
+   (* : nameStructRaw *)
    (fun (titleo , authors , dateo) ->
-      Ok {
-         titleRaw  = Option_.toList titleo ;
+      {  titleRaw  = Option_.toList titleo ;
          authorRaw = authors ;
          dateRaw   = Option_.toList dateo ;
          idRaw     = [ Isbn.toStringBare isbn ] ;
