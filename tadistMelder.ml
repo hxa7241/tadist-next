@@ -44,8 +44,27 @@ let extractMetadata (filePathname:string) : nameStructRaw ress =
       TadistPdf.extractTadist ; ]
 
 
-let meldExtractedAndQueried
-   (trace:bool) (metadata:nameStruct) (querydata:nameStruct)
+let printRawMetadata (trace:bool) (label:string) (nsr:nameStructRaw)
+   : nameStructRaw =
+
+   if trace
+   then begin
+      print_endline ("\n" ^ label ^ " (" ^ nsr.typRaw ^ ")") ;
+
+      let partPrinter (label:string) (sep:string) (ls:string list) : unit =
+         print_endline (label ^ "  " ^ (String.concat sep ls)) ;
+      in
+
+      partPrinter "* titles: " "\n   * " nsr.titleRaw ;
+      partPrinter "* authors:" " | "     nsr.authorRaw ;
+      partPrinter "* dates:  " " | "     nsr.dateRaw ;
+      partPrinter "* isbns:  " " | "     nsr.idRaw ;
+   end ;
+
+   nsr
+
+
+let meldExtractedAndQueried (metadata:nameStruct) (querydata:nameStruct)
    : nameStruct ress =
 
    let authorSetUnion =
@@ -88,27 +107,6 @@ let meldExtractedAndQueried
       Array.of_list
    in
 
-   (* DEBUG *)
-   if trace
-   then begin
-      print_endline "" ;
-      print_endline ("* M-title:   " ^
-         (  querydata.title
-            |> ArrayNe.toArray |> Array.to_list
-            |> (List.map StringT.toString)
-            |> (String.concat " ")  )) ;
-      print_endline ("* M-authors: " ^
-         (  authorSetUnion
-            |> Array.to_list
-            |> (List.map StringT.toString)
-            |> (String.concat " | ")  )) ;
-      print_endline ("* M-date:    " ^
-         (  dateSetUnionEnds
-            |> Array.to_list
-            |> (List.map (DateIso8601e.toString false))
-            |> (String.concat " | ")  )) ;
-      end ;
-
    Ok {
       title  = querydata.title ;
       author = authorSetUnion ;
@@ -141,6 +139,8 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
    (* get basic metadata *)
    (* : nameStructRaw ress *)
    (extractMetadata filePathname)
+   |>=-
+   (printRawMetadata trace "Internal metadata")
    |>=
    (* : nameStruct ress *)
    Tadist.normaliseMetadata
@@ -154,9 +154,11 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
       |>=
       (* : nameStructRaw ress *)
       TadistQuerier.getBasicTadForIsbn
+      |>=-
+      (printRawMetadata trace "Remote ISBN query")
       |>=
       (* : nameStruct ress *)
       Tadist.normaliseMetadata
       |>=
       (* : nameStruct ress *)
-      (meldExtractedAndQueried trace metadata))
+      (meldExtractedAndQueried metadata))
