@@ -237,4 +237,4 @@ let getBasicTadForIsbn (isbn:Isbn.t) : nameStructRaw ress =
          dateRaw   = Option_.toList dateo ;
          idRaw     = [ Isbn.toStringBare isbn ] ;
          subtypRaw = "" ;
-         typRaw    = "isbn-query" ; } )
+         typRaw    = "openlibrary.org" ; } )
