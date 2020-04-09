@@ -211,6 +211,37 @@ let readInput (s:string) : string =
       | _           -> fail "input failure"
 
 
+let printNamestructData (trace:bool) (ns:Tadist.nameStruct) : unit =
+
+   if trace
+   then begin
+      print_endline "\nTadist form" ;
+
+      let arrayPrinter (label:string) (sep:string) (sa:string array) : unit =
+         let content = sa |> Array.to_list |> (String.concat sep) in
+         print_endline (label ^ "   " ^ content) ;
+      in
+
+      let open Tadist in
+
+      arrayPrinter "* title: " " "
+         ((ns.title |> ArrayNe.toArray) |> (Array.map StringT.toString)) ;
+      arrayPrinter "* author:" " | "
+         (ns.author |> (Array.map StringT.toString)) ;
+      arrayPrinter "* date:  " " | "
+         (ns.date |> (Array.map (DateIso8601e.toString false))) ;
+
+      print_endline ("* id:       " ^
+         (Option_.mapUnify
+            (fun (il,ic) -> (StringT.toString il) ^ "-" ^ (StringT.toString ic))
+            (Fun.const "") ns.id) ) ;
+      print_endline ("* subtyp:   " ^
+         (Option_.mapUnify StringT.toString (Fun.const "") ns.subtyp) ) ;
+      print_endline ("* typ:      " ^
+         (StringT.toString ns.typ) ) ;
+   end
+
+
 let suggestRename ~(rename:bool) ?(quiet:bool = false) ?(verbose:bool = false)
    (input:string) : unit =
 
@@ -223,7 +254,11 @@ let suggestRename ~(rename:bool) ?(quiet:bool = false) ?(verbose:bool = false)
       match
          TadistMelder.makeNameStructFromFileName verbose filePathnameOld
       with
-      | Ok ns   -> ( Tadist.toStringName ns , Tadist.toStringText ns )
+      | Ok ns ->
+         begin
+            printNamestructData verbose ns ;
+            ( Tadist.toStringName ns , Tadist.toStringText ns )
+         end
       | Error s -> fail s
    in
    let filePathnameNew = path ^ nameNew in
