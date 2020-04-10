@@ -6,7 +6,7 @@ TADIST tool ***UNFINISHED***
 Harrison Ainsworth / HXA7241 : 2015, 2020  
 http://www.hxa.name/tools
 
-2020-04-02
+2020-04-10
 
 
 
@@ -38,13 +38,14 @@ File-types supported: Epub, PDF.
 Usage:
    tadist [-?|--help]
    tadist (-??|--doc)
-   tadist [-(s|r|R)] (-|<filename>)
+   tadist [-(s|S|r|R)] (-|<filename>)
    tadist -c (-|<string>)
 
 Options:
    -?  | --help  help
    -?? | --doc   more doc
    -s  suggest: print inferred name (default)
+   -S  suggest: verbosely print inferred name
    -r  rename: ask to rename file to inferred name
    -R  rename: go ahead and rename file to inferred name
    -c  convert: between name and text form
@@ -124,7 +125,7 @@ DC:`
    title:`TADIST tool ***UNFINISHED***`
    creator:`Harrison Ainsworth / HXA7241`
 
-   date:`2020-04-02`
+   date:`2020-04-10`
    date:`2015-05-30`
    date:`2015-05-23`
 

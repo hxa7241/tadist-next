@@ -41,13 +41,14 @@ File-types supported: Epub.
 Usage:
   tadist [-?|--help]
   tadist (-??|--doc)
-  tadist [-(s|r|R)] (-|<filename>)
+  tadist [-(s|S|r|R)] (-|<filename>)
   tadist -c (-|<string>)
 
 Options:
 -?  | --help  help
 -?? | --doc   more doc
 -s  suggest: print inferred name (default)
+-S  suggest: verbosely print inferred name
 -r  rename: ask to rename file to inferred name
 -R  rename: go ahead and rename file to inferred name
 -c  convert: between name and text form
