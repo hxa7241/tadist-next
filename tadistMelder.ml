@@ -64,10 +64,16 @@ let printRawMetadata (trace:bool) (label:string) (nsr:nameStructRaw)
    nsr
 
 
-let meldExtractedAndQueried (metadata:nameStruct) (querydata:nameStruct)
-   : nameStruct ress =
+let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
+   : nameStructLax =
 
-   let authorSetUnion =
+   let titlePriority =
+      (* query has priority, unless empty, in which case default to meta *)
+      match querydata.titleLax with
+      | [||]    -> metadata.titleLax
+      | qdTitle -> qdTitle
+
+   and authorSetUnion =
       (* Build a set, by alternately adding the next item from each list.
        * (So the merge is an interleaving of two ordered lists,
        * but for any duplicate, only the first is kept.)
@@ -89,14 +95,14 @@ let meldExtractedAndQueried (metadata:nameStruct) (querydata:nameStruct)
       let interleavedSet =
          merge
             []
-            (Array.to_list metadata.author)
-            (Array.to_list querydata.author)
+            (Array.to_list metadata.authorLax)
+            (Array.to_list querydata.authorLax)
       in
       interleavedSet |> List.rev |> Array.of_list
 
    and dateSetUnionEnds =
       (* lump them together *)
-      ( (Array.append metadata.date querydata.date) |> Array.to_list )
+      ( (Array.append metadata.dateLax querydata.dateLax) |> Array.to_list )
       |>
       (* sort all *)
       (List.sort_uniq DateIso8601e.compare)
@@ -107,23 +113,22 @@ let meldExtractedAndQueried (metadata:nameStruct) (querydata:nameStruct)
       Array.of_list
    in
 
-   Ok {
-      title  = querydata.title ;
-      author = authorSetUnion ;
-      date   = dateSetUnionEnds ;
-      id     = metadata.id ;
-      subtyp = metadata.subtyp ;
-      typ    = metadata.typ    ; }
+   {  titleLax  = titlePriority ;
+      authorLax = authorSetUnion ;
+      dateLax   = dateSetUnionEnds ;
+      idLax     = metadata.idLax ;
+      subtypLax = metadata.subtypLax ;
+      typLax    = metadata.typLax    ;  }
 
 
-let getIsbn (ns:nameStruct) : Isbn.t ress =
+let getIsbn (nsl:nameStructLax) : Isbn.t ress =
 
-   (Option_.toRes "no isbn" ns.id)
+   (Option_.toRes "no isbn" nsl.idLax)
    |>=
    (snd %> StringT.toString %> Isbn.make)
 
    (*
-   match ns.id with
+   match nsl.idLax with
    | None          -> Error "no isbn"
    | Some (_ , id) -> id |> StringT.toString |> Isbn.make
    *)
@@ -136,29 +141,33 @@ let getIsbn (ns:nameStruct) : Isbn.t ress =
 let makeNameStructFromFileName (trace:bool) (filePathname:string)
    : nameStruct ress =
 
-   (* get basic metadata *)
    (* : nameStructRaw ress *)
    (extractMetadata filePathname)
-   |>=-
-   (printRawMetadata trace "Internal metadata")
    |>=
    (* : nameStruct ress *)
-   Tadist.normaliseMetadata
-   |>=
-
-   (* get and meld isbn query data *)
-   (* : nameStruct ress *)
-   (fun metadata ->
-      (* : Isbn.t ress *)
-      (getIsbn metadata)
-      |>=
-      (* : nameStructRaw ress *)
-      TadistQuerier.getBasicTadForIsbn
-      |>=-
-      (printRawMetadata trace "Remote ISBN query")
-      |>=
+   (fun (metadataRaw:nameStructRaw) ->
+      metadataRaw
+      |>
+      (printRawMetadata trace "Internal metadata")
+      |>
+      Tadist.normaliseMetadataLax
+      |>
+      (* : nameStructLax *)
+      (fun (metadataLax:nameStructLax) ->
+         (Ok metadataLax)
+         |>=
+         getIsbn
+         |>=
+         TadistQuerier.getBasicTadForIsbn
+         |>=-
+         (printRawMetadata trace "Remote ISBN query")
+         |>=-
+         Tadist.normaliseMetadataLax
+         |>=-
+         (meldExtractedAndQueried metadataLax)
+         |>
+         (* any query failure defaults meld to just internal metadata *)
+         (Result.value ~default:metadataLax) )
+      |>
       (* : nameStruct ress *)
-      Tadist.normaliseMetadata
-      |>=
-      (* : nameStruct ress *)
-      (meldExtractedAndQueried metadata))
+      Tadist.normaliseMetadata )
