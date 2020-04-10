@@ -223,6 +223,15 @@ type nameStruct = {
    typ    : StringT.t ;
 }
 
+type nameStructLax = {
+   titleLax  : StringT.t array ;
+   authorLax : StringT.t array ;
+   dateLax   : DateIso8601e.t array ;
+   idLax     : (StringT.t * StringT.t) option ;
+   subtypLax : StringT.t option ;
+   typLax    : StringT.t option ;
+}
+
 type nameStructRaw = {
    titleRaw  : string list ;
    authorRaw : string list ;
@@ -251,7 +260,7 @@ val nonEmpties : string list -> string list
  *  NB: truncates according to byte-length, not necessarily char-length *)
 val truncateWords : int -> string list -> string list
 
-val normaliseTitle : string list -> StringT.t ArrayNe.t HxaGeneral.ress
+val normaliseTitle : string list -> StringT.t array
 
 val normaliseAuthor : string list -> StringT.t array
 
@@ -261,7 +270,9 @@ val normaliseIsbn : string list -> (StringT.t * StringT.t) option
 
 val normaliseString : string -> StringT.t option
 
-val normaliseMetadata : nameStructRaw -> nameStruct HxaGeneral.ress
+val normaliseMetadataLax : nameStructRaw -> nameStructLax
+
+val normaliseMetadata : nameStructLax -> nameStruct HxaGeneral.ress
 
 
 

@@ -286,6 +286,15 @@ type nameStruct = {
    typ    : StringT.t ;
 }
 
+type nameStructLax = {
+   titleLax  : StringT.t array ;
+   authorLax : StringT.t array ;
+   dateLax   : DateIso8601e.t array ;
+   idLax     : (StringT.t * StringT.t) option ;
+   subtypLax : StringT.t option ;
+   typLax    : StringT.t option ;
+}
+
 type nameStructRaw = {
    titleRaw  : string list ;
    authorRaw : string list ;
@@ -333,11 +342,11 @@ let truncateWords (max:int) (words:string list) : string list =
    |> List.split |> fst
 
 
-let normaliseTitle (titles:string list) : StringT.t ArrayNe.t ress =
+let normaliseTitle (titles:string list) : StringT.t array =
 
    (* use only first *)
    match titles with
-   | []         -> Error "no title found"
+   | []         -> [||]
    | first :: _ ->
       first
       |> Utf8filter.replace |> Blanks.blankSpacyCtrlChars
@@ -352,9 +361,8 @@ let normaliseTitle (titles:string list) : StringT.t ArrayNe.t ress =
       (* constrain (non-empties, max length, StringT) *)
       |> nonEmpties |> (truncateWords 48)
       |> (List_.filtmap (StringT.make % Result_.toOpt))
-      (* convert to (non-empty) array *)
-      |> Array.of_list |> ArrayNe.make
-      |> Result_.errorMap (fun _ -> "no valid title")
+      (* convert to array *)
+      |> Array.of_list
 
 
 let normaliseAuthor (authors:string list) : StringT.t array =
@@ -466,24 +474,60 @@ let normaliseString (s:string) : StringT.t option =
    |> StringT.make |> Result_.toOpt
 
 
-let normaliseMetadata (nsr:nameStructRaw) : nameStruct ress =
+let normaliseMetadataLax (nsr:nameStructRaw) : nameStructLax =
 
+   {  titleLax  = normaliseTitle nsr.titleRaw ;
+      authorLax = normaliseAuthor nsr.authorRaw ;
+      dateLax   = normaliseDate nsr.dateRaw ;
+      idLax     = normaliseIsbn nsr.idRaw ;
+      subtypLax = normaliseString nsr.subtypRaw ;
+      typLax    = normaliseString nsr.typRaw ;  }
+
+
+let normaliseMetadata (nsl:nameStructLax) : nameStruct ress =
+
+   (Ok nsl)
+   |^^=
+   (* : ( StringT.t ArrayNe.t , StringT.t ) ress *)
+   (  (fun nsl ->
+         (* title is mandatory *)
+         (ArrayNe.make nsl.titleLax)
+         |>
+         (Result_.errorMap (Fun.const "no valid title found")) )
+      ,
+      (fun nsl ->
+         (* type is mandatory *)
+         nsl.typLax
+         |>
+         (Option_.toRes "no valid type") )  )
+   |>=-
+   (fun (title , typ) ->
+      {  title  = title ;
+         author = nsl.authorLax ;
+         date   = nsl.dateLax ;
+         id     = nsl.idLax ;
+         subtyp = nsl.subtypLax ;
+         typ    = typ  } )
+
+(*
    (* title is mandatory *)
-   match normaliseTitle nsr.titleRaw with
-   | Error _ as e -> e
-   | Ok title     ->
+   match ArrayNe.make nsl.titleLax with
+   | Error _  -> Error "no valid title"
+   | Ok title ->
       (* type is mandatory *)
-      match normaliseString nsr.typRaw with
+      begin match nsl.typLax with
       | None     -> Error "invalid type"
       | Some typ ->
          (* the rest are optional *)
          Ok {
             title  = title ;
-            author = normaliseAuthor nsr.authorRaw ;
-            date   = normaliseDate nsr.dateRaw ;
-            id     = normaliseIsbn nsr.idRaw ;
-            subtyp = normaliseString nsr.subtypRaw ;
+            author = nsl.authorLax ;
+            date   = nsl.dateLax ;
+            id     = nsl.idLax ;
+            subtyp = nsl.subtypLax ;
             typ    = typ }
+      end
+*)
 
 
 
