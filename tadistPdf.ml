@@ -30,7 +30,7 @@ let _TYPE = "pdf"
 
 let extractTadist (_(*pdfPathname*):string) : (Tadist.nameStructRaw option) ress =
 
-   Error "not implemented yet"
+   Error "PDF not implemented yet"
 
    (*
    Ok None -- not recognised
