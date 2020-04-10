@@ -215,7 +215,7 @@ let printNamestructData (trace:bool) (ns:Tadist.nameStruct) : unit =
 
    if trace
    then begin
-      print_endline "\nTadist form" ;
+      print_endline "\nTadist form (merged data)" ;
 
       let arrayPrinter (label:string) (sep:string) (sa:string array) : unit =
          let content = sa |> Array.to_list |> (String.concat sep) in
