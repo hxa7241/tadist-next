@@ -54,10 +54,6 @@ let httpStatusCode (statusLine:string) : string =
  * * http://openlibrary.org/developers
  * * https://openlibrary.org/dev/docs/api/books
  * * https://openlibrary.org/dev/docs/restful_api
- *
- * Example response body:
- *
- * {"ISBN:9781786635167": {"publishers": [{"name": "Verso"}], "identifiers": {"isbn_13": ["9781786635167"], "openlibrary": ["OL27613422M"]}, "subtitle": "How the World's Biggest Corporations are Laying the Foundation for Socialism", "weight": "9.9 ounces", "title": "The People's Republic of Walmart", "url": "http://openlibrary.org/books/OL27613422M/The_People's_Republic_of_Walmart", "number_of_pages": 256, "cover": {"small": "https://covers.openlibrary.org/b/id/9063092-S.jpg", "large": "https://covers.openlibrary.org/b/id/9063092-L.jpg", "medium": "https://covers.openlibrary.org/b/id/9063092-M.jpg"}, "publish_date": "1819", "key": "/books/OL27613422M", "authors": [{"url": "blah", "name": "Foo Bar"}, {"url": "http://openlibrary.org/authors/OL7730842A/Leigh_Phillips", "name": "Leigh Phillips"}]}}
  *)
 let requestOpenLib (isbn:Isbn.t) : string ress =
 
@@ -166,6 +162,51 @@ let requestOpenLib (isbn:Isbn.t) : string ress =
  *       }
  *    ],
  * * "publish_date" : "___"
+ *
+ * Example request and response body:
+
+$ curl 'http://openlibrary.org/api/books?bibkeys=ISBN:9780691118802&format=json&jscmd=data'
+
+{
+   "ISBN:9780691118802": {
+      "publishers": [
+         { "name": "Princeton University Press" }
+      ],
+      "identifiers": {
+         "isbn_13": ["9780691118802"],
+         "openlibrary": ["OL11182845M"],
+         "isbn_10": ["0691118809"],
+         "goodreads": ["1471873"],
+         "librarything": ["6238370"]
+      },
+      "title": "The Princeton Companion to Mathematics",
+      "url": "http://openlibrary.org/books/OL11182845M/The_Princeton_Companion_to_Mathematics",
+      "number_of_pages": 1008,
+      "cover": {
+         "small": "https://covers.openlibrary.org/b/id/7423173-S.jpg",
+         "large": "https://covers.openlibrary.org/b/id/7423173-L.jpg",
+         "medium": "https://covers.openlibrary.org/b/id/7423173-M.jpg"
+      },
+      "subjects": [ {
+            "url": "https://openlibrary.org/subjects/mathematics",
+            "name": "Mathematics"
+         }
+      ],
+      "publish_date": "September 11, 2008",
+      "key": "/books/OL11182845M",
+      "authors": [ {
+            "url": "http://openlibrary.org/authors/OL2662614A/Timothy_Gowers",
+            "name": "Timothy Gowers"
+         }
+      ],
+      "ebooks": [ {
+            "formats": {},
+            "preview_url": "https://archive.org/details/princetoncompani00gowe_360",
+            "availability": "restricted"
+         }
+      ]
+   }
+}
  *)
 let parseOpenLib (json:string)
    : (string option * string list * string option) =
