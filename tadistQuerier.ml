@@ -143,7 +143,7 @@ let requestOpenLib (isbn:Isbn.t) : string ress =
          | Failure s -> s
          | _         -> "failed inscrutably"
       in
-      Error ("ISBN query: " ^ message ^ ".")
+      Error (message ^ ".")
 
 
 (**
