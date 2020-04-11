@@ -64,6 +64,14 @@ let printRawMetadata (trace:bool) (label:string) (nsr:nameStructRaw)
    nsr
 
 
+let printQueryError (trace:bool) (label:string) (e:string)
+   : nameStructRaw ress =
+
+   if trace then print_endline ("\n" ^ label ^ ": " ^ e) ;
+
+   Error e
+
+
 let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
    : nameStructLax =
 
@@ -123,7 +131,7 @@ let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
 
 let getIsbn (nsl:nameStructLax) : Isbn.t ress =
 
-   (Option_.toRes "no isbn" nsl.idLax)
+   (Option_.toRes "no isbn to use" nsl.idLax)
    |>=
    (snd %> StringT.toString %> Isbn.make)
 
@@ -159,6 +167,8 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
          getIsbn
          |>=
          TadistQuerier.getBasicTadForIsbn
+         |>=?
+         (printQueryError trace "Remote ISBN query")
          |>=-
          (printRawMetadata trace "Remote ISBN query")
          |>=-
