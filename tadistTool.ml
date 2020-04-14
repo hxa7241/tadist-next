@@ -36,7 +36,7 @@ Does one of three things:
 ... according to the TADIST format definition:
 http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
 
-File-types supported: Epub.
+File-types supported: Epub, PDF.
 
 Usage:
   tadist [-?|--help]
