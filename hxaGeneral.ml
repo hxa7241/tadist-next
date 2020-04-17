@@ -12,10 +12,8 @@
 
 
 
-(* uses:
- * - Unix
- * - Sys
- *)
+(* using Unix *)
+(* using Str *)
 
 
 
