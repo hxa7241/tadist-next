@@ -256,6 +256,22 @@ val _MAX_NAME_LEN : int
 (** Remove empty strings. *)
 val nonEmpties : string list -> string list
 
+(** Split a string of ;|and&, -separated names.
+ *
+ * This will parse lists of names separated by ; | & 'and' , .
+ *  Eg:
+ *  * First Last; Last, First Other; etc...
+ *  * First Last, First Other Otheretc last, and Other Name (etc...)
+ *  But if names themselves use commas to put last first,
+ *  eg:
+ *  * Connor, Sarah
+ *  commas cannot also be used as the list separator.
+ * *)
+val parseNamelist : string -> string list
+
+(** Ie as from: "First Others Last" or "Last, Others First". *)
+val getLastName : string -> string
+
 (** Truncate word list to a maximum.
  *  NB: truncates according to byte-length, not necessarily char-length *)
 val truncateWords : int -> string list -> string list

@@ -323,6 +323,72 @@ let nonEmpties (ls:string list) : string list =
    |> (List.filter (Fun.negate String_.isEmpty))
 
 
+let parseNamelist (names:string) : string list =
+
+   let isListSepChar (c:char) : bool =
+      match c with
+      | ';' | '|' -> true
+      | _         -> false
+
+   and splitAnds (andStr:string) : string list =
+      Str.split (Str.regexp "&\\| and ") andStr
+
+   and splitCommas (commaStr:string) : string list =
+      let isMultiWord (s:string) : bool =
+         String.contains (String.trim s) ' '
+      in
+      let items = String.split_on_char ',' commaStr in
+      match List.length items with
+      (* is this two normal names, or one reversed name ? *)
+      (* (multiple words before comma is only a probable indicator
+         -- it fails with single-word names, but those are unlikely, and where
+         they might occur (eg: Plato, Cicero) they would likely not be in a
+         list of authors -- instead, the editor would be given) *)
+      | 2 -> if isMultiWord (List.hd items) then items else [commaStr]
+      | 1 -> items
+      | _ -> items
+   in
+
+   names
+
+   (* clean a little *)
+   |> Utf8filter.replace |> Blanks.blankSpacyCtrlChars
+
+   (* split into semicolon segments *)
+   |> (String_.split isListSepChar)
+
+   (* split into 'and' segments *)
+   |> (List.map splitAnds)
+   |> List.flatten
+
+   (* split into comma segments *)
+   |> (List.map splitCommas)
+   |> List.flatten
+
+   (* clean a little *)
+   |> (List.map String.trim)
+   |> (List.filter String_.notEmpty)
+
+
+let getLastName (name:string) : string =
+
+   let name = String.trim name in
+
+   (* is there a comma ? *)
+   begin match String_.index ',' name with
+   | Some pos ->
+      (* Last, Others First *)
+      String.sub name 0 pos
+   | None     ->
+      (* First Others Last *)
+      name
+      |> (String_.rindexp Char_.isBlank) |> (Option.value ~default:0)
+      |> (String_.trail name)
+   end
+
+   |> String.trim
+
+
 (* NB: truncates according to byte-length, not necessarily char-length *)
 let truncateWords (max:int) (words:string list) : string list =
 
@@ -368,41 +434,14 @@ let normaliseTitle (titles:string list) : StringT.t array =
 let normaliseAuthor (authors:string list) : StringT.t array =
 
    authors
-   |> (List.map (Utf8filter.replace % Blanks.blankSpacyCtrlChars))
-   (* unified list of all names *)
-   |> (fun authors ->
-      authors
-      (* first, split by ';'s *)
-      |> (List.map (fun s -> String_.split ((=) ';') s))
-      |> List.flatten
-      (* then, split those by 'and' and ','s *)
-      |> (
-         let rx1 = Str.regexp_string_case_fold " and "
-         and rx2 = Str.regexp_case_fold " and \\|,"
-         in
-         List.map (fun s ->
-            if
-               (try ignore(Str.search_forward rx1 s 0) ; true
-               with Not_found -> false)
-            then
-               let ss = Str.global_replace rx2 " ; " s in
-               String_.split ((=) ';') ss
-            else [s]) )
-      |> List.flatten
-      (* clean-up *)
-      |> (List.map String.trim)
-      |> (List.filter (Fun.negate String_.isEmpty)))
+
+   (* split any in-string name lists, and flatten all *)
+   |> (List.map parseNamelist) |> List.flatten
+   |> (List.filter String_.notEmpty)
+
    (* extract last names *)
-   |> (List.map (fun s ->
-         String.trim
-            (* try "last, others first" *)
-            (try
-               let i = String.index s ',' in
-               String.sub s 0 i
-            (* otherwise "first others last" *)
-            with Not_found ->
-               let i = try String.rindex s ' ' with Not_found -> 0 in
-               String.sub s i ((String.length s) - i))))
+   |> (List.map getLastName)
+
    (* constrain *)
    |> nonEmpties |> (truncateWords 32)
    |> (List_.filtmap (StringT.make % Result_.toOpt))
