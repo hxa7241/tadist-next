@@ -460,6 +460,7 @@ sig
    val indexl      : char -> ?start:int -> string -> int
    val indexpl     : (char -> bool) -> ?start:int -> string -> int
    val rindexp     : (char -> bool) -> string -> int option
+   val containsp   : (char -> bool) -> string -> bool
    val filter      : (char -> bool) -> string -> string
    val filterAscii : string -> string
    val check       : (char -> bool) -> string -> bool
@@ -532,6 +533,9 @@ struct
          else None
       in
       recur s (String.length s)
+
+   let containsp (pred: char -> bool) (s:string) : bool =
+      (indexp pred s) |> Option_.toBool
 
    let filter (pred: char -> bool) (s:string) : string =
       let len = String.length s in

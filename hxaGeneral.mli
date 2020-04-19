@@ -355,6 +355,9 @@ sig
        exception. *)
    val rindexp : (char -> bool) -> string -> int option
 
+   (** Like contains, but with predicate instead of char. *)
+   val containsp : (char -> bool) -> string -> bool
+
    (** Remove false-predicate chars. *)
    val filter : (char -> bool) -> string -> string
 
