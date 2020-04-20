@@ -428,10 +428,12 @@ let normaliseTitle (titles:string list) : StringT.t array =
          with Not_found -> title)
       (* tokenise *)
       |> String.trim |> (String_.split ((=) ' ')) |> (List.map String.trim)
-      (* constrain (non-empties, max length, StringT) *)
+      (* constrain (non-empties, max length) *)
       |> nonEmpties |> (truncateWords 48)
+      (* title-case *)
+      |> (List.map String.capitalize_ascii)
+      (* convert to StringT.t array *)
       |> (List_.filtmap (StringT.make % Result_.toOpt))
-      (* convert to array *)
       |> Array.of_list
 
 
