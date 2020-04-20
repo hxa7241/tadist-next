@@ -325,7 +325,10 @@ let nonEmpties (ls:string list) : string list =
 
 let parseNamelist (names:string) : string list =
 
-   let isListSepChar (c:char) : bool =
+   let replaceAmp (s:string) : string =
+      Str.global_replace (Str.regexp_case_fold "&amp;") "&" s
+
+   and isListSepChar (c:char) : bool =
       match c with
       | ';' | '|' -> true
       | _         -> false
@@ -353,6 +356,7 @@ let parseNamelist (names:string) : string list =
 
    (* clean a little *)
    |> Utf8filter.replace |> Blanks.blankSpacyCtrlChars
+   |> replaceAmp
 
    (* split into semicolon segments *)
    |> (String_.split isListSepChar)
