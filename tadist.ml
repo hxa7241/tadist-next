@@ -414,6 +414,33 @@ let truncateWords (max:int) (words:string list) : string list =
 
 let normaliseTitle (titles:string list) : StringT.t array =
 
+   let abbrevEdition (title:string) : string =
+      let editions =
+         [  ( "(?\\(first\\|1st\\) edition)?"        , "1ed"  ) ;
+            ( "(?\\(second\\|2nd\\) edition)?"       , "2ed"  ) ;
+            ( "(?\\(third\\|3rd\\) edition)?"        , "3ed"  ) ;
+            ( "(?\\(fourth\\|4th\\) edition)?"       , "4ed"  ) ;
+            ( "(?\\(fifth\\|5th\\) edition)?"        , "5ed"  ) ;
+            ( "(?\\(sixth\\|6th\\) edition)?"        , "6ed"  ) ;
+            ( "(?\\(seventh\\|7th\\) edition)?"      , "7ed"  ) ;
+            ( "(?\\(eighth\\|8th\\) edition)?"       , "8ed"  ) ;
+            ( "(?\\(ninth\\|9th\\) edition)?"        , "9ed"  ) ;
+            ( "(?\\(tenth\\|10th\\) edition)?"       , "10ed" ) ;
+            ( "(?\\(eleventh\\|11th\\) edition)?"    , "11ed" ) ;
+            ( "(?\\(twelfth\\|12th\\) edition)?"     , "12ed" ) ;
+            ( "(?\\(thirteenth\\|13th\\) edition)?"  , "13ed" ) ;
+            ( "(?\\(fourteenth\\|14th\\) edition)?"  , "14ed" ) ;
+            ( "(?\\(fifteenth\\|15th\\) edition)?"   , "15ed" ) ;
+            ( "(?\\(sixteenth\\|16th\\) edition)?"   , "16ed" ) ;
+            ( "(?\\(seventeenth\\|17th\\) edition)?" , "17ed" ) ;
+            ( "(?\\(eighteenth\\|18th\\) edition)?"  , "18ed" ) ;
+            ( "(?\\(nineteenth\\|19th\\) edition)?"  , "19ed" ) ; ]
+      and replacer (s:string) (ed:(string * string)) : string =
+         Str.global_replace (Str.regexp_case_fold (fst ed)) (snd ed) s
+      in
+      List.fold_left replacer title editions
+   in
+
    (* use only first *)
    match titles with
    | []         -> [||]
@@ -426,6 +453,8 @@ let normaliseTitle (titles:string list) : StringT.t array =
             let i = String.index title ':' in
             if i > 8 then String.sub title 0 i else title
          with Not_found -> title)
+      (* abbreviate edition *)
+      |> abbrevEdition
       (* tokenise *)
       |> String.trim |> (String_.split ((=) ' ')) |> (List.map String.trim)
       (* constrain (non-empties, max length) *)
