@@ -12,7 +12,8 @@ OPTS2=-I libs/
 
 all: exes
 
-exes: $(EXE) $(EXE)b
+#exes: $(EXE) $(EXE)b
+exes: $(EXE)
 $(EXE): $(SRC)
 	ocamlopt.opt -o $(EXE) -nodynlink $(OPTS) $(OPTS2) $(LIBSN) $(SRC)
 	rm -f *.cm[ixo] *.o
