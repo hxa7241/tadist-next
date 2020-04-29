@@ -10,13 +10,15 @@ OPTS=-principal -strict-sequence -strict-formats -w +A
 OPTS2=-I libs/
 
 
-all: exes
+all: native
+#all: native bytecode
 
-#exes: $(EXE) $(EXE)b
-exes: $(EXE)
+native: $(EXE)
 $(EXE): $(SRC)
 	ocamlopt.opt -o $(EXE) -nodynlink $(OPTS) $(OPTS2) $(LIBSN) $(SRC)
 	rm -f *.cm[ixo] *.o
+
+bytecode: $(EXE)b
 $(EXE)b: $(SRC)
 	ocamlc -o $(EXE)b -compat-32 $(OPTS) $(OPTS2) $(LIBSB) $(SRC)
 	rm -f *.cm[ixo] *.o
