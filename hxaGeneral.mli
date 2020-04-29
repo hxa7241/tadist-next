@@ -289,6 +289,9 @@ sig
    (** Is 0-9 ?. *)
    val isDigit   : char -> bool
 
+   (** Is 0-9 or A-F ?. *)
+   val isDigitHex : char -> bool
+
    (** Is - or + ?. *)
    val isSign    : char -> bool
 
