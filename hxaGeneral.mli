@@ -606,7 +606,7 @@ sig
 
 
    (* Prepare a regex. *)
-   val compile : string -> rx
+   val compile : ?caseInsens:bool -> string -> rx
 
    (**
     * Check if start of string matches regex.
@@ -618,9 +618,9 @@ sig
    (**
     * Compile and apply regex.
     *
-    * @params regex string, string to inspect
+    * @params case insensitivity flag, regex string, string to inspect
     *)
-   val regex : string -> string -> rxmatch option
+   val regex : ?caseInsens:bool -> string -> string -> rxmatch option
 
    (**
     * Find first substring in string that matches regex.

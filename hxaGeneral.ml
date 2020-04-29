@@ -1001,9 +1001,9 @@ sig
    type rx
    type rxmatch
 
-   val compile    : string -> rx
+   val compile    : ?caseInsens:bool -> string -> rx
    val apply      : rx     -> string -> rxmatch option
-   val regex      : string -> string -> rxmatch option
+   val regex      : ?caseInsens:bool -> string -> string -> rxmatch option
    val seekFirst  : rx -> string -> rxmatch option
    val allMatches : rx -> string -> string list
    val wholeFound : rxmatch -> string
@@ -1043,16 +1043,18 @@ struct
       (*try Ok (Re.get_all (Re.exec rx content)) with
       | Not_found -> None*)
 
-   let compile (rxs:string) : rx =
-      Str.regexp rxs
-      (*Re.compile (Re_perl.re rxs)*)
+   let compile ?(caseInsens:bool = false) (rxs:string) : rx =
+      if not caseInsens
+      then Str.regexp rxs
+      else Str.regexp_case_fold rxs
 
    let apply (rx:rx) (content:string) : rxmatch option =
       let query = Str.string_match rx content 0 in
       expressOneMatch query content
 
-   let regex (rxs:string) (content:string) : rxmatch option =
-      apply (compile rxs) content
+   let regex ?(caseInsens:bool = false) (rxs:string) (content:string)
+      : rxmatch option =
+      apply (compile ~caseInsens rxs) content
 
    let seekFirst (rx:rx) (content:string) : rxmatch option =
       let query =
