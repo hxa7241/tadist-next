@@ -682,6 +682,12 @@ val optAnd2p :
    's0 ->
    ('o1 * 'o2) option
 
+val ( |^^- ) :
+   'a option ->
+   (  ('a -> 'b option) *
+      ('a -> 'c option) ) ->
+   ('b * 'c) option
+
 val ( |^^= ) :
    'a ress ->
    (  ('a -> 'b ress) *

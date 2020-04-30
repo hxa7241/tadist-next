@@ -1201,6 +1201,15 @@ let ressAnd2p
    Result_.ressAnd2 joiner (f0 o0) (f1 o0)
 
 
+let ( |^^- )
+   (o1:'o1 option)
+   (  (f0:'o1 -> 'o2 option) ,
+      (f1:'o1 -> 'o3 option) )
+   : ('o2 * 'o3) option =
+
+   o1 |>- (optAnd2p f0 f1)
+
+
 let ( |^^= )
    (r1:'o1 ress)
    (  (f0:'o1 -> 'o2 ress) ,
