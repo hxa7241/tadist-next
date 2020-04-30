@@ -664,7 +664,7 @@ val ( ||> ) : 'a option -> (unit -> 'a option) -> 'a option
 val ( &&> ) : 'a option -> (unit -> 'a option) -> 'a option
 
 
-(** Error-handling pipeline (option version) (option monad 'bind'). *)
+(** Option-handling pipeline (option monad 'bind'). *)
 val ( |>- ) : 'o1 option -> ('o1 -> 'o2 option) -> 'o2 option
 
 (** Error-handling pipeline (ress/error monad 'bind'). *)
@@ -676,11 +676,20 @@ val ( let|>= ) : ('o1,'e) result -> ('o1 -> ('o2,'e) result) -> ('o2,'e) result
 (*val ( |^= ) : ('o1,'e) result -> (('o1 -> ('o2,'e) result) list) ->
    ('o2 list,'e list) result*)
 
+(** Option-handling pipeline block, parallel and-merge double heterogeneous. *)
 val optAnd2p :
    ('s0 -> 'o1 option) ->
    ('s0 -> 'o2 option) ->
    's0 ->
    ('o1 * 'o2) option
+
+(** Error-handling pipeline block, parallel and-merge double heterogeneous. *)
+val ressAnd2p :
+   string ->
+   ('o0 -> ('o1,string) result) ->
+   ('o0 -> ('o2,string) result) ->
+   'o0 ->
+   ((('o1 * 'o2) , string) result)
 
 val ( |^^- ) :
    'a option ->
@@ -694,21 +703,6 @@ val ( |^^= ) :
       ('a -> 'c ress) ) ->
    ('b * 'c) ress
 
-(** Error-handling pipeline block, parallel and-merge double heterogeneous. *)
-val ressAnd2p :
-   string ->
-   ('o0 -> ('o1,string) result) ->
-   ('o0 -> ('o2,string) result) ->
-   'o0 ->
-   ((('o1 * 'o2) , string) result)
-
-val ( |^^^= ) :
-   'a ress ->
-   (  ('a -> 'b ress) *
-      ('a -> 'c ress) *
-      ('a -> 'd ress) ) ->
-   ('b * 'c * 'd) ress
-
 (** Error-handling pipeline block, parallel and-merge triple heterogeneous. *)
 val ressAnd3p :
    string ->
@@ -717,6 +711,13 @@ val ressAnd3p :
    ('o0 -> ('o3,string) result) ->
    'o0 ->
    ((('o1 * 'o2 * 'o3) , string) result)
+
+val ( |^^^= ) :
+   'a ress ->
+   (  ('a -> 'b ress) *
+      ('a -> 'c ress) *
+      ('a -> 'd ress) ) ->
+   ('b * 'c * 'd) ress
 
 (*val ( and|&= ) :
    ('o1,'e) result ->
