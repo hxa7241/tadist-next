@@ -643,6 +643,9 @@ sig
    (** Get whole from a match. *)
    val wholeFound : rxmatch -> string
 
+   (** Get position bounds of whole from a match. *)
+   val wholePos   : rxmatch -> (int * int)
+
    (** Get a group (index starts at 1) from a match. *)
    val groupFound : rxmatch -> int -> string option
 end

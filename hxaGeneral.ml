@@ -1012,6 +1012,7 @@ sig
    val seekFirst  : rx -> ?pos:int -> string -> rxmatch option
    val allMatches : rx -> string -> string list
    val wholeFound : rxmatch -> string
+   val wholePos   : rxmatch -> (int * int)
    val groupFound : rxmatch -> int -> (string option)
 end
 =
@@ -1019,6 +1020,7 @@ struct
    type rx      = Str.regexp
    type rxmatch =
       {  whole  : string ;
+         pos    : (int * int) ;
          groups : (string option) array ; }
    (*type rx      = Re.re
    type rxmatch = string array option*)
@@ -1041,7 +1043,10 @@ struct
                      | Not_found          -> Some None
                      | Invalid_argument _ -> None)
             in
-            Some { whole = wholeMatch ; groups = Array.of_list groups }
+            Some
+               { whole  = wholeMatch ;
+                 pos    = ( Str.match_beginning () , Str.match_end () ) ;
+                 groups = Array.of_list groups }
          | None -> None
       else
          None
@@ -1077,6 +1082,9 @@ struct
 
    let wholeFound (rxmatch:rxmatch) : string =
       rxmatch.whole
+
+   let wholePos (rxmatch:rxmatch) : (int * int) =
+      rxmatch.pos
 
    let groupFound (rxmatch:rxmatch) (index:int) : string option =
       rxmatch.groups.(index)
