@@ -614,16 +614,17 @@ sig
    (**
     * Check if start of string matches regex.
     *
-    * @params compiled regex, string to inspect
+    * @params compiled regex, position, string to inspect
     *)
-   val apply : rx -> string -> rxmatch option
+   val apply : rx -> ?pos:int -> string -> rxmatch option
 
    (**
     * Compile and apply regex.
     *
-    * @params case insensitivity flag, regex string, string to inspect
+    * @params regex string, position, case insensitivity flag, string to inspect
     *)
-   val regex : ?caseInsens:bool -> string -> string -> rxmatch option
+   val regex : string -> ?pos:int -> ?caseInsens:bool -> string ->
+      rxmatch option
 
    (**
     * Find first substring in string that matches regex.
