@@ -1009,7 +1009,7 @@ sig
    val apply      : rx     -> ?pos:int -> string -> rxmatch option
    val regex      : string -> ?pos:int -> ?caseInsens:bool -> string ->
                     rxmatch option
-   val seekFirst  : rx -> string -> rxmatch option
+   val seekFirst  : rx -> ?pos:int -> string -> rxmatch option
    val allMatches : rx -> string -> string list
    val wholeFound : rxmatch -> string
    val groupFound : rxmatch -> int -> (string option)
@@ -1061,9 +1061,9 @@ struct
       : rxmatch option =
       apply (compile ~caseInsens rxs) ~pos content
 
-   let seekFirst (rx:rx) (content:string) : rxmatch option =
+   let seekFirst (rx:rx) ?(pos:int=0) (content:string) : rxmatch option =
       let query =
-         try ignore(Str.search_forward rx content 0) ; true with
+         try ignore(Str.search_forward rx content pos) ; true with
          | Not_found -> false
       in
       expressOneMatch query content

@@ -629,9 +629,9 @@ sig
    (**
     * Find first substring in string that matches regex.
     *
-    * @params compiled regex, string to inspect
+    * @params compiled regex, position, string to inspect
     *)
-   val seekFirst : rx -> string -> rxmatch option
+   val seekFirst : rx -> ?pos:int -> string -> rxmatch option
 
    (**
     * Find all substrings in string that match regex.
