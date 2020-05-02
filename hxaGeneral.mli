@@ -634,6 +634,14 @@ sig
    val seekFirst : rx -> ?pos:int -> string -> rxmatch option
 
    (**
+    * Find first substring in string that matches regex.
+    *
+    * @params regex string, position, case insensitivity flag, string to inspect
+    *)
+   val regexFirst : string -> ?pos:int -> ?caseInsens:bool -> string ->
+      rxmatch option
+
+   (**
     * Find all substrings in string that match regex.
     *
     * @params compiled regex, string to inspect

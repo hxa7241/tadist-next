@@ -1010,6 +1010,8 @@ sig
    val regex      : string -> ?pos:int -> ?caseInsens:bool -> string ->
                     rxmatch option
    val seekFirst  : rx -> ?pos:int -> string -> rxmatch option
+   val regexFirst : string -> ?pos:int -> ?caseInsens:bool -> string ->
+                    rxmatch option
    val allMatches : rx -> string -> string list
    val wholeFound : rxmatch -> string
    val wholePos   : rxmatch -> (int * int)
@@ -1072,6 +1074,11 @@ struct
          | Not_found -> false
       in
       expressOneMatch query content
+
+   let regexFirst (rxs:string) ?(pos:int=0) ?(caseInsens:bool=false)
+      (content:string)
+      : rxmatch option =
+      seekFirst (compile ~caseInsens rxs) ~pos content
 
    let allMatches (rx:rx) (content:string) : string list =
       (Str.full_split rx content)
