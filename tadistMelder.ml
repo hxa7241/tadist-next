@@ -119,13 +119,16 @@ let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
       List_.hdft
       |>
       Array.of_list
+
+   and subtypPriority =
+      Option_.or2 metadata.subtypLax querydata.subtypLax
    in
 
    {  titleLax  = titlePriority ;
       authorLax = authorSetUnion ;
       dateLax   = dateSetUnionEnds ;
       idLax     = metadata.idLax ;
-      subtypLax = metadata.subtypLax ;
+      subtypLax = subtypPriority ;
       typLax    = metadata.typLax    ;  }
 
 
