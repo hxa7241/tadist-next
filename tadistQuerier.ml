@@ -24,8 +24,13 @@ open Tadist
 
 let httpResponseParts (response:string) : string list =
 
-   let rx = Str.regexp "\r\n\r\n\\|\r\r\\|\n\n" in
-   Str.split rx response
+   match Rx.regexFirst "\r\n\r\n\\|\n\n" response with
+   | Some rxmatch ->
+      let posEnd      = snd (Rx.wholePos rxmatch) in
+      let head , body = String_.leadTrail response posEnd in
+      [ head ; body ]
+   | None ->
+      [ response ]
 
 
 let httpStatusLine (head:string) : string =
@@ -42,6 +47,105 @@ let httpStatusCode (statusLine:string) : string =
       Str.split rx statusLine
    in
    Option.value ~default:"" (List_.nth 1 tokens)
+
+
+let httpResponseBody (head:string) (bodyRaw:string) : string =
+
+   (* to handle header-field: "Transfer-Encoding: chunked"
+      https://tools.ietf.org/html/rfc2616#section-3.6.1
+      * each chunk is:
+         * preceded by:
+            * its byte length, in hex
+            * (maybe other stuff)
+            * \r\n
+         * and followed by:
+            * \r\n
+      * last chunk has zero length, but has the same pre/post-fixes
+         * extra postfix: maybe other stuff \r\n, \r\n *)
+
+   (* DEBUG *)
+   (*print_endline ("bodyRaw:\n" ^ bodyRaw ^ "<<<") ;*)
+
+   let isChunked =
+      let rx =
+         Rx.compile ~caseInsens:true " *Transfer-Encoding: +chunked *[\r\n]"
+      in
+      Option_.toBool (Rx.seekFirst rx head)
+   in
+
+   if not isChunked
+   then
+      bodyRaw
+   else
+      let chunks : string list =
+         let rec extractChunks (bodyRaw:string) (pos:int) (chunks:string list)
+            : string list =
+
+            (* DEBUG *)
+            (*print_endline ("\n* pos: " ^ (string_of_int pos)) ;*)
+
+            (* parse length from prefix -- len[;stuff]\r\n : int option *)
+            let parseLength ((bodyRaw , pos):string * int) : int option =
+               (Rx.regex "[0-9a-fA-F]+" ~pos bodyRaw)
+               |>- (fun rxmatch -> Some (Rx.wholeFound rxmatch))
+               (* DEBUG *)
+               (*|>- (fun s -> print_endline ("* len-str: " ^ s) ; Some s)*)
+               |>- (fun hex     -> int_of_string_opt ("0x" ^ hex))
+            (* parse start from prefix -- len[;stuff]\r\n : int option *)
+            and parseStart ((bodyRaw , pos):string * int) : int option =
+               (Rx.regex "[^\r\n]*\r?\n" ~pos bodyRaw)
+               (*(Rx.compile "[^\r\n]*\r?\n")
+               |>  (fun rx      -> Rx.seekFirst rx ~pos bodyRaw)*)
+               (* DEBUG *)
+               (*|>- (fun rxmatch -> print_endline ("* fch: " ^
+                  (String.sub bodyRaw (snd (Rx.wholePos rxmatch)) 1) ) ;
+                  Some rxmatch)*)
+               |>- (fun rxmatch -> Some (snd (Rx.wholePos rxmatch)))
+
+            (* assemble chunks : string list *)
+            and handleChunk ((length , start) : int * int) : string list =
+               (* DEBUG *)
+               (*print_endline ("* start , length: " ^
+                  (string_of_int start) ^ " , " ^ (string_of_int length)) ;*)
+
+               (* is not last chunk: recurse *)
+               if length <> 0
+               then
+                  let thisChunk = String.sub bodyRaw start length
+                  and posNext   =
+                     let posEnd = start + length in
+                     (Rx.regex "\r?\n" ~pos:posEnd bodyRaw)
+                     |>- (Rx.wholePos %> snd %> Option.some)
+                     |> (Option.value ~default:posEnd)
+                  in
+                  (* DEBUG *)
+                  (*print_endline ("* chunk:\n" ^ thisChunk) ;*)
+                  extractChunks bodyRaw posNext (thisChunk :: chunks)
+               else
+                  chunks
+            (* failure: just dump the rest as the last chunk *)
+            and dumpRest () : string list =
+               (* DEBUG *)
+               (*print_endline "dump" ;*)
+               (String_.trail bodyRaw pos) :: chunks
+            in
+
+            (Some (bodyRaw , pos))
+            |^^-
+            (parseLength , parseStart)
+            |>
+            (Option_.mapUnify handleChunk dumpRest)
+            |>
+            List.rev
+
+         and prefixPos = String_.indexp (Fun.negate Char_.isBlank) bodyRaw in
+
+         match prefixPos with
+         | Some pos -> extractChunks bodyRaw pos []
+         | None     -> []
+      in
+
+      String.concat "" chunks
 
 
 (**
@@ -90,33 +194,40 @@ let requestOpenLib (isbn:Isbn.t) : string ress =
          in
 
          (* receive *)
-         let response =
-            let bufLen  = 16384 in (* expecting ~ 1-2KB *)
+         let response :string =
+            (* imperative mutable stuff: read into byte buffer *)
+            let bufLen  = 65536 in (* expecting <8KB *)
             let byteBuf = Bytes.make bufLen ' ' in
-            let inCount = Unix.read socket byteBuf 0 bufLen in
-            Bytes.sub_string byteBuf 0 inCount
+            let readLen =
+               let rec readMore (offset:int) : int =
+                  match Unix.read socket byteBuf offset (bufLen - offset) with
+                  | 0       -> offset
+                  | inCount -> readMore (offset + inCount)
+               in
+               readMore 0
+            in
+            Bytes.sub_string byteBuf 0 readLen
          in
-         (*print_endline ("* ISBN query response:\n" ^ response) ;*)
+         (* DEBUG *)
+         (*print_endline ("\n* ISBN query response length: " ^
+            (string_of_int (String.length response))) ;
+         print_endline ("* ISBN query response:\n" ^ response ^ "<<<") ;*)
 
-         (* basic check of http response *)
+         (* basic parse of http response *)
          let body =
-            let maybeHeadAndBody = httpResponseParts response in
-            match maybeHeadAndBody with
-            | [] ->
-               failwith "bad response"
-            | head :: body ->
-               let statusLine = httpStatusLine head in
-               let statusCode = httpStatusCode statusLine in
-               if (body = []) || (statusCode <> "200")
-               then
-                  failwith ("bad response: " ^ statusLine)
-               else
-                  begin
-                     let body = List.hd body in
-                     (*print_endline ("* ISBN query body:\n" ^ body) ;*)
-
-                     body
-                  end
+            let head , bodyRaw =
+               let maybeHeadAndBody = httpResponseParts response in
+               match maybeHeadAndBody with
+               | [] ->
+                  failwith "bad response"
+               | head :: body ->
+                  let statusLine = httpStatusLine head in
+                  let statusCode = httpStatusCode statusLine in
+                  if (body = []) || (statusCode <> "200")
+                  then failwith ("bad response: " ^ statusLine)
+                  else (head , List.hd body)
+            in
+            httpResponseBody head bodyRaw
          in
 
          Unix.close socket ;
