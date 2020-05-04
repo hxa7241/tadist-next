@@ -221,7 +221,7 @@ let parseOpenLib (json:string)
    let extractAuthors (json:string) : string list =
       let rx = Rx.compile "\"name\" *: *\"\\([^\"]*\\)\"" in
       (* get authors json array : string option *)
-      (extractElement json "authors" "\\[\\(.*\\)\\]" )
+      (extractElement json "authors" "\\[\\([^]]*\\)\\]" )
       |>-
       (*(fun s ->
          print_endline ("* Q-authsjson: " ^ s) ;
@@ -239,10 +239,7 @@ let parseOpenLib (json:string)
       (ofList1
          %>
          (List_.filtmap
-            (fun s ->
-               (Rx.apply rx s)
-               |>-
-               ((Fun.flip Rx.groupFound) 1)))
+            (fun s -> (Rx.apply rx s) |>- ((Fun.flip Rx.groupFound) 1)))
          %>
          toList1)
       |>
