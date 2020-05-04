@@ -211,14 +211,34 @@ $ curl 'http://openlibrary.org/api/books?bibkeys=ISBN:9780691118802&format=json&
 let parseOpenLib (json:string)
    : (string option * string list * string option) =
 
-   let extractElement (json:string) (name:string) (form:string)
+   let stringValueRx = "\"\\([^\"]*\\)\""
+   and extractElement (json:string) (name:string) (form:string)
       : string option =
       let rx = Rx.compile ("\"" ^ name ^ "\" *: *" ^ form) in
       (Rx.seekFirst rx json)
       |>-
       (fun rxmatch -> Rx.groupFound rxmatch 1)
    in
-   let extractAuthors (json:string) : string list =
+
+   let extractTitle (json:string) : string option =
+      (* find second '{' (the main object) : int option *)
+      (String_.index '{' json)
+      |>- (fun pos -> (String_.index '{' ~start:pos json))
+      (* therefrom, delete (leaf) sub-objects : string option *)
+      |>- (fun pos -> Some (String_.trail json pos))
+      |>- (fun json ->
+         let rx = Str.regexp "{[^{}]*}" in
+         Some (Str.global_replace rx "" json))
+      (* now, seek "title" (without ambiguities) : string option *)
+      |>- (fun json -> extractElement json "title" stringValueRx)
+      (* regex version *)
+      (*let rx =
+         Rx.compile
+            "[^{}]*{[^{}]*{[^{}]*\({[^{}]*}[^{}]*\)*\"title\" *: *\"\([^\"]*\)\""
+      in
+      (Rx.seekFirst rx json)
+      |> Option.map ((Fun.flip Rx.groupFound) 2)*)
+   and extractAuthors (json:string) : string list =
       let rx = Rx.compile "\"name\" *: *\"\\([^\"]*\\)\"" in
       (* get authors json array : string option *)
       (extractElement json "authors" "\\[\\([^]]*\\)\\]" )
@@ -245,10 +265,10 @@ let parseOpenLib (json:string)
       |>
       ofList1o
    in
-   let stringValueRx = "\"\\([^\"]*\\)\""
-   and json = Blanks.blankSpacyCtrlChars json in
 
-   let titleo  = extractElement json "title" stringValueRx
+   let json = Blanks.blankSpacyCtrlChars json in
+
+   let titleo  = extractTitle json
    and authors = extractAuthors json
    and dateo   = extractElement json "publish_date" stringValueRx in
 
