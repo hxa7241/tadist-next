@@ -59,6 +59,7 @@ let printRawMetadata (trace:bool) (label:string) (nsr:nameStructRaw)
       partPrinter "* authors:" " | "     nsr.authorRaw ;
       partPrinter "* dates:  " " | "     nsr.dateRaw ;
       partPrinter "* isbns:  " " | "     nsr.idRaw ;
+      partPrinter "* pages:  " " | "     [ nsr.subtypRaw ] ;
    end ;
 
    nsr
