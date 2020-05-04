@@ -185,6 +185,9 @@ sig
    (** And-merge double heterogeneous options. *)
    val and2 : ('a option) -> ('b option) -> (('a * 'b) option)
 
+   (** Or-merge double homogeneous options -- like short-circuiting 'or'. *)
+   val or2 : ('a option) -> ('a option) -> ('a option)
+
    (** Convert to list of zero of one item. *)
    val toList : 'a option -> 'a list
 

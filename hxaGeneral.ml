@@ -151,6 +151,7 @@ sig
    val toExc_x  : (unit -> exn) -> 'a option -> 'a
    val fromExc  : (unit -> 'a) -> 'a option
    val and2     : ('a option) -> ('b option) -> (('a * 'b) option)
+   val or2      : ('a option) -> ('a option) -> ('a option)
    val toList   : 'a option -> 'a list
    (*val merge2   : 'a -> ('a -> 'a -> 'a) -> ('a option * 'a option) -> 'a*)
 end
@@ -223,16 +224,17 @@ struct
    let fromExc (f:unit -> 'a) : 'a option =
       excToDefaultf ~default:(Fun.const None) ~f:(f % Option.some)
 
-   let and2
-      (o0:'o0 option)
-      (o1:'o1 option)
-      : ('o0 * 'o1) option =
-
+   let and2 (o0:'o0 option) (o1:'o1 option) : ('o0 * 'o1) option =
       match o0 , o1 with
       | Some s0 , Some s1 -> Some (s0 , s1)
       | Some _  , None    -> None
       | None    , Some _  -> None
       | None    , None    -> None
+
+   let or2 (o0:'a option) (o1:'a option) : ('a option) =
+      match o0 with
+      | Some _ -> o0
+      | None   -> o1
 
    let toList (o:'a option) : 'a list =
       match o with
