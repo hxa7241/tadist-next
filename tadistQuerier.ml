@@ -402,9 +402,9 @@ let getBasicTadForIsbn (isbn:Isbn.t) : nameStructRaw ress =
    |>=-
    (* : nameStructRaw *)
    (fun (titleo , authors , dateo , pageso) ->
-      {  titleRaw  = Option_.toList titleo ;
+      {  titleRaw  = Option.to_list titleo ;
          authorRaw = authors ;
-         dateRaw   = Option_.toList dateo ;
+         dateRaw   = Option.to_list dateo ;
          idRaw     = [ Isbn.toStringBare isbn ] ;
          subtypRaw = (Option_.mapUnify (fun p -> p ^ "p") (Fun.const "") pageso);
          typRaw    = "openlibrary.org" ; } )

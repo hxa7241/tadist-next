@@ -188,9 +188,6 @@ sig
    (** Or-merge double homogeneous options -- like short-circuiting 'or'. *)
    val or2 : ('a option) -> ('a option) -> ('a option)
 
-   (** Convert to list of zero of one item. *)
-   val toList : 'a option -> 'a list
-
    (*(**
     * Not sure about this ... .
     * @param null-form of type
