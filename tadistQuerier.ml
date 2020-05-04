@@ -320,9 +320,10 @@ $ curl 'http://openlibrary.org/api/books?bibkeys=ISBN:9780691118802&format=json&
 }
  *)
 let parseOpenLib (json:string)
-   : (string option * string list * string option) =
+   : (string option * string list * string option * string option) =
 
    let stringValueRx = "\"\\([^\"]*\\)\""
+   and numberValueRx = "\\([^,]+\\),"
    and extractElement (json:string) (name:string) (form:string)
       : string option =
       let rx = Rx.compile ("\"" ^ name ^ "\" *: *" ^ form) in
@@ -381,9 +382,10 @@ let parseOpenLib (json:string)
 
    let titleo  = extractTitle json
    and authors = extractAuthors json
-   and dateo   = extractElement json "publish_date" stringValueRx in
+   and dateo   = extractElement json "publish_date" stringValueRx
+   and pageso  = extractElement json "number_of_pages" numberValueRx in
 
-   ( titleo , authors, dateo )
+   ( titleo , authors, dateo, pageso )
 
 
 
@@ -399,10 +401,10 @@ let getBasicTadForIsbn (isbn:Isbn.t) : nameStructRaw ress =
    parseOpenLib
    |>=-
    (* : nameStructRaw *)
-   (fun (titleo , authors , dateo) ->
+   (fun (titleo , authors , dateo , pageso) ->
       {  titleRaw  = Option_.toList titleo ;
          authorRaw = authors ;
          dateRaw   = Option_.toList dateo ;
          idRaw     = [ Isbn.toStringBare isbn ] ;
-         subtypRaw = "" ;
+         subtypRaw = (Option_.mapUnify (fun p -> p ^ "p") (Fun.const "") pageso);
          typRaw    = "openlibrary.org" ; } )
