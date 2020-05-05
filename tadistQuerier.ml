@@ -323,7 +323,7 @@ let parseOpenLib (json:string)
    : (string option * string list * string option * string option) =
 
    let stringValueRx = "\"\\([^\"]*\\)\""
-   and numberValueRx = "\\([^,]+\\),"
+   and numberValueRx = "\\([^ ,]+\\),"
    and extractElement (json:string) (name:string) (form:string)
       : string option =
       let rx = Rx.compile ("\"" ^ name ^ "\" *: *" ^ form) in
