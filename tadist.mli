@@ -256,7 +256,8 @@ val _MAX_NAME_LEN : int
 (** Remove empty strings. *)
 val nonEmpties : string list -> string list
 
-(** Split a string of ;|and&, -separated names.
+(**
+ * Split a string of ;|and&, -separated names.
  *
  * This will parse lists of names separated by ; | & 'and' , .
  *  Eg:
@@ -266,7 +267,7 @@ val nonEmpties : string list -> string list
  *  eg:
  *  * Connor, Sarah
  *  commas cannot also be used as the list separator.
- * *)
+ *)
 val parseNamelist : string -> string list
 
 (** Ie as from: "First Others Last" or "Last, Others First". *)
@@ -283,6 +284,11 @@ val normaliseAuthor : string list -> StringT.t array
 val normaliseDate : string list -> DateIso8601e.t array
 
 val normaliseIsbn : string list -> (StringT.t * StringT.t) option
+
+(**
+ * Subtyp taken to be page-count.
+ *)
+val normaliseSubtyp : string -> StringT.t option
 
 val normaliseString : string -> StringT.t option
 

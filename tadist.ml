@@ -536,6 +536,31 @@ let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =
       | _ -> None)
 
 
+let normaliseSubtyp (s:string) : StringT.t option =
+
+   s
+   |> Utf8filter.filter |> Blanks.blankSpacyCtrlChars |> String.trim
+
+   (* drop if contains invalid chars or is negative *)
+   |> (fun s ->
+      let notValid (c:char) : bool =
+         match c with
+         | '0'..'9' | '+' | '-' | '.' | 'e' | 'E' -> false
+         | _ -> true
+      in
+      if String_.containsp notValid s then "" else s)
+   |> (fun s -> if String_.isFirstChar ((=) '-') s then "" else s)
+
+   (* symbols to alphas *)
+   |> (String.map (function | '-' -> 'm' | '.' -> 'p' | c -> c))
+   |> (String_.filter ((<>) '+'))
+
+   (* suffix 'p' *)
+   |> (function | "" -> "" | s -> s ^ "p")
+
+   |> StringT.make |> Result_.toOpt
+
+
 let normaliseString (s:string) : StringT.t option =
 
    s
@@ -554,7 +579,7 @@ let normaliseMetadataLax (nsr:nameStructRaw) : nameStructLax =
       authorLax = normaliseAuthor nsr.authorRaw ;
       dateLax   = normaliseDate nsr.dateRaw ;
       idLax     = normaliseIsbn nsr.idRaw ;
-      subtypLax = normaliseString nsr.subtypRaw ;
+      subtypLax = normaliseSubtyp nsr.subtypRaw ;
       typLax    = normaliseString nsr.typRaw ;  }
 
 
