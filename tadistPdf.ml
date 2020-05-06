@@ -110,7 +110,7 @@ let extractTadist (pdfPathname:string) : (Tadist.nameStructRaw option) ress =
             authorRaw = [ lookupInfoUtf8 pdf "/Author" ] ;
             dateRaw   = [ getDate pdf ] ;
             idRaw     = [] ;
-            subtypRaw = (string_of_int (getPagecount pdf)) ^ "p" ;
+            subtypRaw = string_of_int (getPagecount pdf) ;
             typRaw    = _TYPE ;
          } )
 
