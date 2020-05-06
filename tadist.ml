@@ -942,4 +942,4 @@ let toStringName (name:nameStruct) : string =
 
 
 let toStringText (name:nameStruct) : string =
-   toStringNameStruct name "\""  " "  " ; "  " / "  ", "  " ."
+   toStringNameStruct name "\""  " "  "; "  " / "  ", "  "."

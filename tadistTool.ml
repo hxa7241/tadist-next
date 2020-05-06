@@ -61,7 +61,7 @@ let _DOC =
 {|
 Original document:
 
-"TADIST file naming pattern" ; HXA7241 ; 2014-12-31 / html .
+"TADIST file naming pattern"; HXA7241; 2014-12-31 / html.
 http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
 
 
@@ -153,9 +153,9 @@ Comments:
 Text-Form Grammar
 -----------------
 
-   (textform (, plain meta " ."))
+   (textform (, plain meta "."))
 
-   (plain   (, title (? (, " ; " author (? (, " ; " date))))))
+   (plain   (, title (? (, "; " author (? (, "; " date))))))
    (title   (, "\"" chars-no-dquos "\""))
    (author  (+ chars-no-commas-or-semicolons-or-slashes ", "))
    (date    (+ (, year (? (, "-" month (? "-" day)))) ", "))
