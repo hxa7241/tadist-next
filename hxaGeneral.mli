@@ -648,6 +648,13 @@ sig
     *)
    val allMatches : rx -> string -> string list
 
+   (**
+    * Find all substrings in string that match regex, with their positions.
+    *
+    * @params compiled regex, string to inspect
+    *)
+   val allMatchesPos : rx -> string -> (string * int) list
+
    (** Get whole from a match. *)
    val wholeFound : rxmatch -> string
 

@@ -1009,6 +1009,7 @@ sig
    val regexFirst : string -> ?pos:int -> ?caseInsens:bool -> string ->
                     rxmatch option
    val allMatches : rx -> string -> string list
+   val allMatchesPos : rx -> string -> (string * int) list
    val wholeFound : rxmatch -> string
    val wholePos   : rxmatch -> (int * int)
    val groupFound : rxmatch -> int -> (string option)
@@ -1082,6 +1083,26 @@ struct
       (List_.filtmap (function
          | Str.Delim d -> Some d
          | Str.Text  _ -> None ))
+
+   let allMatchesPos (rx:rx) (content:string) : (string * int) list =
+      (* get all matches : Str.split_result list *)
+      (Str.full_split rx content)
+      |>
+      (* calc positions : (Str.split_result , int) list *)
+      ((List.fold_left
+         (fun (all,pos) part ->
+            let srVal part = Str.(match part with | Delim s | Text s -> s) in
+            (  (part , pos) :: all ,
+               pos + (String.length (srVal part)) ))
+         ( [] , 0 ) )
+         %>
+         (fun (lst , _) -> List.rev lst))
+      |>
+      (* drop non-sought parts : (string , int) list *)
+      (List_.filtmap
+         (function
+            | (Str.Delim str , pos) -> Some (str , pos)
+            | (Str.Text  _   , _  ) -> None ))
 
    let wholeFound (rxmatch:rxmatch) : string =
       rxmatch.whole
