@@ -333,23 +333,29 @@ let parseOpenLib (json:string)
    in
 
    let extractTitle (json:string) : string option =
-      (* find second '{' (the main object) : int option *)
-      (String_.index '{' json)
-      |>- (fun pos -> (String_.index '{' ~start:pos json))
-      (* therefrom, delete (leaf) sub-objects : string option *)
-      |>- (fun pos -> Some (String_.trail json pos))
-      |>- (fun json ->
-         let rx = Str.regexp "{[^{}]*}" in
-         Some (Str.global_replace rx "" json))
-      (* now, seek "title" (without ambiguities) : string option *)
-      |>- (fun json -> extractElement json "title" stringValueRx)
-      (* regex version *)
-      (*let rx =
-         Rx.compile
-            "[^{}]*{[^{}]*{[^{}]*\({[^{}]*}[^{}]*\)*\"title\" *: *\"\([^\"]*\)\""
-      in
-      (Rx.seekFirst rx json)
-      |> Option.map ((Fun.flip Rx.groupFound) 2)*)
+      (* find candidate elements : (string * int) list *)
+      (Rx.allMatchesPos (Rx.compile ("\"title\" *: *" ^ stringValueRx)) json)
+      |>
+      (* find json object depth of each : (string * int * int) list *)
+      (List.map
+         (fun (elem , pos) ->
+            let depth =
+               let charCounter (c:char) (s:string) : int =
+                  String.length (String_.filter ((=) c) s)
+               and before = String_.lead json pos
+               in
+               let inSteps  = charCounter '{' before
+               and outSteps = charCounter '}' before in
+               inSteps - outSteps
+            in
+            ( elem , pos , depth )))
+      |>
+      (* get first elem at depth 2 : string option *)
+      (List.find_map
+         (fun (elem , _ , depth) ->
+            if depth = 2
+            then extractElement elem "title" stringValueRx
+            else None))
    and extractAuthors (json:string) : string list =
       let rx = Rx.compile "\"name\" *: *\"\\([^\"]*\\)\"" in
       (* get authors json array : string option *)
