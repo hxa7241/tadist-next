@@ -160,17 +160,39 @@ let getContentopfMetadata (contentopf:string)
 
    (* remove line-ends for easier regexps *)
    let contentopf = Blanks.blankNewlines contentopf in
-   let matcher tag attr : string list =
-      let rx = Str.regexp_case_fold ("<dc:" ^ tag ^ attr ^
-         "[^>]*>\\([^<]*\\)</dc:" ^ tag ^ ">")
+
+   let matcher (tag:string) : string list =
+      let rx =
+         Str.regexp_case_fold
+            ("<dc:" ^ tag ^ "[^>]*>\\([^<]*\\)</dc:" ^ tag ^ ">")
       in
       Str.allMatches rx contentopf (Str.matched_group 1)
+   and matcherIsbn () : string list =
+      (* try one std form ... *)
+      let rx =
+         Str.regexp_case_fold
+            "<dc:identifier[^>]\
+            *opf:scheme=[\"']ISBN[\"'][^>]*>\
+            \\([^<]*\\)\
+            </dc:identifier>"
+      in
+      match Str.allMatches rx contentopf (Str.matched_group 1) with
+      | [] ->
+         (* ... then try the other std form *)
+         let rx =
+            Str.regexp_case_fold
+               "<dc:identifier[^>]*>\
+               urn:isbn:\\([^<]*\\)\
+               </dc:identifier>"
+         in
+         Str.allMatches rx contentopf (Str.matched_group 1)
+      | found -> found
    in
 
-   (  matcher "title"      "" ,
-      matcher "creator"    "" ,
-      matcher "date"       "" ,
-      matcher "identifier" "[^>]*opf:scheme=[\"']ISBN[\"']" )
+   (  matcher "title"   ,
+      matcher "creator" ,
+      matcher "date"    ,
+      matcherIsbn () )
 
 
 let getHtmlPathnames (contentopf:string) : string list =
