@@ -252,7 +252,7 @@ let findFirstIsbn (text:string) : (string option) =
             ,  matchG1 (Str.regexp "[^0-9]\\([0-9]+\\([- ]\\)\
                   [0-9]+\\2[0-9]+\\2[0-9]*[0-9X]\\)[^0-9]") 13
             ,  matchG1 (Str.regexp "[^0-9]\\([0-9]+\\)[^0-9]") 13
-            ,  matchG1 (Str.regexp "[^0-9]\\([0-9]+\\)[^0-9]") 10 )
+            ,  matchG1 (Str.regexp "[^0-9]\\([0-9]+[0-9X]\\)[^0-9]") 10 )
          in
          None
          ||> (fun () -> matchIsbnH13 txt pos)
