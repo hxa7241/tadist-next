@@ -209,6 +209,13 @@ sig
 
    (** String of form 'ISBN 012-345678901-2' or 'ISBN 012345678X'. *)
    val toStringFull : t -> string
+
+   (**
+    * Search for a bare isbn number.
+    *
+    * @params text to search in, start pos, length to search
+    *)
+   val search : string -> int -> int -> string option
 end
 
 

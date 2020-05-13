@@ -219,6 +219,7 @@ sig
    val toString     : t -> string
    val toStringBare : t -> string
    val toStringFull : t -> string
+   val search       : string -> int -> int -> string option
 end
 =
 struct
@@ -270,6 +271,44 @@ struct
          ^ (String.sub isbn 12 1)
       (* 10: ISBN 9 digits digit/X *)
       | _  -> "ISBN " ^ isbn
+
+   let search (text:string) (pos:int) (len:int) : string option =
+
+      let matchIsbnNum (txt:string) (pos:int) : (string option) =
+         let matchIsbnH13 , matchIsbnH10 , matchIsbnM13 , matchIsbnM10 =
+            let matchG1 (rx:Str.regexp) (len:int) (txt:string) (pos:int)
+               : string option =
+               if Str.string_match rx txt pos
+               then
+                  let isbn = Str.matched_group 1 txt in
+                  if String.length isbn = len then Some isbn else None
+               else None
+            in
+            (  matchG1 (Str.regexp "[^0-9]\\([0-9]+\\([- ]\\)\
+                  [0-9]+\\2[0-9]+\\2[0-9]+\\2[0-9]+\\)[^0-9]") 17
+            ,  matchG1 (Str.regexp "[^0-9]\\([0-9]+\\([- ]\\)\
+                  [0-9]+\\2[0-9]+\\2[0-9]*[0-9X]\\)[^0-9]") 13
+            ,  matchG1 (Str.regexp "[^0-9]\\([0-9]+\\)[^0-9]") 13
+            ,  matchG1 (Str.regexp "[^0-9]\\([0-9]+[0-9X]\\)[^0-9]") 10 )
+         in
+         None
+         ||> (fun () -> matchIsbnH13 txt pos)
+         ||> (fun () -> matchIsbnH10 txt pos)
+         ||> (fun () -> matchIsbnM13 txt pos)
+         ||> (fun () -> matchIsbnM10 txt pos)
+      in
+
+      let rec searchForward (i:int) (iend:int) : string option =
+         if i < iend
+         then
+            match matchIsbnNum text (pos + i) with
+            | None           -> searchForward (i + 1) iend
+            | Some _ as isbn -> isbn
+         else None
+      in
+
+      searchForward 0 (min len ((String.length text) - pos))
+
 end
 
 
