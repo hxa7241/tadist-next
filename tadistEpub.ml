@@ -192,7 +192,7 @@ let getContentopfMetadata (contentopf:string)
    (  matcher "title"   ,
       matcher "creator" ,
       matcher "date"    ,
-      (* DEBUG *) [] (*matcherIsbn ()*) )
+      matcherIsbn () )
 
 
 let getHtmlPathnames (contentopf:string) : string list =
