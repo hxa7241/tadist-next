@@ -159,40 +159,64 @@ let getContentopfMetadata (contentopf:string)
    : (string list * string list * string list * string list) =
 
    (* remove line-ends for easier regexps *)
-   let contentopf = Blanks.blankNewlines contentopf in
+   let contentopf = Blanks.blankNewlines contentopf
 
-   let matcher (tag:string) : string list =
+   and matcher (tag:string) (attr:string) (prefix:string) (text:string)
+      : string list =
       let rx =
          Str.regexp_case_fold
-            ("<dc:" ^ tag ^ "[^>]*>\\([^<]*\\)</dc:" ^ tag ^ ">")
-      in
-      Str.allMatches rx contentopf (Str.matched_group 1)
-   and matcherIsbn () : string list =
-      (* try one std form ... *)
-      let rx =
-         Str.regexp_case_fold
-            "<dc:identifier[^>]\
-            *opf:scheme=[\"']ISBN[\"'][^>]*>\
+            ("<dc:" ^ tag ^ "[^>]*\
+            " ^ attr ^ "[^>]*\
+            >\
+            " ^ prefix ^ "\
             \\([^<]*\\)\
-            </dc:identifier>"
+            </dc:" ^ tag ^ ">")
       in
-      match Str.allMatches rx contentopf (Str.matched_group 1) with
-      | [] ->
-         (* ... then try the other std form *)
-         let rx =
-            Str.regexp_case_fold
-               "<dc:identifier[^>]*>\
-               urn:isbn:\\([^<]*\\)\
-               </dc:identifier>"
-         in
-         Str.allMatches rx contentopf (Str.matched_group 1)
-      | found -> found
+      Str.allMatches rx text (Str.matched_group 1)
    in
 
-   (  matcher "title"   ,
-      matcher "creator" ,
-      matcher "date"    ,
-      matcherIsbn () )
+   let matcherSimple (tag:string) (text:string) : string list =
+      matcher tag "" "" text
+
+   and matcherIsbn (text:string) : string list =
+      let matcher tag attr prefix text =
+         HxaGeneral.toList1 (matcher tag attr prefix text)
+      and searcher (tag:string) (text:string)
+         : string list1 option =
+         (matcher tag "" "" text)
+         |> (List_.filtmap
+               (fun (s:string) ->
+                  Tadist.Isbn.search (" " ^ s ^ " ") 0 (String.length text)))
+         |> HxaGeneral.toList1
+      in
+
+      (* define the various matching forms *)
+      let identifier2  text () =
+         matcher "identifier" "opf:scheme=[\"']ISBN[\"']" "" text
+      and identifier3  text () =
+         matcher "identifier" "" "urn:isbn:" text
+      and source2 text () =
+         matcher "source" "opf:scheme=[\"']ISBN[\"']" "" text
+      and source3 text () =
+         matcher "source" "" "urn:isbn:" text
+
+      and bareIdentifier text () = searcher "identifier" text
+      and bareSource     text () = searcher "source"     text in
+
+      (* take the first successful match, in this priority of alternatives *)
+      (identifier3 text ())
+      ||> (identifier2 text)
+      ||> (source3 text)
+      ||> (source2 text)
+      ||> (bareIdentifier text)
+      ||> (bareSource text)
+      |> ofList1o
+   in
+
+   (  matcherSimple "title"   contentopf ,
+      matcherSimple "creator" contentopf ,
+      matcherSimple "date"    contentopf ,
+      matcherIsbn             contentopf )
 
 
 let getHtmlPathnames (contentopf:string) : string list =
