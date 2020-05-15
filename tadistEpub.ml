@@ -185,8 +185,7 @@ let getContentopfMetadata (contentopf:string)
          : string list1 option =
          (matcher tag "" "" text)
          |> (List_.filtmap
-               (fun (s:string) ->
-                  Tadist.Isbn.search (" " ^ s ^ " ") 0 (String.length text)))
+               (fun str -> Tadist.Isbn.search str 0 (String.length text)))
          |> HxaGeneral.toList1
       in
 

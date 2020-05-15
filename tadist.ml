@@ -280,16 +280,24 @@ struct
                : string option =
                if Str.string_match rx txt pos
                then
-                  let isbn = Str.matched_group 1 txt in
+                  let isbn = Str.matched_group 2 txt in
                   if String.length isbn = len then Some isbn else None
-               else None
+               else
+                  None
+            and front  = "\\(^\\|[^0-9]\\)"
+            and back   = "\\($\\|[^0-9]\\)"
+            and hPart1 = "\\([0-9]+\\([- ]\\)[0-9]+\\3[0-9]+\\3"
             in
-            (  matchG1 (Str.regexp "[^0-9]\\([0-9]+\\([- ]\\)\
-                  [0-9]+\\2[0-9]+\\2[0-9]+\\2[0-9]+\\)[^0-9]") 17
-            ,  matchG1 (Str.regexp "[^0-9]\\([0-9]+\\([- ]\\)\
-                  [0-9]+\\2[0-9]+\\2[0-9]*[0-9X]\\)[^0-9]") 13
-            ,  matchG1 (Str.regexp "[^0-9]\\([0-9]+\\)[^0-9]") 13
-            ,  matchG1 (Str.regexp "[^0-9]\\([0-9]+[0-9X]\\)[^0-9]") 10 )
+            (* 'human form' containing spaces or hyphens *)
+            (  matchG1
+                  (Str.regexp (front ^ hPart1 ^ "[0-9]+\\3[0-9]+\\)" ^ back)) 17
+            ,  matchG1
+                  (Str.regexp (front ^ hPart1 ^ "[0-9]*[0-9X]\\)"    ^ back)) 13
+            (* 'machine form' containing only digits (maybe last X) *)
+            ,  matchG1
+                  (Str.regexp (front ^          "\\([0-9]+\\)"       ^ back)) 13
+            ,  matchG1
+                  (Str.regexp (front ^         "\\([0-9]+[0-9X]\\)" ^ back)) 10 )
          in
          None
          ||> (fun () -> matchIsbnH13 txt pos)
