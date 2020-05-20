@@ -28,10 +28,8 @@ let _TYPE = "epub"
 
 (* ---- lib module augmentations ---- *)
 
-module Str =
+module Str_ =
 struct
-
-   include Str
 
    (* (f as either (Str.matched_string) or (Str.matched_group <int>)) *)
    let allMatches (rx:Str.regexp) (toSearch:string) (f:string -> string)
@@ -172,7 +170,7 @@ let getContentopfMetadata (contentopf:string)
             \\([^<]*\\)\
             </dc:" ^ tag ^ ">")
       in
-      Str.allMatches rx text (Str.matched_group 1)
+      Str_.allMatches rx text (Str.matched_group 1)
    in
 
    let matcherSimple (tag:string) (text:string) : string list =
@@ -236,12 +234,12 @@ let getHtmlPathnames (contentopf:string) : string list =
       let rx = Str.regexp (head ^
          "media-type=[\"']application/xhtml\\+xml[\"']" ^ foot)
       in
-      let l = Str.allMatches rx manifest (Str.matched_string) in
+      let l = Str_.allMatches rx manifest (Str.matched_string) in
       String.concat "\n" l
    and rx = Str.regexp (head ^ "href=[\"']\\([^\"']*\\)[\"']" ^ foot)
    in
 
-   Str.allMatches rx htmlItems (Str.matched_group 1)
+   Str_.allMatches rx htmlItems (Str.matched_group 1)
 
 
 let findFirstIsbn (text:string) : (string option) =
