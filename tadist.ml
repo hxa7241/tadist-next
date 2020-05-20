@@ -215,16 +215,20 @@ sig
 
    val make : string -> t ress
 
-   val length       : t -> int
-   val toString     : t -> string
-   val toStringBare : t -> string
-   val toStringFull : t -> string
-   val search       : string -> int -> int -> string option
+   val length        : t -> int
+   val makeChecksum  : t -> char
+   val checkChecksum : t -> bool
+   val toString      : t -> string
+   val toStringBare  : t -> string
+   val toStringFull  : t -> string
+   val search        : string -> int -> int -> string option
 end
 =
 struct
+   (* module invariant: length = 13 or 10 *)
    type t = string
 
+   (* private *)
    let checkChars (s:string) : string ress =
       (* 13: all must be digits *)
       if (String_.check Char_.isDigit s)
@@ -236,6 +240,7 @@ struct
       then Ok s
       else Error "ISBN chars invalid"
 
+   (* private *)
    let checkLength (s:string) : string ress =
       match String.length s with
       | 13 | 10 -> Ok s
@@ -256,6 +261,36 @@ struct
    let length (isbn:t) : int =
       String.length isbn
 
+
+   let makeChecksum (isbn:t) : char =
+
+      let calcChecksum (digits:string) (weightGen:int -> int) (modFactor:int)
+         (toChar:int -> char) : char =
+         let digits : int list =
+            (List_.ofStringAscii digits)
+            |> (List_.filtmap (string_of_char %> int_of_string_opt))
+         in
+         let weights  = List_.unfoldl weightGen (List.length digits) in
+         let products = List.map2 ( * ) digits weights in
+         let sum      = List.fold_left (+) 0 products in
+         toChar ((modFactor - (sum mod modFactor)) mod modFactor)
+      in
+
+      let firstDigits = String_.lead isbn (String_.lastPos isbn) in
+      match String.length firstDigits with
+      | 12 ->
+         calcChecksum firstDigits (fun i -> if (i land 1) = 0 then 1 else 3) 10
+            (fun i -> (string_of_int i).[0])
+      |  9 ->
+         calcChecksum firstDigits (fun i -> 10 - i) 11
+            (fun i -> if i < 10 then (string_of_int i).[0] else 'X')
+      | _ -> ' ' (* not possible: module invariant *)
+
+
+   let checkChecksum (isbn:t) : bool =
+      (String_.notEmpty isbn) &&
+         ((String_.last isbn) = (makeChecksum isbn))
+
    let toString (isbn:t) : string =
       isbn
 
@@ -271,6 +306,7 @@ struct
          ^ (String.sub isbn 12 1)
       (* 10: ISBN 9 digits digit/X *)
       | _  -> "ISBN " ^ isbn
+
 
    let search (text:string) (pos:int) (len:int) : string option =
 
@@ -297,7 +333,7 @@ struct
             ,  matchG1
                   (Str.regexp (front ^          "\\([0-9]+\\)"       ^ back)) 13
             ,  matchG1
-                  (Str.regexp (front ^         "\\([0-9]+[0-9X]\\)" ^ back)) 10 )
+                  (Str.regexp (front ^         "\\([0-9]+[0-9X]\\)" ^ back)) 10)
          in
          None
          ||> (fun () -> matchIsbnH13 txt pos)

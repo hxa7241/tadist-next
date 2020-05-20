@@ -201,6 +201,12 @@ sig
    (** ISBN type: only 13 or 10. *)
    val length       : t -> int
 
+   (** Calc checksum digit. *)
+   val makeChecksum  : t -> char
+
+   (** Check checksum digit. *)
+   val checkChecksum : t -> bool
+
    (** String of digits only (possibly last one an 'X'). *)
    val toString     : t -> string
 
