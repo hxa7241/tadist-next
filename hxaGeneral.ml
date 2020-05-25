@@ -1111,7 +1111,7 @@ struct
       rxmatch.pos
 
    let groupFound (rxmatch:rxmatch) (index:int) : string option =
-      rxmatch.groups.(index)
+      excToDefault None (fun () -> rxmatch.groups.(index))
 end
 
 
