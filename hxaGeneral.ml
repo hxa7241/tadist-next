@@ -657,6 +657,8 @@ sig
    val unfoldo       : (int->'a option) -> 'a list
    val ofStringAscii : string -> char list
    val toStringAscii : (char list) -> string
+   val ofOpt         : 'a option -> 'a list
+   val toOpt         : 'a list -> 'a option
 end
 =
 struct
@@ -803,6 +805,13 @@ struct
 
    let toStringAscii (lc:char list) : string =
       String.concat "" (List.map string_of_char lc)
+
+   let ofOpt (o:'a option) : 'a list =
+      match o with
+      | Some a -> [a]
+      | None   -> []
+
+   let toOpt = hd
 end
 
 

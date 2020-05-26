@@ -464,6 +464,12 @@ sig
 
    (** Convert list-of-chars to string (of bytes). *)
    val toStringAscii : (char list) -> string
+
+   (** Convert an option to a singletonian/empty list. *)
+   val ofOpt : 'a option -> 'a list
+
+   (** Convert a singletonian/empty list to an option. *)
+   val toOpt : 'a list -> 'a option
 end
 
 
