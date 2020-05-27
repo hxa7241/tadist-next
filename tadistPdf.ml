@@ -69,6 +69,46 @@ let lookupInfoUtf8 (pdf:Pdf.t) (key:string) : string =
    | None -> ""
 
 
+let getXmpXml (pdf:Pdf.t) : string =
+
+   (Some pdf.Pdf.trailerdict)
+   |>-
+   (Pdf.lookup_direct pdf "/Root")
+   |>-
+   (Pdf.lookup_direct pdf "/Metadata")
+   |>-
+   (* : ((Pdf.pdfobject * Pdf.stream) Stdlib.ref) option *)
+   (fun (pdfo:Pdf.pdfobject) ->
+      match pdfo with
+      | Pdf.Null    | Pdf.Boolean _    | Pdf.Integer _
+      | Pdf.Real _  | Pdf.String _     | Pdf.Name _
+      | Pdf.Array _ | Pdf.Dictionary _ | Pdf.Indirect _ -> None
+      | Pdf.Stream stream                               -> Some stream)
+   |>-
+   (fun stream ->
+      Pdfcodec.decode_pdfstream pdf (Pdf.Stream stream) ;
+      Some stream)
+   |>-
+   (* : Pdfio.bytes option *)
+   (fun stream ->
+      match stream with
+      | {contents = (_, Pdf.Got data)} -> Some data
+      | {contents = (_, Pdf.ToGet _ )} -> None)
+   |>-
+   (fun b -> Some (Pdfio.string_of_bytes b))
+   |>
+   (Option.value ~default:"")
+
+
+let lookupXmlTag (xmp:string) (regex:string) (group:int) : string =
+
+   (Rx.regexFirst regex ~caseInsens:true ~pos:0 xmp)
+   |>-
+   (Fun.flip Rx.groupFound group)
+   |>
+   (Option.value ~default:"")
+
+
 let getDate (pdf:Pdf.t) : string =
 
    (* format:
@@ -92,6 +132,54 @@ let getPagecount (pdf:Pdf.t) : int =
    Pdfpage.endpage pdf ;;
 
 
+let getIsbns (pdf:Pdf.t) : string list =
+
+   (* define the various matching forms *)
+   (* XMP rdf/xml: *)
+   let identifierDc (xmp:string) () : string option =
+      let tag =
+         (* <dc:identifier ...>[content]</dc:identifier> *)
+         lookupXmlTag
+            xmp
+            "<dc:identifier\\( [^>]*\\)?>\\([^<]*\\)</dc:identifier>"
+            2
+      in
+      Tadist.Isbn.search tag 0 (String.length tag)
+   and identifierXmp (xmp:string) () : string option =
+      let tag =
+         (* <xmp.Identifer ...>
+               <rdf:Bag ...>
+                  <rdf:li ...>[content]</rdf:li>
+                  ...
+               </rdf:Bag>
+            </xmp.Identifer> *)
+         lookupXmlTag
+            xmp
+            "<xmp.Identifer\\( [^>]*\\)?>[^<]*\
+               <rdf:\\(Alt\\|Bag\\|Seq\\)\\( [^>]*\\)?>[^<]*\
+               <rdf:li[^>]*>\\([^<]*\\)</rdf:li>"
+            4
+      in
+      Tadist.Isbn.search tag 0 (String.length tag)
+   (* other inappropriate metadata (unlikely but possible) *)
+   and subject (pdf:Pdf.t) () : string option =
+      let field = lookupInfoUtf8 pdf "/Subject" in
+      Tadist.Isbn.search field 0 (String.length field)
+   and keywords (pdf:Pdf.t) () : string option =
+      let field = lookupInfoUtf8 pdf "/Keywords" in
+      Tadist.Isbn.search field 0 (String.length field)
+   in
+
+   let xmp = (getXmpXml pdf) |> Blanks.blankSpacyCtrlChars in
+
+   (* take the first successful match, in this priority of alternatives *)
+   (identifierDc xmp ())
+   ||> (identifierXmp xmp)
+   ||> (subject pdf)
+   ||> (keywords pdf)
+   |> List_.ofOpt
+
+
 
 
 (* ---- public functions ---- *)
@@ -109,7 +197,7 @@ let extractTadist (pdfPathname:string) : (Tadist.nameStructRaw option) ress =
             titleRaw  = [ lookupInfoUtf8 pdf "/Title" ] ;
             authorRaw = [ lookupInfoUtf8 pdf "/Author" ] ;
             dateRaw   = [ getDate pdf ] ;
-            idRaw     = [] ;
+            idRaw     = getIsbns pdf ;
             subtypRaw = string_of_int (getPagecount pdf) ;
             typRaw    = _TYPE ;
          } )
