@@ -584,6 +584,9 @@ sig
     * [ ["0xEF", "0xBB", "0xBF"]   "U+FEFF  zero width no-break space" ]
     *)
    val unifySpaces : string -> string
+
+   (* Replace each run of spaces with a single space char. *)
+   val squashSpaces : string -> string
 end
 
 

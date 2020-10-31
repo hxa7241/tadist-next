@@ -939,6 +939,7 @@ sig
    val blankSpacyCtrlChars : string -> string
    val blankNewlines       : string -> string
    val unifySpaces         : string -> string
+   val squashSpaces        : string -> string
 end
 =
 struct
@@ -968,6 +969,10 @@ struct
          \xE3\x80\x80\\|\
          \xEF\xBB\xBF"
       in
+      Str.global_replace rx " " s
+
+   let squashSpaces (s:string) : string =
+      let rx = Str.regexp "  +" in
       Str.global_replace rx " " s
 end
 
