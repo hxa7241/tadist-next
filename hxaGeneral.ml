@@ -407,6 +407,7 @@ module Char_ :
 sig
    val isAlpha    : char -> bool
    val isDigit    : char -> bool
+   val isDigitOct : char -> bool
    val isDigitHex : char -> bool
    val isSign     : char -> bool
    val isAscii    : char -> bool
@@ -422,8 +423,11 @@ struct
    let isDigit (c:char) : bool =
       match c with | '0'..'9' -> true | _ -> false
 
+   let isDigitOct (c:char) : bool =
+      match c with | '0'..'7' -> true | _ -> false
+
    let isDigitHex (c:char) : bool =
-      match c with | '0'..'9'| 'a'..'f' | 'A'..'F' -> true | _ -> false
+      match c with | '0'..'9' | 'a'..'f' | 'A'..'F' -> true | _ -> false
 
    let isSign (c:char) : bool =
       (c = '-') || (c = '+')
