@@ -454,6 +454,7 @@ sig
    val trail       : string -> int -> string
    val leadTrail   : string -> int -> (string * string)
    val last        : string -> char
+   val subp        : string -> int -> int -> string
    val isFirstChar : (char -> bool) -> string -> bool
    val index       : char -> ?start:int -> string -> int option
    val indexp      : (char -> bool) -> ?start:int -> string -> int option
@@ -502,6 +503,9 @@ struct
 
    let last (s:string) : char =
       s.[(String.length s) - 1]
+
+   let subp (s:string) (startpos:int) (endpos:int) : string =
+      String.sub s startpos (endpos - startpos)
 
    let isFirstChar (pred:char -> bool) (s:string) : bool =
       ((String.length s) > 0) && pred s.[0]
