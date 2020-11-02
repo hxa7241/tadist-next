@@ -182,8 +182,7 @@ let getContentopfMetadata (contentopf:string)
       and searcher (tag:string) (text:string)
          : string list1 option =
          (matcher tag "" "" text)
-         |> (List_.filtmap
-               (fun str -> Tadist.Isbn.search str 0 (String.length text)))
+         |> (List_.filtmap (Tadist.Isbn.search 0 (String.length text)))
          |> HxaGeneral.toList1
       in
 
@@ -256,7 +255,7 @@ let findFirstIsbn (text:string) : (string option) =
    | Some pos ->
       (* find number nearby *)
       (*print_endline ("   'isbn' pos: " ^ (string_of_int pos)) ;*)
-      Tadist.Isbn.search text pos 15
+      Tadist.Isbn.search pos 15 text
    | None     -> None
 
 

@@ -219,9 +219,9 @@ sig
    (**
     * Search for a bare isbn number.
     *
-    * @params text to search in, start pos, length to search
+    * @params start pos, length to search, text to search in
     *)
-   val search : string -> int -> int -> string option
+   val search : int -> int -> string -> string option
 end
 
 

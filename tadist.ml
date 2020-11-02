@@ -221,7 +221,7 @@ sig
    val toString      : t -> string
    val toStringBare  : t -> string
    val toStringFull  : t -> string
-   val search        : string -> int -> int -> string option
+   val search        : int -> int -> string -> string option
 end
 =
 struct
@@ -308,7 +308,7 @@ struct
       | _  -> "ISBN " ^ isbn
 
 
-   let search (text:string) (pos:int) (len:int) : string option =
+   let search (pos:int) (len:int) (text:string) : string option =
 
       let matchIsbnNum (txt:string) (pos:int) : (string option) =
          let matchIsbnH13 , matchIsbnH10 , matchIsbnM13 , matchIsbnM10 =
