@@ -132,7 +132,7 @@ let getPagecount (pdf:Pdf.t) : int =
    Pdfpage.endpage pdf ;;
 
 
-let getIsbns (pdf:Pdf.t) : string list =
+let getIsbnsFromMetadata (pdf:Pdf.t) : string list =
 
    (* define the various matching forms *)
    (* XMP rdf/xml: *)
@@ -144,7 +144,7 @@ let getIsbns (pdf:Pdf.t) : string list =
             "<dc:identifier\\( [^>]*\\)?>\\([^<]*\\)</dc:identifier>"
             2
       in
-      Tadist.Isbn.search tag 0 (String.length tag)
+      Tadist.Isbn.search 0 (String.length tag) tag
    and identifierXmp (xmp:string) () : string option =
       let tag =
          (* <xmp.Identifer ...>
@@ -160,14 +160,14 @@ let getIsbns (pdf:Pdf.t) : string list =
                <rdf:li[^>]*>\\([^<]*\\)</rdf:li>"
             4
       in
-      Tadist.Isbn.search tag 0 (String.length tag)
+      Tadist.Isbn.search 0 (String.length tag) tag
    (* other inappropriate metadata (unlikely but possible) *)
    and subject (pdf:Pdf.t) () : string option =
       let field = lookupInfoUtf8 pdf "/Subject" in
-      Tadist.Isbn.search field 0 (String.length field)
+      Tadist.Isbn.search 0 (String.length field) field
    and keywords (pdf:Pdf.t) () : string option =
       let field = lookupInfoUtf8 pdf "/Keywords" in
-      Tadist.Isbn.search field 0 (String.length field)
+      Tadist.Isbn.search 0 (String.length field) field
    in
 
    let xmp = (getXmpXml pdf) |> Blanks.blankSpacyCtrlChars in
@@ -178,6 +178,263 @@ let getIsbns (pdf:Pdf.t) : string list =
    ||> (subject pdf)
    ||> (keywords pdf)
    |> List_.ofOpt
+
+
+let extractTextFromPdfStream (pdfStream:string) : string =
+
+   let extractParenthised (pdfStream:string) : string =
+      (* strings are in ()s *)
+      (* BUT those strings can include inner unescaped ()s if balanced *)
+      let isParen (c:char) : bool = (c = '(') || (c = ')') in
+      let rec seek (pdfStream:string) (seekpos:int)
+         (nestdepth:int) (openpos:int) (accum:string list)
+         : string list =
+         let foundPosOpt = String_.indexp isParen ~start:seekpos pdfStream in
+         match foundPosOpt with
+         | Some foundPos ->
+            let foundChar =
+               let isUnEscaped =
+                  (foundPos = 0) || (pdfStream.[foundPos - 1] <> '\\')
+               in
+               if isUnEscaped then pdfStream.[foundPos] else ' '
+            and foundEnd = foundPos + 1
+            in
+            begin match foundChar with
+            | '(' ->
+               (* only set open pos at bottom-level open (others are ignored) *)
+               let openpos = if nestdepth = 0 then foundEnd else openpos
+               (* (nesting cannot overflow because max string len < max int) *)
+               and nestdepth = (min nestdepth (Int.max_int - 1)) + 1 in
+               seek pdfStream foundEnd nestdepth openpos accum
+            | ')' ->
+               (* only accum at bottom close (which must follow a bottom open) *)
+               let accum =
+                  if nestdepth = 1
+                  then (String_.subp pdfStream openpos foundPos) :: accum
+                  else accum
+               (* disallow negative nestdepths *)
+               and nestdepth = max 0 (nestdepth - 1) in
+               seek pdfStream foundEnd nestdepth openpos accum
+            | _ ->
+               (* it was escaped, so ignorable *)
+               seek pdfStream foundEnd nestdepth openpos accum
+            end
+         | None ->
+            (* if inside bottom paren, accum from openpos to end *)
+            if nestdepth > 0
+            then
+               let streamEnd = String.length pdfStream in
+               (String_.subp pdfStream openpos streamEnd) :: accum
+            else
+               accum
+      in
+      (* apply to entire stream *)
+      (seek pdfStream 0 0 0 [])
+      |> List.rev
+      (* put spaces between each () chunk
+         (PDF text content is often broken into words, or more, per ()) *)
+      |> (String.concat " ")
+
+   and unescapeChars (text:string) : string =
+      (*
+         the various things to do:
+         * unescape: \n \r \t \b \f \( \) \\
+            * \f -> 0C
+         * unencode: \000 (1-3 octal digits, 0-255)
+         * remove:   \\n (linewrap: \ and immediately following actual \n)
+         * leave:    \ with any other following char
+      *)
+      let translate (whole:string) : string =
+         let found = Str.matched_string whole in
+         match found.[1] with
+         (* unencode *)
+         | '0' .. '7' ->
+            begin try
+               let code = Scanf.sscanf (String_.trail found 1) "%o" Fun.id
+               (* add back extraneous char picked up by regex *)
+               and nextChar =
+                  let last = String_.last found in
+                  if Char_.isDigitOct last then "" else string_of_char last
+               in
+               (string_of_char (Char.chr code)) ^ nextChar
+            with
+            (* failed to read number, so leave it untranslated *)
+            | Scanf.Scan_failure _ | Failure _ | End_of_file -> found
+            end
+         (* unescape *)
+         | 'n'  -> "\n"
+         | 'r'  -> "\r"
+         | 't'  -> "\t"
+         | 'b'  -> "\b"
+         | 'f'  -> "\x0C"
+         | '('  -> "("
+         | ')'  -> ")"
+         | '\\' -> "\\"
+         (* remove *)
+         | '\n' -> ""
+         (* leave *)
+         | _    -> found
+      and rx = Str.regexp
+         (* (to match a single '\', the escaping here requires 4) *)
+         "\\\\[0-7][0-7][0-7]\\|\
+          \\\\[0-7][0-7][^0-7]\\|\
+          \\\\[0-7][0-7]$\\|\
+          \\\\[0-7][^0-7]\\|\
+          \\\\[0-7]$\\|\
+          \\\\[^0-7]"
+      in
+      Str.global_substitute rx translate text
+   in
+
+   pdfStream |> extractParenthised |> unescapeChars
+
+
+let regulariseDashs (text:string) : string =
+
+   (* just a list of plausible variations, not a complete countermeasure to
+      every possible villainy and madness *)
+
+   (* (SOFT HYPHEN) *)
+   (* (MINUS SIGN) *)
+   (* (HYPHEN) *)
+   (* (NON-BREAKING HYPHEN) *)
+   (* (FIGURE DASH) *)
+   (* (EN DASH) *)
+   (* (EM DASH) *)
+   (* (HORIZONTAL BAR) *)
+   (* (SMALL EM DASH) *)
+   (* (SMALL HYPHEN-MINUS) *)
+   (* (FULLWIDTH HYPHEN-MINUS) *)
+   let rx = Str.regexp
+      "\xC2\xAD\\|\
+       \xE2\x88\x92\\|\
+       \xE2\x80\x90\\|\
+       \xE2\x80\x91\\|\
+       \xE2\x80\x92\\|\
+       \xE2\x80\x93\\|\
+       \xE2\x80\x94\\|\
+       \xE2\x80\x95\\|\
+       \xEF\xB9\x98\\|\
+       \xEF\xB9\xA3\\|\
+       \xEF\xBC\x8D"
+   in
+
+   (* replace all with ordinary '-' *)
+   Str.global_replace rx "-" text
+
+
+let rec getPageStreamString (pdf:Pdf.t) (obj:Pdf.pdfobject) : string =
+
+   try
+
+      match obj with
+
+      (* ignore *)
+      | Pdf.Null   | Pdf.Boolean _    | Pdf.Integer _  | Pdf.Real _
+      | Pdf.Name _ | Pdf.Dictionary _ | Pdf.String _ ->
+         ""
+
+      (* merge a 'sub-tree' *)
+      | Pdf.Array objs ->
+         let strs = List.map (getPageStreamString pdf) objs in
+         String.concat "\n" strs
+
+      (* follow 'pointer' *)
+      | Pdf.Indirect _ ->
+         getPageStreamString pdf (Pdf.direct pdf obj)
+
+      (* this is the main thing *)
+      | Pdf.Stream stream ->
+         Pdfcodec.decode_pdfstream pdf (Pdf.Stream stream) ;
+         begin match stream with
+         | {contents = (_, Pdf.Got data)} -> Pdfio.string_of_bytes data
+         | {contents = (_, Pdf.ToGet _ )} -> ""
+         end
+
+   with
+   | _ -> ""
+
+
+let getIsbnsFromText (pdf:Pdf.t) : string list =
+
+   (* get first few pages *)
+   let pages : Pdfpage.t list =
+      try
+         let pages = Pdfpage.pages_of_pagetree pdf
+         and _NUMBER_OF_PAGES_TO_INSPECT = 10 (* 7 *) in
+         fst (List_.bisect pages _NUMBER_OF_PAGES_TO_INSPECT)
+      with
+      | _ -> []
+   in
+
+   (* map pages to streams *)
+   let streams : string list =
+      let streamss : string list list =
+         List.map
+            (fun (page : Pdfpage.t) ->
+               let objs : Pdf.pdfobject list = page.Pdfpage.content in
+               List.map
+                  (fun (obj : Pdf.pdfobject) -> getPageStreamString pdf obj)
+                  objs )
+            pages
+      in
+      List.flatten streamss
+   in
+
+   (* map streams to texts *)
+   let texts : string list = List.map extractTextFromPdfStream streams in
+
+   (* map texts to isbns *)
+   let isbns : string list =
+      List_.filtmap
+         (fun (text : string) ->
+            (*
+               example stream fragment:
+                  0.0287 Tc 9.3 0 0 9.3 151.14 89.04 Tm
+                  (ISBN )Tj
+                  0.0429 Tc 9.5 0 0 9.5 176.06 89.04 Tm
+                  (0-674-53751-3 )Tj
+                  0.0142 Tc -5.931 -3.586 Td
+
+               extracted text:
+                  ISBN  0-674-53751-3
+
+               possible eccentricities:
+                  * ISBN:
+                  * eISBN
+                  * ISBN-13
+                  * hyphens not actual '-' chars
+            *)
+            (* robust against atomised chars and shuffled 'words' *)
+
+            (* remove all spaces *)
+            let text =
+               text |> Blanks.unifySpaces |> (String_.filter ((<>)' '))
+            in
+            (* check for any 'ISBN' labels *)
+            if Option_.toBool (Rx.regexFirst "isbn" ~caseInsens:true text)
+            then
+               (* extract first conforming number in text *)
+               text
+               |> regulariseDashs
+               (* delete '-10' '-13' ISBN suffixs *)
+               |> (Str.global_replace (Str.regexp_case_fold "ISBN-1[03]") "ISBN")
+               |> Tadist.Isbn.search 0 (String.length text)
+            else
+               None )
+         texts
+   in
+
+   isbns
+
+
+let getIsbns (pdf:Pdf.t) : string list =
+
+   let meta = getIsbnsFromMetadata pdf in
+
+   if meta <> []
+   then meta
+   else getIsbnsFromText pdf
 
 
 
