@@ -35,12 +35,15 @@ let recognisePdf (pdfPathname:string) : bool ress =
       let file = open_in_bin pdfPathname in
 
       let recognised =
+         let pdfId = "\x25\x50\x44\x46\x2D"
+         and bom   = "\xEF\xBB\xBF" in
          let readString file pos len =
             (* (assuming these cannot fail, in a deeper IO sense) *)
             try seek_in file pos ; really_input_string file len with _ -> ""
          in
-         (* check pdf id ("%PDF-") *)
-         (readString file 0 5) = "\x25\x50\x44\x46\x2D"
+         let first8Bytes = (readString file 0 8) in
+         (* check pdf id as first, or BOM first then pdf id *)
+         ((String_.lead first8Bytes 5) = pdfId) || (first8Bytes = bom ^ pdfId)
       in
 
       close_in_noerr file ;
