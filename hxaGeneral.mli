@@ -662,6 +662,8 @@ sig
 
    (**
     * Find all substrings in string that match regex.
+    * (but of overlapping matches, only the first is found --
+    * search continues after the *end* of each match)
     *
     * @params compiled regex, string to inspect
     *)
@@ -669,6 +671,8 @@ sig
 
    (**
     * Find all substrings in string that match regex, with their positions.
+    * (but of overlapping matches, only the first is found --
+    * search continues after the *end* of each match)
     *
     * @params compiled regex, string to inspect
     *)
