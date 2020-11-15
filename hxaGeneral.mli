@@ -344,6 +344,9 @@ sig
        @exceptions: Invalid_argument for invalid positions *)
    val subp : string -> int -> int -> string
 
+   (** Like sub, but clamped params. *)
+   val subc : string -> int -> int -> string
+
    (** Test first char. *)
    val isFirstChar : (char -> bool) -> string -> bool
 
