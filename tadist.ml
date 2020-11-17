@@ -215,13 +215,14 @@ sig
 
    val make : string -> t ress
 
-   val length        : t -> int
-   val makeChecksum  : t -> char
-   val checkChecksum : t -> bool
-   val toString      : t -> string
-   val toStringBare  : t -> string
-   val toStringFull  : t -> string
-   val search        : int -> int -> string -> string option
+   val length           : t -> int
+   val makeChecksum     : t -> char
+   val checkChecksum    : t -> bool
+   val toString         : t -> string
+   val toStringBare     : t -> string
+   val toStringFull     : t -> string
+   val search           : int -> int -> string -> string option
+   val searchByChecksum : int -> ?len:int -> string -> string list
 end
 =
 struct
@@ -353,6 +354,51 @@ struct
 
       searchForward 0 (min len ((String.length text) - pos))
 
+
+   let searchByChecksum (pos:int) ?(len:int = -1) (text:string) : string list =
+
+      (* precondition params *)
+      let pos = clamp ~lo:0 ~up:(String.length text) pos in
+      let len =
+         if len >= 0
+         then min len ((String.length text) - pos)
+         else String.length text
+      in
+
+      (* to match contiguous 10 and 13 digit number
+         (allowing last 'X' for 10, and filtering by lead '978'/'979' for 13) *)
+      let rx =
+         Rx.compile
+         ( {|\(97[89][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]\)\||} ^
+           {|\([0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][xX0-9]\)|} )
+      in
+
+      (* match number with correct checksum *)
+      let matchIsbnNum (txt:string) (pos:int) : (string option) =
+         (* seek basic match *)
+         (Rx.apply rx ~pos txt)
+         |>- (Rx.wholeFound %> Option.some)
+         (* reject if invalid checksum *)
+         |>- (Option_.classify checkChecksum)
+      in
+
+      (* apply matching throughout string
+         (inefficiently, but probably not handling large data) *)
+      let rec searchForward (i:int) (iend:int) (ls:string list) : string list =
+         if i < iend
+         then
+            let ls =
+               match matchIsbnNum text (pos + i) with
+               | None      -> ls
+               | Some isbn -> (isbn :: ls)
+            in
+            (* only advance by one, thus find all overlapping matches *)
+            searchForward (i + 1) iend ls
+         else
+            List.rev ls
+      in
+
+      searchForward 0 len []
 end
 
 

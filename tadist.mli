@@ -217,11 +217,20 @@ sig
    val toStringFull : t -> string
 
    (**
-    * Search for a bare isbn number.
+    * Search for first bare isbn number, by format.
     *
     * @params start pos, length to search, text to search in
     *)
    val search : int -> int -> string -> string option
+
+   (**
+    * Search for all bare isbn numbers, by length and checksum.
+    * (return all matches, including overlapping ones)
+    * Not very efficient, so maybe not for large data.
+    *
+    * @params start pos, length to search, text to search in
+    *)
+   val searchByChecksum : int -> ?len:int -> string -> string list
 end
 
 
