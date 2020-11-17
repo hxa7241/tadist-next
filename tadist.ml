@@ -311,6 +311,14 @@ struct
 
    let search (pos:int) (len:int) (text:string) : string option =
 
+      (* precondition params *)
+      let pos = clamp ~lo:0 ~up:(String.length text) pos in
+      let len =
+         if len >= 0
+         then min len ((String.length text) - pos)
+         else String.length text
+      in
+
       let matchIsbnNum (txt:string) (pos:int) : (string option) =
          let matchIsbnH13 , matchIsbnH10 , matchIsbnM13 , matchIsbnM10 =
             let matchG1 (rx:Str.regexp) (len:int) (txt:string) (pos:int)
