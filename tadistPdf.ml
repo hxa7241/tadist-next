@@ -292,38 +292,39 @@ let extractTextFromPdfStream (pdfStream:string) : string =
    pdfStream |> extractParenthised |> unescapeChars
 
 
-let regulariseDashs (text:string) : string =
+let regulariseDashs (replacement:string) (text:string) : string =
 
    (* just a list of plausible variations, not a complete countermeasure to
       every possible villainy and madness *)
 
-   (* (SOFT HYPHEN) *)
-   (* (MINUS SIGN) *)
-   (* (HYPHEN) *)
-   (* (NON-BREAKING HYPHEN) *)
-   (* (FIGURE DASH) *)
-   (* (EN DASH) *)
-   (* (EM DASH) *)
-   (* (HORIZONTAL BAR) *)
-   (* (SMALL EM DASH) *)
-   (* (SMALL HYPHEN-MINUS) *)
-   (* (FULLWIDTH HYPHEN-MINUS) *)
+   (* HYPHEN-MINUS (ordinary '-') *)
+   (* SOFT HYPHEN *)
+   (* MINUS SIGN *)
+   (* HYPHEN *)
+   (* NON-BREAKING HYPHEN *)
+   (* FIGURE DASH *)
+   (* EN DASH *)
+   (* EM DASH *)
+   (* HORIZONTAL BAR *)
+   (* SMALL EM DASH *)
+   (* SMALL HYPHEN-MINUS *)
+   (* FULLWIDTH HYPHEN-MINUS *)
    let rx = Str.regexp
-      "\xC2\xAD\\|\
-       \xE2\x88\x92\\|\
-       \xE2\x80\x90\\|\
-       \xE2\x80\x91\\|\
-       \xE2\x80\x92\\|\
-       \xE2\x80\x93\\|\
-       \xE2\x80\x94\\|\
-       \xE2\x80\x95\\|\
-       \xEF\xB9\x98\\|\
-       \xEF\xB9\xA3\\|\
-       \xEF\xBC\x8D"
+      "-\\|\
+      \xC2\xAD\\|\
+      \xE2\x88\x92\\|\
+      \xE2\x80\x90\\|\
+      \xE2\x80\x91\\|\
+      \xE2\x80\x92\\|\
+      \xE2\x80\x93\\|\
+      \xE2\x80\x94\\|\
+      \xE2\x80\x95\\|\
+      \xEF\xB9\x98\\|\
+      \xEF\xB9\xA3\\|\
+      \xEF\xBC\x8D"
    in
 
-   (* replace all with ordinary '-' *)
-   Str.global_replace rx "-" text
+   Str.global_replace rx replacement text
 
 
 let rec getPageStreamString (pdf:Pdf.t) (obj:Pdf.pdfobject) : string =
@@ -372,60 +373,106 @@ let getIsbnsFromText (pdf:Pdf.t) : string list =
 
    (* map pages to streams *)
    let streams : string list =
-      let streamss : string list list =
-         List.map
-            (fun (page : Pdfpage.t) ->
-               let objs : Pdf.pdfobject list = page.Pdfpage.content in
+      List.map
+         (fun (page : Pdfpage.t) : string ->
+            let objs : Pdf.pdfobject list = page.Pdfpage.content in
+            let strings : string list =
                List.map
                   (fun (obj : Pdf.pdfobject) -> getPageStreamString pdf obj)
-                  objs )
-            pages
-      in
-      List.flatten streamss
+                  objs
+            in
+            String.concat "\n" strings )
+         pages
    in
 
    (* map streams to texts *)
    let texts : string list = List.map extractTextFromPdfStream streams in
 
    (* map texts to isbns *)
-   let isbns : string list =
-      List_.filtmap
-         (fun (text : string) ->
+   let isbnsAll : string list list =
+      (List.map
+         (fun (text : string) : string list ->
             (*
                example stream fragment:
                   0.0287 Tc 9.3 0 0 9.3 151.14 89.04 Tm
-                  (ISBN )Tj
+                  (ISBN-10: )Tj
                   0.0429 Tc 9.5 0 0 9.5 176.06 89.04 Tm
                   (0-674-53751-3 )Tj
                   0.0142 Tc -5.931 -3.586 Td
 
                extracted text:
-                  ISBN  0-674-53751-3
+                  ISBN-10:  0-674-53751-3
 
-               possible eccentricities:
-                  * ISBN:
-                  * eISBN
-                  * ISBN-13
-                  * hyphens not actual '-' chars
+               * strings can be fragmented (or even reordered, but ignore that)
+               * spaces may be absent, or spurious, hence are meaningless
+               * hyphens may be some other similar looking char
+
+               handles (with/without preceding/following digits/etc):
+               * ISBN 555555555X
+               * ISBN: 555555555X
+               * ISBN-10: 555555555X
+               * ISBN-10 555555555X
+               * ISBN13: 5555555555555
+               * ISBNs 555555555X...555555555X...555555555X...
+               * ISBN-10 ISBN-13 e-ISBN 555555555X...555555555X...555555555X...
+
+               but not:
+               * ISBN 10 555555555X
             *)
-            (* robust against atomised chars and shuffled 'words' *)
 
+            text
             (* remove all spaces *)
-            let text =
-               text |> Blanks.unifySpaces |> (String_.filter ((<>)' '))
-            in
-            (* check for any 'ISBN' labels *)
-            if Option_.toBool (Rx.regexFirst "isbn" ~caseInsens:true text)
-            then
-               (* extract first conforming number in text *)
-               text
-               |> regulariseDashs
-               (* delete '-10' '-13' ISBN suffixs *)
-               |> (Str.global_replace (Str.regexp_case_fold "ISBN-1[03]") "ISBN")
-               |> Tadist.Isbn.search 0 (String.length text)
-            else
-               None )
-         texts
+            |> Blanks.unifySpaces |> (String_.filter ((<>)' '))
+            (* remove '-10' '-13' ISBN suffixs, and any chars up to digits *)
+            |> (Str.global_replace
+               (Str.regexp_case_fold {|ISBN\([^0-9]1[03]:?\|1[03]:\)?[^0-9]*|})
+               "ISBN")
+            (* remove dashes *)
+            |> (regulariseDashs "")
+            (* extract all label+number by regex *)
+            |> (Rx.allMatches
+               (Rx.compile ~caseInsens:true
+               ({|ISBN[^0-9]*|} ^
+               {|\(97[89][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]\||} ^
+               {|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][xX0-9]\)|} )))
+            (* remove 'ISBN' labels *)
+            |> (List.map ((Fun.flip String_.trail) 4))
+            (* disambiguate 10/13 by checksum *)
+            |> (List.map
+               (fun number ->
+                  if String.length number < 13
+                  then number
+                  else
+                     if Tadist.Isbn.check number
+                     then number
+                     else String_.lead number 10) )
+            )
+         texts)
+   in
+
+   (* select priority isbns: first few on copyright page *)
+   let isbns : string list =
+      (* check for 'library of congress', indicating copyright page *)
+      let isCopyrightPages : bool list =
+         (List.map
+            (
+               Blanks.unifySpaces
+               (* remove all spaces *)
+               %> (String_.filter ((<>)' '))
+               (* search for marker *)
+               %> (Rx.regexFirst "libraryofcongress" ~pos:0 ~caseInsens:true)
+               %> Option_.toBool
+            )
+            texts)
+      in
+      (List.combine isCopyrightPages isbnsAll)
+      (* move copyright pages to the front *)
+      |> (List.stable_sort (fun (b0 , _) (b1 , _) -> ~-(compare b0 b1)))
+      |> (List.split %> snd)
+      |> List.flatten
+      |> List_.deduplicate
+      (* take first 2 *)
+      |> (((Fun.flip List_.bisect) 2) %> fst)
    in
 
    isbns
@@ -433,11 +480,8 @@ let getIsbnsFromText (pdf:Pdf.t) : string list =
 
 let getIsbns (pdf:Pdf.t) : string list =
 
-   let meta = getIsbnsFromMetadata pdf in
-
-   if meta <> []
-   then meta
-   else getIsbnsFromText pdf
+   (List.append (getIsbnsFromMetadata pdf) (getIsbnsFromText pdf))
+   |> List_.deduplicate
 
 
 
