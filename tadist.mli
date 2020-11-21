@@ -198,6 +198,9 @@ sig
    (** Induct bare digits, or with "ISBN" prefix and spaces/hyphens. *)
    val make : string -> t HxaGeneral.ress
 
+   (** Check bare digits, or with "ISBN" prefix and spaces/hyphens. *)
+   val check : string -> bool
+
    (** ISBN type: only 13 or 10. *)
    val length       : t -> int
 

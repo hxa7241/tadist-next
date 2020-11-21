@@ -213,7 +213,8 @@ module Isbn :
 sig
    type t
 
-   val make : string -> t ress
+   val make  : string -> t ress
+   val check : string -> bool
 
    val length           : t -> int
    val makeChecksum     : t -> char
@@ -291,6 +292,11 @@ struct
    let checkChecksum (isbn:t) : bool =
       (String_.notEmpty isbn) &&
          ((String_.last isbn) = (makeChecksum isbn))
+
+   let check (s:string) : bool =
+      match make s with
+      | Ok i    -> checkChecksum i
+      | Error _ -> false
 
    let toString (isbn:t) : string =
       isbn
