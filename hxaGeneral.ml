@@ -665,6 +665,7 @@ sig
    val filtmap       : ('a -> 'b option) -> 'a list -> 'b list
    val partmap       : ('a -> ('o, 'e) result) -> 'a list -> ('o list * 'e list)
    val findmap       : ('a -> 'b option) -> 'a list -> 'b option
+   val deduplicate : 'a list -> 'a list
    val optAnd        : ('a option) list -> ('a list) option
    val optOr         : ('a option) list -> ('a list) option
    val resAnd        : (('o,'e) result list) -> ('o list , 'e list) result
@@ -762,6 +763,21 @@ struct
             | Ok    o -> (o :: oOut ,      eOut)
             | Error e -> (     oOut , e :: eOut))
          l ([] , [])
+
+   let deduplicate (l:'a list) : 'a list =
+      let dict = Hashtbl.create (List.length l) in
+      (List.fold_left
+         (fun (dict , uniques) value ->
+            if not (Hashtbl.mem dict value)
+            then
+               let () = Hashtbl.add dict value true in
+               (dict , value :: uniques)
+            else
+               (dict , uniques) )
+         (dict , [])
+         l )
+      |> snd
+      |> List.rev
 
    let findmap = List.find_map
    (*let rec findmap (predmap:'a -> 'b option) (l:'a list) : 'b option =

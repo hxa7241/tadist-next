@@ -446,6 +446,9 @@ sig
    (** Some kind of find ... *)
    val findmap : ('a -> 'b option) -> 'a list -> 'b option
 
+   (** Remove duplicate elements. *)
+   val deduplicate : 'a list -> 'a list
+
    (** Gather options with an 'and': yield Some when all Some, else None.
        (Or call it a 'transpose': list of options -> option of a list.).
        (Empty list yields Some.). *)
