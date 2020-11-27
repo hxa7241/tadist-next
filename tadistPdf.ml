@@ -535,7 +535,7 @@ let getIsbnsFromText (pdf:Pdf.t) : string list =
 
 let getIsbns (pdf:Pdf.t) : string list =
 
-   (List.append (getIsbnsFromMetadata pdf) (getIsbnsFromText pdf))
+   (List.append (getIsbnsFromText pdf) (getIsbnsFromMetadata pdf))
    |> List_.deduplicate
 
 
