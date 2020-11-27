@@ -589,7 +589,16 @@ let normaliseTitle (titles:string list) : StringT.t array =
    | []         -> [||]
    | first :: _ ->
       first
-      |> Utf8filter.replace |> Blanks.blankSpacyCtrlChars
+      |> Utf8filter.replace
+      |> Blanks.blankSpacyCtrlChars
+      |> Blanks.unifySpaces
+      |> String.trim
+      (* truncate any parenthised suffix *)
+      |> (fun title ->
+         title
+         |> (Rx.regex {|^\(.....+\)(.*) *$|} ~pos:0 ~caseInsens:false)
+         |>- ((Fun.flip Rx.groupFound) 1)
+         |> (Option.value ~default:title) )
       (* truncate after ':', if more than 7 chars before *)
       |> (fun title ->
          try
@@ -598,8 +607,15 @@ let normaliseTitle (titles:string list) : StringT.t array =
          with Not_found -> title)
       (* abbreviate edition *)
       |> abbrevEdition
+      (* replace hyphens with spaces *)
+      |> (String.map (function | '-' -> ' ' | c -> c))
+      (* lowercase, if all uppercase, and more than one word *)
+      |> (fun title ->
+         if String.contains title ' '
+         then String.lowercase_ascii title
+         else title)
       (* tokenise *)
-      |> String.trim |> (String_.split ((=) ' ')) |> (List.map String.trim)
+      |> (String_.split ((=) ' ')) |> (List.map String.trim)
       (* constrain (non-empties, max length) *)
       |> nonEmpties |> (truncateWords 48)
       (* title-case *)
