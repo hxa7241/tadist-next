@@ -183,16 +183,104 @@ let getIsbnsFromMetadata (pdf:Pdf.t) : string list =
    |> List_.ofOpt
 
 
+let unescapeChars (text:string) : string =
+
+   (*
+      the various things to do:
+      * unescape: \n \r \t \b \f \( \) \\
+         * \f -> 0C
+      * unencode: \000 (1-3 octal digits, 0-255)
+      * remove:   \\n (linewrap: \ and immediately following actual \n)
+      * leave:    \ with any other following char
+   *)
+
+   let translate (whole:string) : string =
+      let found = Str.matched_string whole in
+      match found.[1] with
+      (* unencode *)
+      | '0' .. '7' ->
+         begin try
+            let code = Scanf.sscanf (String_.trail found 1) "%o" Fun.id
+            (* add back extraneous char picked up by regex *)
+            and nextChar =
+               let last = String_.last found in
+               if Char_.isDigitOct last then "" else string_of_char last
+            in
+            (string_of_char (Char.chr code)) ^ nextChar
+         with
+         (* failed to read number, so leave it untranslated *)
+         | Scanf.Scan_failure _ | Failure _ | End_of_file -> found
+         end
+      (* unescape *)
+      | 'n'  -> "\n"
+      | 'r'  -> "\r"
+      | 't'  -> "\t"
+      | 'b'  -> "\b"
+      | 'f'  -> "\x0C"
+      | '('  -> "("
+      | ')'  -> ")"
+      | '\\' -> "\\"
+      (* remove *)
+      | '\n' -> ""
+      (* leave *)
+      | _    -> found
+
+   and rx = Str.regexp
+      (  {|\\[0-7][0-7][0-7]\||} ^
+         {|\\[0-7][0-7][^0-7]\||} ^
+         {|\\[0-7][0-7]$\||} ^
+         {|\\[0-7][^0-7]\||} ^
+         {|\\[0-7]$\||} ^
+         {|\\[^0-7]|}  )
+   in
+
+   Str.global_substitute rx translate text
+
+
 let extractTextFromPdfStream (pdfStream:string) : string =
 
-   let extractParenthised (pdfStream:string) : string =
-      (* strings are in ()s *)
-      (* BUT those strings can include inner unescaped ()s if balanced *)
+   (*
+   let extractHexString (pdfStream:string) (openPos:int) : (string * int) =
+      (* PDF 1.3 ref: 3.2.3
+         <1A70D5...>
+         * unspaced pairs of hex digits, each meaning a byte
+         * ignore any blanks
+         * if uneven total count, then assume the missing last is one 0 *)
+      (* seek closing '>' *)
+      let closePos =
+         (String_.index '>' ~start:(openPos + 1) pdfStream)
+         |> (Option.value ~default:(String.length pdfStream))
+      in
+      (* extract sub-string *)
+      (String_.subp pdfStream (openPos + 1) closePos)
+      (* remove non hex-digits *)
+      |> (String_.filter Char_.isDigitHex)
+      (* if odd length, add trailing 0 *)
+      |> (fun s -> if (String.length s) mod 2 = 1 then s ^ "0" else s)
+      (* translate digit pairs to bytes *)
+      |> (Rx.allMatches (Rx.compile ".."))
+      |> (List.map
+         (fun hexPair ->
+            let code = Scanf.sscanf hexPair "%x" Fun.id in
+            (string_of_char (Char.chr code))) )
+      (*|> (Str.global_substitute (Rx.compile "..")
+         (fun whole ->
+            let found = Str.matched_string whole in
+            let code  = Scanf.sscanf found "%x" Fun.id
+            (string_of_char (Char.chr code))))*)
+      |> (String.concat "")
+      (* return byte-string and end pos *)
+      |> (fun str -> (str , closePos))
+   *)
+
+   let extractParenString (pdfStream:string) (startPos:int) : (string * int) =
+      (* strings are in ()s,
+         but those strings can include inner unescaped ()s if balanced *)
       let isParen (c:char) : bool = (c = '(') || (c = ')') in
-      let rec seek (pdfStream:string) (seekpos:int)
-         (nestdepth:int) (openpos:int) (accum:string list)
-         : string list =
-         let foundPosOpt = String_.indexp isParen ~start:seekpos pdfStream in
+      let rec seekParen (pdfStream:string) (seekPos:int)
+         (nestDepth:int) (openPos:int)
+         : (string * int) =
+         let foundPosOpt = String_.indexp isParen ~start:seekPos pdfStream in
          match foundPosOpt with
          | Some foundPos ->
             let foundChar =
@@ -205,91 +293,58 @@ let extractTextFromPdfStream (pdfStream:string) : string =
             begin match foundChar with
             | '(' ->
                (* only set open pos at bottom-level open (others are ignored) *)
-               let openpos = if nestdepth = 0 then foundEnd else openpos
+               let openPos = if nestDepth = 0 then foundEnd else openPos
                (* (nesting cannot overflow because max string len < max int) *)
-               and nestdepth = (min nestdepth (Int.max_int - 1)) + 1 in
-               seek pdfStream foundEnd nestdepth openpos accum
+               and nestDepth = (min nestDepth (Int.max_int - 1)) + 1 in
+               seekParen pdfStream foundEnd nestDepth openPos
             | ')' ->
-               (* only accum at bottom close (which must follow a bottom open) *)
-               let accum =
-                  if nestdepth = 1
-                  then (String_.subp pdfStream openpos foundPos) :: accum
-                  else accum
-               (* disallow negative nestdepths *)
-               and nestdepth = max 0 (nestdepth - 1) in
-               seek pdfStream foundEnd nestdepth openpos accum
+               (* only recurse if inside nested parens *)
+               if nestDepth > 1
+               then
+                  let nestDepth = nestDepth - 1 in
+                  seekParen pdfStream foundEnd nestDepth openPos
+               else
+                  (* extract parenthised string *)
+                  (String_.subp pdfStream openPos foundPos , foundPos)
+            (* it was escaped, so ignorable *)
             | _ ->
-               (* it was escaped, so ignorable *)
-               seek pdfStream foundEnd nestdepth openpos accum
+               seekParen pdfStream foundEnd nestDepth openPos
             end
+         (* end of string reached *)
          | None ->
-            (* if inside bottom paren, accum from openpos to end *)
-            if nestdepth > 0
-            then
-               let streamEnd = String.length pdfStream in
-               (String_.subp pdfStream openpos streamEnd) :: accum
-            else
-               accum
+            (* extract string to end *)
+            let streamEndPos = String.length pdfStream in
+            (String_.subp pdfStream openPos streamEndPos , streamEndPos)
       in
-      (* apply to entire stream *)
-      (seek pdfStream 0 0 0 [])
-      |> List.rev
-      (* put spaces between each () chunk
-         (PDF text content is often broken into words, or more, per ()) *)
-      |> (String.concat " ")
-
-   and unescapeChars (text:string) : string =
-      (*
-         the various things to do:
-         * unescape: \n \r \t \b \f \( \) \\
-            * \f -> 0C
-         * unencode: \000 (1-3 octal digits, 0-255)
-         * remove:   \\n (linewrap: \ and immediately following actual \n)
-         * leave:    \ with any other following char
-      *)
-      let translate (whole:string) : string =
-         let found = Str.matched_string whole in
-         match found.[1] with
-         (* unencode *)
-         | '0' .. '7' ->
-            begin try
-               let code = Scanf.sscanf (String_.trail found 1) "%o" Fun.id
-               (* add back extraneous char picked up by regex *)
-               and nextChar =
-                  let last = String_.last found in
-                  if Char_.isDigitOct last then "" else string_of_char last
-               in
-               (string_of_char (Char.chr code)) ^ nextChar
-            with
-            (* failed to read number, so leave it untranslated *)
-            | Scanf.Scan_failure _ | Failure _ | End_of_file -> found
-            end
-         (* unescape *)
-         | 'n'  -> "\n"
-         | 'r'  -> "\r"
-         | 't'  -> "\t"
-         | 'b'  -> "\b"
-         | 'f'  -> "\x0C"
-         | '('  -> "("
-         | ')'  -> ")"
-         | '\\' -> "\\"
-         (* remove *)
-         | '\n' -> ""
-         (* leave *)
-         | _    -> found
-      and rx = Str.regexp
-         (* (to match a single '\', the escaping here requires 4) *)
-         "\\\\[0-7][0-7][0-7]\\|\
-          \\\\[0-7][0-7][^0-7]\\|\
-          \\\\[0-7][0-7]$\\|\
-          \\\\[0-7][^0-7]\\|\
-          \\\\[0-7]$\\|\
-          \\\\[^0-7]"
-      in
-      Str.global_substitute rx translate text
+      let str , endPos = seekParen pdfStream startPos 0 0 in
+      (unescapeChars str) , endPos
    in
 
-   pdfStream |> extractParenthised |> unescapeChars
+   let rec seekStrings (pdfStream:string) (seekPos:int) (accum:string list)
+      : string list =
+      let isOpen (c:char) : bool = (c = '(') (*|| (c = '<')*) in
+      let foundPosOpt = String_.indexp isOpen ~start:seekPos pdfStream in
+      match foundPosOpt with
+      | Some openPos ->
+         let foundString , closePos =
+            match pdfStream.[openPos] with
+            | '(' -> extractParenString pdfStream openPos
+            (*| '<' -> extractHexString   pdfStream openPos*)
+            (* impossible *)
+            | _   -> ("" , String.length pdfStream)
+         in
+         seekStrings pdfStream (closePos + 1) (foundString :: accum)
+      | None ->
+         accum
+   in
+
+   (seekStrings pdfStream 0 [])
+   |> List.rev
+   (* remove empties *)
+   |> (List_.filtmap (Option_.classify String_.notEmpty))
+   (* put spaces between each chunk
+      (PDF text content is often broken into words, or more, per ()) *)
+   |> (String.concat " ")
 
 
 let regulariseDashs (replacement:string) (text:string) : string =
