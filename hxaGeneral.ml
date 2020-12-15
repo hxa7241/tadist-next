@@ -119,10 +119,17 @@ let timerWall (f:'a -> 'b) (input:'a) : ('b * float) =
 
 (* -- function combinators -- *)
 
-let ( % ) f g x =
-   g (f x)
+let id = Fun.id
+
+let ko = Fun.const
+
+let tr = Fun.flip
+
+let ( % ) f g x = g (f x)
 
 let ( %> ) = ( % )
+
+let ne = Fun.negate
 
 
 (* -- heterogenous (product) map -- *)

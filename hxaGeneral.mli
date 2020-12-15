@@ -124,10 +124,21 @@ val timerWall : ('a -> 'b) -> 'a -> ('b * float)
 
 (* -- function combinators -- *)
 
-(** Compose two functions: (f % g)(x) = g(f(x))
- * (be aware of value restriction). *)
+(** Identity: id x = x. *)
+val id : 'a -> 'a
+
+(** Constant: (ko c) x = c. *)
+val ko : 'a -> 'b -> 'a
+
+(** Transpose: (tr f) x y = f y x. *)
+val tr : ('a -> 'b -> 'c) -> 'b -> 'a -> 'c
+
+(** Compose: (f % g)(x) = g(f(x)) *)
 val ( %  ) : ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
 val ( %> ) : ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
+
+(** Negate: (ne p) x = not (p x). *)
+val ne : ('a -> bool) -> 'a -> bool
 
 
 (* -- heterogenous (product) map -- *)
