@@ -660,6 +660,7 @@ end
 module List_ :
 sig
    val isEmpty       : 'a list -> bool
+   val notEmpty      : 'a list -> bool
    val hd            : 'a list -> 'a option
    val first         : 'a list -> 'a option
    val ft            : 'a list -> 'a option
@@ -687,6 +688,9 @@ end
 struct
    let isEmpty (l:'a list) : bool =
       (List.length l = 0)
+
+   let notEmpty (l:'a list) : bool =
+      not (isEmpty l)
 
    let hd (l:'a list) : 'a option =
       match l with

@@ -422,7 +422,8 @@ end
 module List_ :
 sig
    (** Is list empty?. *)
-   val isEmpty : 'a list -> bool
+   val isEmpty  : 'a list -> bool
+   val notEmpty : 'a list -> bool
 
    (** Like hd, but with option instead of exception. *)
    val hd    : 'a list -> 'a option
