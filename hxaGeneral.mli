@@ -815,3 +815,11 @@ val fileRead  : filePathname:string ->
 (** Write a file (from name) from a string. *)
 val fileWrite : filePathname:string -> stuffToWrite:string ->
    (unit , exn) result
+
+(**
+ * Read an in_channel into a string.
+ *
+ * @param in_channel
+ * @param expected length
+ *)
+val inputString : in_channel -> int -> string

@@ -1418,3 +1418,19 @@ let fileWrite ~(filePathname:string) ~(stuffToWrite:string)
       (fun c ->
          output_string c stuffToWrite ;
          flush c ;)
+
+
+let inputString (inChannel:in_channel) (expectedLength:int) : string =
+
+   let buf = Buffer.create expectedLength in
+   (* just keep sucking chars until EOF exception *)
+   begin
+      try
+         while true do
+            let c = input_char inChannel in
+            Buffer.add_char buf c ;
+         done ;
+      with
+      | End_of_file -> () ;
+   end ;
+   Buffer.contents buf
