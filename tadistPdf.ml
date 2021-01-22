@@ -414,14 +414,13 @@ let rec getPageStreamString (pdf:Pdf.t) (obj:Pdf.pdfobject) : string =
    | _ -> ""
 
 
-let getIsbnsFromText (pdf:Pdf.t) : string list =
+let getTextPages (pdf:Pdf.t) (pageCount:int) : string list =
 
    (* get first few pages *)
    let pages : Pdfpage.t list =
       try
-         let pages = Pdfpage.pages_of_pagetree pdf
-         and _NUMBER_OF_PAGES_TO_INSPECT = 10 (* 7 *) in
-         fst (List_.bisect pages _NUMBER_OF_PAGES_TO_INSPECT)
+         let pages = Pdfpage.pages_of_pagetree pdf in
+         fst (List_.bisect pages (max 0 pageCount))
       with
       | _ -> []
    in
@@ -441,7 +440,57 @@ let getIsbnsFromText (pdf:Pdf.t) : string list =
    in
 
    (* map streams to texts *)
-   let texts : string list = List.map extractTextFromPdfStream streams in
+   List.map extractTextFromPdfStream streams
+
+
+let getTextPagesExternal (pdfPathname:string) (pageCount:int) : string list =
+
+   (*
+      using xpdf pdftotext tool:
+      * https://www.xpdfreader.com/pdftotext-man.html
+
+      with the command:
+      $ pdftotext -q -enc UTF-8 -eol unix -l 10 somedocument.pdf -
+
+      ie:
+      * no error messages
+      * UTF-8 encoding
+      * unix line-endings
+      * first 10 pages
+      * input file somedocument.pdf
+      * output to stdout
+   *)
+
+   let text : string =
+      try
+         let toolOutChannel : in_channel =
+            let command : string =
+               let _TOOL_AND_OPTIONS =
+                  "pdftotext -q -enc UTF-8 -eol unix -l " ^
+                  (string_of_int (max 0 pageCount))
+               and _FILES_IO = pdfPathname ^ " -" in
+               _TOOL_AND_OPTIONS ^ " " ^ _FILES_IO
+            in
+            (* exceptions: Unix.Unix_error *)
+            Unix.open_process_in command
+         in
+
+         let toolOutput : string = HxaGeneral.inputString toolOutChannel 512 in
+
+         (* exceptions: Unix.Unix_error *)
+         let _ = Unix.close_process_in toolOutChannel in
+
+         toolOutput
+      with
+      | Unix.Unix_error _ ->
+         ""
+   in
+
+   (* split into pages by ascii form-feed char *)
+   String.split_on_char '\x0C' text
+
+
+let getIsbnsFromTextPages (texts:string list) : string list =
 
    (* map texts to isbns *)
    let isbnsAll : string list list =
@@ -533,9 +582,23 @@ let getIsbnsFromText (pdf:Pdf.t) : string list =
    isbns
 
 
-let getIsbns (pdf:Pdf.t) : string list =
+let getIsbns (pdf:Pdf.t) (pdfPathname:string) : string list =
 
-   (List.append (getIsbnsFromText pdf) (getIsbnsFromMetadata pdf))
+   let isbnsFromTextPages =
+      let _NUMBER_OF_PAGES_TO_INSPECT = 10 (* 7 *) in
+      let internalSourced =
+         getIsbnsFromTextPages (getTextPages pdf _NUMBER_OF_PAGES_TO_INSPECT)
+      in
+      (* if text extraction fails, try external method *)
+      if List_.notEmpty internalSourced
+      then
+         internalSourced
+      else
+         getIsbnsFromTextPages
+            (getTextPagesExternal pdfPathname _NUMBER_OF_PAGES_TO_INSPECT)
+   in
+
+   (List.append isbnsFromTextPages (getIsbnsFromMetadata pdf))
    |> List_.deduplicate
 
 
@@ -556,7 +619,7 @@ let extractTadist (pdfPathname:string) : (Tadist.nameStructRaw option) ress =
             titleRaw  = [ lookupInfoUtf8 pdf "/Title" ] ;
             authorRaw = [ lookupInfoUtf8 pdf "/Author" ] ;
             dateRaw   = [ getDate pdf ] ;
-            idRaw     = getIsbns pdf ;
+            idRaw     = getIsbns pdf pdfPathname ;
             subtypRaw = string_of_int (getPagecount pdf) ;
             typRaw    = _TYPE ;
          } )
