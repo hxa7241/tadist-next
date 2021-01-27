@@ -46,6 +46,7 @@
  * * functions
  *    * error-handling pipeline/monad
  *    * file read/write
+ *    * command-line invoke
  *
  *)
 
@@ -823,3 +824,31 @@ val fileWrite : filePathname:string -> stuffToWrite:string ->
  * @param expected length
  *)
 val inputString : in_channel -> int -> string
+
+
+(* -- command-line invoke -- *)
+
+(**
+ * Run the command (on the shell), and return its results.
+ *
+ * @param command and options etc
+ * @param environment (item eg: "LANG=en_GB.UTF-8")
+ * @param string to feed to std input
+ * @param expected length of output
+ * @return std output, std error, and return code from the invocation; or
+ *         signal and error code
+ *)
+val commandLineInvoke2 : string -> string list -> string -> int ->
+   ((string * string * int) , (Unix.process_status * Unix.error)) result
+
+(**
+ * Run the command (on the shell), and return its results.
+ *
+ * @param command and options etc
+ * @param environment (item eg: "LANG=en_GB.UTF-8")
+ * @param string to feed to std input
+ * @param expected length of output
+ * @return std output or error message
+ *)
+val commandLineInvoke : string -> string list -> string -> int ->
+   string ress

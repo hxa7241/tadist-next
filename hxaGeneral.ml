@@ -1434,3 +1434,52 @@ let inputString (inChannel:in_channel) (expectedLength:int) : string =
       | End_of_file -> () ;
    end ;
    Buffer.contents buf
+
+
+(* -- command-line invoke -- *)
+
+let commandLineInvoke2 (command:string) (environ:string list) (input:string)
+   (expectedLength:int)
+   : ((string * string * int) , (Unix.process_status * Unix.error)) result =
+
+   try
+      let stdOut , stdIn , stdErr =
+         Unix.open_process_full command (Array.of_list environ)
+      in
+      output_string stdIn input ;
+      close_out stdIn ;
+      let toolOut    = inputString stdOut expectedLength in
+      let toolErr    = inputString stdErr 32 in
+      let exitStatus = Unix.close_process_full (stdOut , stdIn , stdErr) in
+
+      match exitStatus with
+      | Unix.WEXITED exitCode       -> Ok (toolOut , toolErr , exitCode)
+      | Unix.WSIGNALED _ as sigCode -> Error (sigCode , Unix.EUNKNOWNERR 0)
+      | Unix.WSTOPPED  _ as sigCode -> Error (sigCode , Unix.EUNKNOWNERR 0)
+
+   with
+   | Unix.Unix_error (errorCode , _ , _) -> Error (Unix.WEXITED 0 , errorCode)
+
+
+let commandLineInvoke (command:string) (environ:string list) (input:string)
+   (expectedLength:int)
+   : string ress =
+
+   match commandLineInvoke2 command environ input expectedLength with
+
+   (* normal execution *)
+   | Ok (output , error , exitCode) ->
+      begin match exitCode with
+      | 0        -> Ok output
+      | exitCode -> Error ("(" ^ (string_of_int exitCode) ^ ") " ^ error)
+      end
+
+   (* invocation failure *)
+   | Error (sigCode , unixError) ->
+      begin match sigCode with
+      | Unix.WSIGNALED _
+      | Unix.WSTOPPED  _ ->
+         Error "invocation did not exit, due to signal"
+      | Unix.WEXITED _   ->
+         Error (Unix.error_message unixError)
+      end
