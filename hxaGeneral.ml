@@ -477,7 +477,8 @@ sig
    val filter      : (char -> bool) -> string -> string
    val filterAscii : string -> string
    val check       : (char -> bool) -> string -> bool
-   val halve       : char -> string -> (string * string * int) option
+   val halvep      : char -> string -> (string * string * int) option
+   val halve       : char -> string -> (string * string) option
    val splitp      : ?ls:((string * int) list) -> (char -> bool) -> string ->
                      (string * int) list
    val split       : (char -> bool) -> string -> string list
@@ -575,13 +576,17 @@ struct
       | Some _ -> false
       | None   -> true
 
-   let halve (div:char) (str:string) : (string * string * int) option =
+   let halvep (div:char) (str:string) : (string * string * int) option =
       Option.map
          (fun pos ->
             (  String.sub str 0 pos ,
                String.sub str (pos + 1) ((String.length str) - (pos + 1)) ,
                pos ))
          (index div str)
+
+   let halve (div:char) (str:string) : (string * string) option =
+      (halvep div str)
+      |> (Option.map (fun (left , right , _) -> (left , right)))
 
    let rec splitp ?(ls:(string * int) list = []) (pred: char -> bool)
       (s:string)

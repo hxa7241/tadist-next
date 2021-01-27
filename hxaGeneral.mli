@@ -395,7 +395,10 @@ sig
 
    (** Break into two fragments by finding some first char, also output
        breaking-char position. *)
-   val halve : char -> string -> (string * string * int) option
+   val halvep : char -> string -> (string * string * int) option
+
+   (** Break into two fragments by finding some first char. *)
+   val halve : char -> string -> (string * string) option
 
    (** Break into fragments by char predicate, also output positions. *)
    val splitp : ?ls:((string * int) list) -> (char -> bool) -> string ->
