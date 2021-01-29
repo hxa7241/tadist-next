@@ -268,16 +268,18 @@ sig
    val toExc_x      : ('e -> exn) -> ('o,'e) result -> 'o
    val fromExc      : (unit -> 'o) -> ('o , exn) result
    val fromExc2     : 'e -> (unit -> 'o) -> ('o,'e) result
+   val ressOr2      :
+      string ->
+      ('o0 * 'o1) ->
+      ((('o0,string) result) * (('o1,string) result)) ->
+      ((('o0 * 'o1) , string) result)
    val ressAnd2     :
       string ->
-      (('o0,string) result) ->
-      (('o1,string) result) ->
+      ((('o0,string) result) * (('o1,string) result)) ->
       ((('o0 * 'o1) , string) result)
    val ressAnd3 :
       string ->
-      (('o0,string) result) ->
-      (('o1,string) result) ->
-      (('o2,string) result) ->
+      ((('o0,string) result) * (('o1,string) result) * (('o2,string) result)) ->
       ((('o0 * 'o1 * 'o2) , string) result)
 end
 =
@@ -365,10 +367,21 @@ struct
    let result_of_bool (b:bool) : ('o,'e) result =
       if b then Ok () else Error ()*)
 
+   let ressOr2
+      (joiner:string)
+      (default0 , default1 : ('o0 * 'o1))
+      (r0 , r1 : (('o0,string) result) * (('o1,string) result))
+      : (('o0 * 'o1) , string) result =
+
+      match (r0,r1) with
+      | (Ok o0    , Ok o1   ) -> Ok (o0 , o1)
+      | (Error _  , Ok o1   ) -> Ok (default0 , o1)
+      | (Ok o0    , Error _ ) -> Ok (o0 , default1)
+      | (Error e0 , Error e1) -> Error (e0 ^ joiner ^ e1)
+
    let ressAnd2
       (joiner:string)
-      (r0:('o0,string) result)
-      (r1:('o1,string) result)
+      (r0 , r1 : (('o0,string) result) * (('o1,string) result))
       : (('o0 * 'o1) , string) result =
 
       match (r0,r1) with
@@ -379,14 +392,12 @@ struct
 
    let ressAnd3
       (joiner:string)
-      (r0:('o0,string) result)
-      (r1:('o1,string) result)
-      (r2:('o2,string) result)
+      (r0 , r1 , r2 :
+         (('o0,string) result) * (('o1,string) result) * (('o2,string) result))
       : (('o0 * 'o1 * 'o2) , string) result =
 
       (ressAnd2 joiner
-         (ressAnd2 joiner r0 r1)
-         r2)
+         ((ressAnd2 joiner (r0 , r1)) , r2))
       |>
       (okMap (fun ((o1,o2),o3) -> (o1,o2,o3)))
 end
@@ -1281,6 +1292,17 @@ let optAnd2p
    Option_.and2 (f0 s0) (f1 s0)
 
 
+let ressOr2p
+   (joiner:string)
+   (defaults:('o1 * 'o2))
+   (f0:'o0 -> ('o1,string) result)
+   (f1:'o0 -> ('o2,string) result)
+   (o0:'o0)
+   : (('o1 * 'o2) , string) result =
+
+   Result_.ressOr2 joiner defaults ((f0 o0) , (f1 o0))
+
+
 let ressAnd2p
    (joiner:string)
    (f0:'o0 -> ('o1,string) result)
@@ -1288,7 +1310,7 @@ let ressAnd2p
    (o0:'o0)
    : (('o1 * 'o2) , string) result =
 
-   Result_.ressAnd2 joiner (f0 o0) (f1 o0)
+   Result_.ressAnd2 joiner ((f0 o0) , (f1 o0))
 
 
 let ( |^^- )
@@ -1322,14 +1344,14 @@ let ressAnd3p
    (o0:'o0)
    : (('o1 * 'o2 * 'o3) , string) result =
 
-   Result_.ressAnd3 joiner (f0 o0) (f1 o0) (f2 o0)
+   Result_.ressAnd3 joiner ((f0 o0) , (f1 o0) , (f2 o0))
 
    (*
    (ressAnd2 joiner
-      (ressAnd2 joiner
-         (f0 o0)
-         (f1 o0))
-      (f2 o0))
+      ( (ressAnd2 joiner
+         ( (f0 o0)
+         , (f1 o0)))
+      , (f2 o0)))
    |>
    (okMap (fun ((o1,o2),o3) -> (o1,o2,o3)))
 

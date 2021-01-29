@@ -254,19 +254,23 @@ sig
        (not caught: Out_of_memory, Stack_overflow, Sys.Break). *)
    val fromExc2 : 'e -> (unit -> 'o) -> ('o,'e) result
 
+   (** Or-merge double heterogeneous. *)
+   val ressOr2 :
+      string ->
+      ('o0 * 'o1) ->
+      ((('o0,string) result) * (('o1,string) result)) ->
+      ((('o0 * 'o1) , string) result)
+
    (** And-merge double heterogeneous. *)
    val ressAnd2 :
       string ->
-      (('o0,string) result) ->
-      (('o1,string) result) ->
+      ((('o0,string) result) * (('o1,string) result)) ->
       ((('o0 * 'o1) , string) result)
 
    (** And-merge triple heterogeneous. *)
    val ressAnd3 :
       string ->
-      (('o0,string) result) ->
-      (('o1,string) result) ->
-      (('o2,string) result) ->
+      ((('o0,string) result) * (('o1,string) result) * (('o2,string) result)) ->
       ((('o0 * 'o1 * 'o2) , string) result)
 end
 
@@ -742,6 +746,14 @@ val optAnd2p :
    ('o1 * 'o2) option
 
 (** Error-handling pipeline block, parallel and-merge double heterogeneous. *)
+val ressOr2p :
+   string ->
+   ('o1 * 'o2) ->
+   ('o0 -> ('o1,string) result) ->
+   ('o0 -> ('o2,string) result) ->
+   'o0 ->
+   ((('o1 * 'o2) , string) result)
+
 val ressAnd2p :
    string ->
    ('o0 -> ('o1,string) result) ->
