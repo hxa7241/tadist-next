@@ -977,6 +977,7 @@ module Blanks :
 sig
    val blankSpacyCtrlChars : string -> string
    val blankNewlines       : string -> string
+   val unifyNonNewlines    : string -> string
    val unifySpaces         : string -> string
    val squashSpaces        : string -> string
 end
@@ -991,9 +992,9 @@ struct
    let blankNewlines : (string -> string) =
       String.map (function | '\n' | '\r' -> ' ' | c -> c)
 
-   let unifySpaces (s:string) : string =
+   let unifyNonNewlines (s:string) : string =
       let rx = Str.regexp
-         "\x09\\|\x0A\\|\x0B\\|\x0C\\|\x0D\\|\x20\\|\
+         "\x09\\|\x0B\\|\x0C\\|\x20\\|\
          \xC2\x85\\|\xC2\xA0\\|\
          \xE1\x9A\x80\\|\xE1\xA0\x8E\\|\
          \xE2\x80\x80\\|\xE2\x80\x81\\|\xE2\x80\x82\\|\xE2\x80\x83\\|\
@@ -1009,6 +1010,10 @@ struct
          \xEF\xBB\xBF"
       in
       Str.global_replace rx " " s
+
+   let unifySpaces (s:string) : string =
+      (unifyNonNewlines s)
+      |> blankNewlines
 
    let squashSpaces (s:string) : string =
       let rx = Str.regexp "  +" in

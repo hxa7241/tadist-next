@@ -574,10 +574,8 @@ sig
     * Replace all UTF-8 blank chars with spaces.
     *
     * [ ["0x09" ],                 "U+0009  HT horizontal tab"         ],
-    * [ ["0x0A" ],                 "U+000A  LF line feed"              ],
     * [ ["0x0B" ],                 "U+000B  VT vertical tab"           ],
     * [ ["0x0C" ],                 "U+000C  FF form feed"              ],
-    * [ ["0x0D" ],                 "U+000D  CR carriage return"        ],
     * [ ["0x20" ],                 "U+0020  SP space"                  ],
     * [ ["0xC2", "0x85" ],         "U+0085  NEL next line"             ],
     * [ ["0xC2", "0xA0" ],         "U+00A0  no-break space"            ],
@@ -605,6 +603,9 @@ sig
     * [ ["0xE3", "0x80", "0x80"],  "U+3000  ideographic space"         ],
     * [ ["0xEF", "0xBB", "0xBF"]   "U+FEFF  zero width no-break space" ]
     *)
+   val unifyNonNewlines : string -> string
+
+   (* Like unifyNonNewlines, but including \n and \r too. *)
    val unifySpaces : string -> string
 
    (* Replace each run of spaces with a single space char. *)
