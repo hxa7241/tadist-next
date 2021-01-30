@@ -655,18 +655,18 @@ sig
    val compile : ?caseInsens:bool -> string -> rx
 
    (**
-    * Check if start of string matches regex.
+    * Check if START of string matches regex.
     *
     * @params compiled regex, position, string to inspect
     *)
    val apply : rx -> ?pos:int -> string -> rxmatch option
 
    (**
-    * Compile and apply regex.
+    * Compile and apply regex, at START of string only.
     *
     * @params regex string, position, case insensitivity flag, string to inspect
     *)
-   val regex : string -> ?pos:int -> ?caseInsens:bool -> string ->
+   val regexApply : string -> ?pos:int -> ?caseInsens:bool -> string ->
       rxmatch option
 
    (**
@@ -674,14 +674,14 @@ sig
     *
     * @params compiled regex, position, string to inspect
     *)
-   val seekFirst : rx -> ?pos:int -> string -> rxmatch option
+   val seek : rx -> ?pos:int -> string -> rxmatch option
 
    (**
     * Find first substring in string that matches regex.
     *
     * @params regex string, position, case insensitivity flag, string to inspect
     *)
-   val regexFirst : string -> ?pos:int -> ?caseInsens:bool -> string ->
+   val regexSeek : string -> ?pos:int -> ?caseInsens:bool -> string ->
       rxmatch option
 
    (**

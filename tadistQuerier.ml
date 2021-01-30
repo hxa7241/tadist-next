@@ -24,7 +24,7 @@ open Tadist
 
 let httpResponseParts (response:string) : string list =
 
-   match Rx.regexFirst "\r\n\r\n\\|\n\n" response with
+   match Rx.regexSeek "\r\n\r\n\\|\n\n" response with
    | Some rxmatch ->
       let posEnd      = snd (Rx.wholePos rxmatch) in
       let head , body = String_.leadTrail response posEnd in
@@ -70,7 +70,7 @@ let httpResponseBody (head:string) (bodyRaw:string) : string =
       let rx =
          Rx.compile ~caseInsens:true " *Transfer-Encoding: +chunked *[\r\n]"
       in
-      Option_.toBool (Rx.seekFirst rx head)
+      Option_.toBool (Rx.seek rx head)
    in
 
    if not isChunked
@@ -86,14 +86,14 @@ let httpResponseBody (head:string) (bodyRaw:string) : string =
 
             (* parse length from prefix -- len[;stuff]\r\n : int option *)
             let parseLength ((bodyRaw , pos):string * int) : int option =
-               (Rx.regex "[0-9a-fA-F]+" ~pos bodyRaw)
+               (Rx.regexApply "[0-9a-fA-F]+" ~pos bodyRaw)
                |>- (fun rxmatch -> Some (Rx.wholeFound rxmatch))
                (* DEBUG *)
                (*|>- (fun s -> print_endline ("* len-str: " ^ s) ; Some s)*)
                |>- (fun hex     -> int_of_string_opt ("0x" ^ hex))
             (* parse start from prefix -- len[;stuff]\r\n : int option *)
             and parseStart ((bodyRaw , pos):string * int) : int option =
-               (Rx.regex "[^\r\n]*\r?\n" ~pos bodyRaw)
+               (Rx.regexApply "[^\r\n]*\r?\n" ~pos bodyRaw)
                (*(Rx.compile "[^\r\n]*\r?\n")
                |>  (fun rx      -> Rx.seekFirst rx ~pos bodyRaw)*)
                (* DEBUG *)
@@ -114,7 +114,7 @@ let httpResponseBody (head:string) (bodyRaw:string) : string =
                   let thisChunk = String.sub bodyRaw start length
                   and posNext   =
                      let posEnd = start + length in
-                     (Rx.regex "\r?\n" ~pos:posEnd bodyRaw)
+                     (Rx.regexApply "\r?\n" ~pos:posEnd bodyRaw)
                      |>- (Rx.wholePos %> snd %> Option.some)
                      |> (Option.value ~default:posEnd)
                   in
@@ -327,7 +327,7 @@ let parseOpenLib (json:string)
    and extractElement (json:string) (name:string) (form:string)
       : string option =
       let rx = Rx.compile ("\"" ^ name ^ "\" *: *" ^ form) in
-      (Rx.seekFirst rx json)
+      (Rx.seek rx json)
       |>-
       (fun rxmatch -> Rx.groupFound rxmatch 1)
    in

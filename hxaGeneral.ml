@@ -1080,10 +1080,10 @@ sig
 
    val compile    : ?caseInsens:bool -> string -> rx
    val apply      : rx     -> ?pos:int -> string -> rxmatch option
-   val regex      : string -> ?pos:int -> ?caseInsens:bool -> string ->
+   val regexApply : string -> ?pos:int -> ?caseInsens:bool -> string ->
                     rxmatch option
-   val seekFirst  : rx -> ?pos:int -> string -> rxmatch option
-   val regexFirst : string -> ?pos:int -> ?caseInsens:bool -> string ->
+   val seek       : rx -> ?pos:int -> string -> rxmatch option
+   val regexSeek  : string -> ?pos:int -> ?caseInsens:bool -> string ->
                     rxmatch option
    val allMatches : rx -> string -> string list
    val allMatchesPos : rx -> string -> (string * int) list
@@ -1138,21 +1138,22 @@ struct
       let query = Str.string_match rx content pos in
       expressOneMatch query content
 
-   let regex (rxs:string) ?(pos:int=0) ?(caseInsens:bool=false) (content:string)
+   let regexApply (rxs:string) ?(pos:int=0) ?(caseInsens:bool=false)
+      (content:string)
       : rxmatch option =
       apply (compile ~caseInsens rxs) ~pos content
 
-   let seekFirst (rx:rx) ?(pos:int=0) (content:string) : rxmatch option =
+   let seek (rx:rx) ?(pos:int=0) (content:string) : rxmatch option =
       let query =
          try ignore(Str.search_forward rx content pos) ; true with
          | Not_found -> false
       in
       expressOneMatch query content
 
-   let regexFirst (rxs:string) ?(pos:int=0) ?(caseInsens:bool=false)
+   let regexSeek (rxs:string) ?(pos:int=0) ?(caseInsens:bool=false)
       (content:string)
       : rxmatch option =
-      seekFirst (compile ~caseInsens rxs) ~pos content
+      seek (compile ~caseInsens rxs) ~pos content
 
    let allMatches (rx:rx) (content:string) : string list =
       (Str.full_split rx content)

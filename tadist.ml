@@ -596,7 +596,7 @@ let normaliseTitle (titles:string list) : StringT.t array =
       (* truncate any parenthised suffix *)
       |> (fun title ->
          title
-         |> (Rx.regex {|^\(.....+\)(.*) *$|} ~pos:0 ~caseInsens:false)
+         |> (Rx.regexApply {|^\(.....+\)(.*) *$|} ~pos:0 ~caseInsens:false)
          |>- ((Fun.flip Rx.groupFound) 1)
          |> (Option.value ~default:title) )
       (* truncate after ':', if more than 7 chars before *)
