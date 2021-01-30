@@ -356,12 +356,15 @@ sig
        @exceptions: on empty string: Invalid_argument "index out of bounds" *)
    val last : string -> char
 
+   (** Like sub, but clamped params. *)
+   val subc : string -> int -> int -> string
+
    (** Like sub, but 2nd int is pos not len.
        @exceptions: Invalid_argument for invalid positions *)
    val subp : string -> int -> int -> string
 
-   (** Like sub, but clamped params. *)
-   val subc : string -> int -> int -> string
+   (** Like sub, but 2nd int is pos not len, and clamped params. *)
+   val subpc : string -> int -> int -> string
 
    (** Test first char. *)
    val isFirstChar : (char -> bool) -> string -> bool

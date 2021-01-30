@@ -476,8 +476,9 @@ sig
    val trail       : string -> int -> string
    val leadTrail   : string -> int -> (string * string)
    val last        : string -> char
-   val subp        : string -> int -> int -> string
    val subc        : string -> int -> int -> string
+   val subp        : string -> int -> int -> string
+   val subpc       : string -> int -> int -> string
    val isFirstChar : (char -> bool) -> string -> bool
    val index       : char -> ?start:int -> string -> int option
    val indexp      : (char -> bool) -> ?start:int -> string -> int option
@@ -528,14 +529,20 @@ struct
    let last (s:string) : char =
       s.[(String.length s) - 1]
 
-   let subp (s:string) (startpos:int) (endpos:int) : string =
-      String.sub s startpos (endpos - startpos)
-
    let subc (s:string) (pos:int) (len:int) : string =
       let wholeLen = String.length s in
       let posc     = clamp ~lo:0 ~up:wholeLen          pos in
       let lenc     = clamp ~lo:0 ~up:(wholeLen - posc) len in
       String.sub s posc lenc
+
+   let subp (s:string) (startpos:int) (endpos:int) : string =
+      String.sub s startpos (endpos - startpos)
+
+   let subpc (s:string) (startpos:int) (endpos:int) : string =
+      let wholeLen = String.length s in
+      let startc   = clamp ~lo:0      ~up:wholeLen startpos in
+      let endc     = clamp ~lo:startc ~up:wholeLen endpos in
+      subc s startpos (endc - startc)
 
    let isFirstChar (pred:char -> bool) (s:string) : bool =
       ((String.length s) > 0) && pred s.[0]
