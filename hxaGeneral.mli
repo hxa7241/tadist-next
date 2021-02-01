@@ -424,6 +424,12 @@ sig
        (optional bools express forbidden or required (or allowed if absent)). *)
    val toInt : ?zeroPadded:(bool * int) -> ?widthMaxed:int -> ?signed:bool ->
       string -> int option
+
+   (** Default a string option to an empty string. *)
+   val ofOpt : string option -> string
+
+   (** Convert a non-empty/empty string to an option. *)
+   val toOpt : string -> string option
 end
 
 

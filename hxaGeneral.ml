@@ -498,6 +498,8 @@ sig
    val truncate    : int -> string -> string
    val toInt       : ?zeroPadded:(bool * int) -> ?widthMaxed:int ->
                      ?signed:bool -> string -> int option
+   val ofOpt       : string option -> string
+   val toOpt       : string -> string option
 end
 =
 struct
@@ -677,6 +679,12 @@ struct
             (fun () -> Scanf.sscanf (lead input suffixPos) "%d" Fun.id)
       else
          None
+
+   let ofOpt (so:string option) : string =
+      Option.value ~default:"" so
+
+   let toOpt (s:string) : string option =
+      Option_.classify notEmpty s
 end
 
 
