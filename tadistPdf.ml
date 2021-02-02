@@ -14,7 +14,6 @@
 
 open HxaGeneral
 (* using Tadist *)
-(* using Camlpdf: Pdf, Pdfpage, Pdfread, Pdftext *)
 
 
 
@@ -52,72 +51,139 @@ let recognisePdf (pdfPathname:string) : bool ress =
    | _ -> Error ("cannot open/read file: " ^ pdfPathname)
 
 
-(*
- * Lookup an entry from the /Info dictionary, returning it as a UTF8 string
- *)
-let lookupInfoUtf8 (pdf:Pdf.t) (key:string) : string =
+let toolInvoke (command:string) : string ress =
 
-   let infodict =
-      match Pdf.lookup_direct pdf "/Info" pdf.Pdf.trailerdict with
-      | Some infodict -> infodict
-      | None          -> Pdf.Dictionary []
+   let environ : string list =
+      (* use path and this dir so tool can be found *)
+      let path = try Unix.getenv "PATH" with | _ -> "" in
+      if path <> "" then [ ("PATH=.:" ^ path) ] else []
    in
 
-   match Pdf.lookup_direct pdf key infodict with
-   | Some (Pdf.String s) -> Pdftext.utf8_of_pdfdocstring s
-   | Some
-      Pdf.(Null | Boolean _ | Integer _ |
-         Real _ | Name _ | Array _ |
-         Dictionary _ | Stream _ | Indirect _) -> ""
-   | None -> ""
-
-
-let getXmpXml (pdf:Pdf.t) : string =
-
-   (Some pdf.Pdf.trailerdict)
-   |>-
-   (Pdf.lookup_direct pdf "/Root")
-   |>-
-   (Pdf.lookup_direct pdf "/Metadata")
-   |>-
-   (* : ((Pdf.pdfobject * Pdf.stream) Stdlib.ref) option *)
-   (fun (pdfo:Pdf.pdfobject) ->
-      match pdfo with
-      | Pdf.Null    | Pdf.Boolean _    | Pdf.Integer _
-      | Pdf.Real _  | Pdf.String _     | Pdf.Name _
-      | Pdf.Array _ | Pdf.Dictionary _ | Pdf.Indirect _ -> None
-      | Pdf.Stream stream                               -> Some stream)
-   |>-
-   (fun stream ->
-      Pdfcodec.decode_pdfstream pdf (Pdf.Stream stream) ;
-      Some stream)
-   |>-
-   (* : Pdfio.bytes option *)
-   (fun stream ->
-      match stream with
-      | {contents = (_, Pdf.Got data)} -> Some data
-      | {contents = (_, Pdf.ToGet _ )} -> None)
-   |>-
-   (fun b -> Some (Pdfio.string_of_bytes b))
+   (commandLineInvoke command environ "" 1024)
    |>
+   (* shorten and preface the error output *)
+   (Result.map_error
+      (fun msg ->
+         let msg = String_.lead msg (min 40 (String_.indexl '\n' msg)) in
+         "tool failure" ^ (if msg <> "" then (": " ^ msg) else "")))
+
+
+let getMetadata (pdfPathname:string) : (string * string) ress =
+
+   (*
+      using xpdf pdftotext tool:
+      * https://www.xpdfreader.com/pdfinfo-man.html
+
+      with the command:
+      $ pdfinfo -enc UTF-8 -rawdates -meta somedocument.pdf
+
+      ie:
+      * UTF-8 encoding
+      * non human-readable-ised dates
+      * print xml metadata
+      * input file somedocument.pdf
+   *)
+
+   let invoke (options:string) : string ress =
+      toolInvoke ("pdfinfo -enc UTF-8 -rawdates " ^ options ^ " " ^ pdfPathname)
+   in
+
+   let infoRaw : string ress =
+      (invoke "")
+      |>
+      (Result.map Blanks.unifyNonNewlines)
+   (*
+   let infoRaw : (string * string) list ress =
+      (invoke "")
+      (* parse into assoc list *)
+      |> (Result.map (fun str ->
+         str
+         |> Blanks.unifyNonNewlines
+         (* separate lines : string list *)
+         |> (String_.split ((=) '\n'))
+         (* extract name-value pairs : (string * string) option list *)
+         |> (String_.halve ':')
+         (* discard invalid : (string * string) list *)
+         |> (List.filtmap id)
+         (* trim all : (string * string) list *)
+         |> (List.map
+            (fun (name,value) -> (String.trim name , String.trim value)))
+         (* remove duplicates : (string * string) list *)
+         |> List_.deduplicate))
+   *)
+   and xmpRaw  : string ress =
+      (invoke "-meta ")
+      (* extract all xml : rxmatch option *)
+      |>
+      (Result.map (fun str ->
+         (* find open and close xml tags : int option , int option *)
+         let openTagPos_o =
+            (Rx.regexSeek {|<rdf:RDF[^>]*>|} str)
+            |>-
+            (Rx.wholePos %> fst %> Option.some)
+         and closeTagEnd_o =
+            (Rx.regexSeek {|</rdf:RDF>|} str)
+            |>-
+            (Rx.wholePos %> snd %> Option.some)
+         in
+         (* both or nothing : (int * int) option *)
+         (Option_.and2 openTagPos_o closeTagEnd_o)
+         |>-
+         (* extract that substring : string option *)
+         (fun (openTagPos , closeTagEnd) ->
+            Some (String_.subpc str openTagPos closeTagEnd))
+         |>
+         (* default to empty string *)
+         (Option.value ~default:"") ))
+   in
+
+   let xmpNoNewlines = Result.map Blanks.unifySpaces xmpRaw in
+
+   Result_.ressOr2 "\n" ("","") (infoRaw , xmpNoNewlines)
+
+
+let lookupInfoValue (info:string) (key:string) : string =
+
+   let rxs = {|^|} ^ key ^ {| *: *\(.*\)$|} in
+
+   (* : rxmatch option *)
+   (Rx.regexSeek rxs info)
+   |>-
+   (* : string option *)
+   ((Fun.flip Rx.groupFound) 1)
+   |>
+   (* : string *)
    (Option.value ~default:"")
 
+   (*
+   (List.assoc_opt key info)
+   |>
+   (Option.value ~default:"")
+   *)
 
-let lookupXmlTag (xmp:string) (regex:string) (group:int) : string =
 
-   (Rx.regexFirst regex ~caseInsens:true ~pos:0 xmp)
+let lookupXmlValue (xmp:string) (regex:string) (group:int) : string =
+
+   (Rx.regexSeek regex ~caseInsens:true ~pos:0 xmp)
    |>-
    (Fun.flip Rx.groupFound group)
    |>
    (Option.value ~default:"")
 
 
-let getDate (pdf:Pdf.t) : string =
+let lookupMetadataValue (metadata:string*string) (key:string) : string =
+
+   let info , _ = metadata in
+
+   lookupInfoValue info key
+
+
+let getDate (metadata:string*string) : string =
 
    (* format:
     * D:YYYYMMDDHHmmSSOHH'mm'
     * with optionalness: D:YYYY[MM[DD[HH[mm[SS[O[HH'[mm']]]]]]]] *)
-   let s = lookupInfoUtf8 pdf "/CreationDate" in
+   let s = lookupMetadataValue metadata "CreationDate" in
 
    (* take yearmonthday, or just year *)
    if (String.length s) >= 10
@@ -130,221 +196,129 @@ let getDate (pdf:Pdf.t) : string =
       ""
 
 
-let getPagecount (pdf:Pdf.t) : int =
+let getPagecount (metadata:string*string) : string =
 
-   Pdfpage.endpage pdf ;;
+   lookupMetadataValue metadata "Pages"
 
 
-let getIsbnsFromMetadata (pdf:Pdf.t) : string list =
+let getIsbnsFromMetadata (metadata:string*string) : string list =
 
-   (* define the various matching forms *)
-   (* XMP rdf/xml: *)
-   let identifierDc (xmp:string) () : string option =
+   (* main metadata fields: XMP rdf/xml: *)
+
+   let identifierDc (xmp:string) : string list =
       let tag =
          (* <dc:identifier ...>[content]</dc:identifier> *)
-         lookupXmlTag
+         lookupXmlValue
             xmp
-            "<dc:identifier\\( [^>]*\\)?>\\([^<]*\\)</dc:identifier>"
+            {|<dc:identifier\([^>]*\)?>\([^<]*\)</dc:identifier>|}
             2
       in
-      Tadist.Isbn.search 0 (String.length tag) tag
-   and identifierXmp (xmp:string) () : string option =
-      let tag =
-         (* <xmp.Identifer ...>
-               <rdf:Bag ...>
-                  <rdf:li ...>[content]</rdf:li>
-                  ...
-               </rdf:Bag>
-            </xmp.Identifer> *)
-         lookupXmlTag
-            xmp
-            "<xmp.Identifer\\( [^>]*\\)?>[^<]*\
-               <rdf:\\(Alt\\|Bag\\|Seq\\)\\( [^>]*\\)?>[^<]*\
-               <rdf:li[^>]*>\\([^<]*\\)</rdf:li>"
-            4
-      in
-      Tadist.Isbn.search 0 (String.length tag) tag
-   (* other inappropriate metadata (unlikely but possible) *)
-   and subject (pdf:Pdf.t) () : string option =
-      let field = lookupInfoUtf8 pdf "/Subject" in
-      Tadist.Isbn.search 0 (String.length field) field
-   and keywords (pdf:Pdf.t) () : string option =
-      let field = lookupInfoUtf8 pdf "/Keywords" in
-      Tadist.Isbn.search 0 (String.length field) field
+      Tadist.Isbn.searchByChecksum 0 tag
+
+   and identifierXmp (xmp:string) : string list =
+      (* TODO: check and test extract array elements *)
+      (* <xmp:Identifier ...>
+            <rdf:Bag ...>
+               <rdf:li ...>
+                  <xmpidq:Scheme>mobi-asin</xmpidq:Scheme>
+                  <rdf:value>B00BR40XJ6</rdf:value>
+               </rdf:li>
+               ...
+            </rdf:Bag>
+         </xmp:Identifier> *)
+      (* find element containing value array : string *)
+      (lookupXmlValue
+         xmp
+         ({|<xmp:Identifier\([^>]*\)?>|}
+         ^ {|[^<]*<rdf:\(Alt\|Bag\|Seq\)\([^>]*\)?>|}
+         ^ {|\(.*\)|}
+         ^ {|</rdf:\(Alt\|Bag\|Seq\)>|})
+         4)
+      |>
+      (* find all <rdf:li>s : string list *)
+      (Rx.allMatches (Rx.compile {|<rdf:li\([^>]*\)?>.</rdf:li>|}))
+      |>
+      (* map to label and value : (string * string) list *)
+      (List.map
+         (fun (item : string) ->
+            let seekGroup1 (rx:string) (s:string) : string =
+               (Rx.regexSeek rx s)
+               |>-
+               ((Fun.flip (Rx.groupFound)) 1)
+               |>
+               String_.ofOpt
+            in
+            ( (seekGroup1 {|<xmpidq:Scheme>\([^<]*\)</xmpidq:Scheme>|} item)
+            , (seekGroup1 {|<rdf:value>\([^<]*\)</rdf:value>|} item) ) ))
+      |>
+      (* filter-in by checksum validity : (string * string) list *)
+      List_.filtmap
+         (fun ((label , value) : (string * string)) ->
+            (Tadist.Isbn.searchByChecksum 0 value)
+            |> List_.toOpt
+            |> (Option.map (fun isbn -> label , isbn)))
+      |>
+      (* sort by ISBN labelled before not : (string * string) list *)
+      (List.stable_sort
+         (fun (lbl0 , _) (lbl1 , _) ->
+            compare
+               (Option_.toBool (Rx.regexSeek ~caseInsens:true "isbn" lbl0))
+               (Option_.toBool (Rx.regexSeek ~caseInsens:true "isbn" lbl1))
+               ))
+      |>
+      (* discard labels : string list *)
+      (List.split %> snd)
+
+   (* other inappropriate metadata fields (unlikely but possible) *)
+
+   and subject (metadata:string*string) : string list =
+      let field = lookupMetadataValue metadata "Subject" in
+      Tadist.Isbn.searchByChecksum 0 field
+
+   and keywords (metadata:string*string) : string list =
+      let field = lookupMetadataValue metadata "Keywords" in
+      Tadist.Isbn.searchByChecksum 0 field
    in
 
-   let xmp = (getXmpXml pdf) |> Blanks.blankSpacyCtrlChars in
+   let _ , xmp = metadata in
 
-   (* take the first successful match, in this priority of alternatives *)
-   (identifierDc xmp ())
-   ||> (identifierXmp xmp)
-   ||> (subject pdf)
-   ||> (keywords pdf)
-   |> List_.ofOpt
+   (* concat all, in this priority *)
+   (identifierDc xmp)
+   @ (identifierXmp xmp)
+   @ (subject metadata)
+   @ (keywords metadata)
 
 
-let unescapeChars (text:string) : string =
+let getTextPages (pdfPathname:string) : (string list) ress =
 
    (*
-      the various things to do:
-      * unescape: \n \r \t \b \f \( \) \\
-         * \f -> 0C
-      * unencode: \000 (1-3 octal digits, 0-255)
-      * remove:   \\n (linewrap: \ and immediately following actual \n)
-      * leave:    \ with any other following char
+      using xpdf pdftotext tool:
+      * https://www.xpdfreader.com/pdftotext-man.html
+
+      with the command:
+      $ pdftotext -q -enc UTF-8 -eol unix -l 10 somedocument.pdf -
+
+      ie:
+      * no error messages
+      * UTF-8 encoding
+      * unix line-endings
+      * first 10 pages
+      * input file somedocument.pdf
+      * output to stdout
    *)
 
-   let translate (whole:string) : string =
-      let found = Str.matched_string whole in
-      match found.[1] with
-      (* unencode *)
-      | '0' .. '7' ->
-         begin try
-            let code = Scanf.sscanf (String_.trail found 1) "%o" Fun.id
-            (* add back extraneous char picked up by regex *)
-            and nextChar =
-               let last = String_.last found in
-               if Char_.isDigitOct last then "" else string_of_char last
-            in
-            (string_of_char (Char.chr code)) ^ nextChar
-         with
-         (* failed to read number, so leave it untranslated *)
-         | Scanf.Scan_failure _ | Failure _ | End_of_file -> found
-         end
-      (* unescape *)
-      | 'n'  -> "\n"
-      | 'r'  -> "\r"
-      | 't'  -> "\t"
-      | 'b'  -> "\b"
-      | 'f'  -> "\x0C"
-      | '('  -> "("
-      | ')'  -> ")"
-      | '\\' -> "\\"
-      (* remove *)
-      | '\n' -> ""
-      (* leave *)
-      | _    -> found
-
-   and rx = Str.regexp
-      (  {|\\[0-7][0-7][0-7]\||} ^
-         {|\\[0-7][0-7][^0-7]\||} ^
-         {|\\[0-7][0-7]$\||} ^
-         {|\\[0-7][^0-7]\||} ^
-         {|\\[0-7]$\||} ^
-         {|\\[^0-7]|}  )
+   let text : string ress =
+      let _NUMBER_OF_PAGES_TO_INSPECT = 10 (* 7 *) in
+      toolInvoke
+         ("pdftotext -q -enc UTF-8 -eol unix -l "
+         ^ (string_of_int _NUMBER_OF_PAGES_TO_INSPECT) ^ " "
+         ^ pdfPathname ^ " -")
    in
 
-   Str.global_substitute rx translate text
-
-
-let extractTextFromPdfStream (pdfStream:string) : string =
-
-   (*
-   let extractHexString (pdfStream:string) (openPos:int) : (string * int) =
-      (* PDF 1.3 ref: 3.2.3
-         <1A70D5...>
-         * unspaced pairs of hex digits, each meaning a byte
-         * ignore any blanks
-         * if uneven total count, then assume the missing last is one 0 *)
-      (* seek closing '>' *)
-      let closePos =
-         (String_.index '>' ~start:(openPos + 1) pdfStream)
-         |> (Option.value ~default:(String.length pdfStream))
-      in
-      (* extract sub-string *)
-      (String_.subp pdfStream (openPos + 1) closePos)
-      (* remove non hex-digits *)
-      |> (String_.filter Char_.isDigitHex)
-      (* if odd length, add trailing 0 *)
-      |> (fun s -> if (String.length s) mod 2 = 1 then s ^ "0" else s)
-      (* translate digit pairs to bytes *)
-      |> (Rx.allMatches (Rx.compile ".."))
-      |> (List.map
-         (fun hexPair ->
-            let code = Scanf.sscanf hexPair "%x" Fun.id in
-            (string_of_char (Char.chr code))) )
-      (*|> (Str.global_substitute (Rx.compile "..")
-         (fun whole ->
-            let found = Str.matched_string whole in
-            let code  = Scanf.sscanf found "%x" Fun.id
-            (string_of_char (Char.chr code))))*)
-      |> (String.concat "")
-      (* return byte-string and end pos *)
-      |> (fun str -> (str , closePos))
-   *)
-
-   let extractParenString (pdfStream:string) (startPos:int) : (string * int) =
-      (* strings are in ()s,
-         but those strings can include inner unescaped ()s if balanced *)
-      let isParen (c:char) : bool = (c = '(') || (c = ')') in
-      let rec seekParen (pdfStream:string) (seekPos:int)
-         (nestDepth:int) (openPos:int)
-         : (string * int) =
-         let foundPosOpt = String_.indexp isParen ~start:seekPos pdfStream in
-         match foundPosOpt with
-         | Some foundPos ->
-            let foundChar =
-               let isUnEscaped =
-                  (foundPos = 0) || (pdfStream.[foundPos - 1] <> '\\')
-               in
-               if isUnEscaped then pdfStream.[foundPos] else ' '
-            and foundEnd = foundPos + 1
-            in
-            begin match foundChar with
-            | '(' ->
-               (* only set open pos at bottom-level open (others are ignored) *)
-               let openPos = if nestDepth = 0 then foundEnd else openPos
-               (* (nesting cannot overflow because max string len < max int) *)
-               and nestDepth = (min nestDepth (Int.max_int - 1)) + 1 in
-               seekParen pdfStream foundEnd nestDepth openPos
-            | ')' ->
-               (* only recurse if inside nested parens *)
-               if nestDepth > 1
-               then
-                  let nestDepth = nestDepth - 1 in
-                  seekParen pdfStream foundEnd nestDepth openPos
-               else
-                  (* extract parenthised string *)
-                  (String_.subp pdfStream openPos foundPos , foundPos)
-            (* it was escaped, so ignorable *)
-            | _ ->
-               seekParen pdfStream foundEnd nestDepth openPos
-            end
-         (* end of string reached *)
-         | None ->
-            (* extract string to end *)
-            let streamEndPos = String.length pdfStream in
-            (String_.subp pdfStream openPos streamEndPos , streamEndPos)
-      in
-      let str , endPos = seekParen pdfStream startPos 0 0 in
-      (unescapeChars str) , endPos
-   in
-
-   let rec seekStrings (pdfStream:string) (seekPos:int) (accum:string list)
-      : string list =
-      let isOpen (c:char) : bool = (c = '(') (*|| (c = '<')*) in
-      let foundPosOpt = String_.indexp isOpen ~start:seekPos pdfStream in
-      match foundPosOpt with
-      | Some openPos ->
-         let foundString , closePos =
-            match pdfStream.[openPos] with
-            | '(' -> extractParenString pdfStream openPos
-            (*| '<' -> extractHexString   pdfStream openPos*)
-            (* impossible *)
-            | _   -> ("" , String.length pdfStream)
-         in
-         seekStrings pdfStream (closePos + 1) (foundString :: accum)
-      | None ->
-         accum
-   in
-
-   (seekStrings pdfStream 0 [])
-   |> List.rev
-   (* remove empties *)
-   |> (List_.filtmap (Option_.classify String_.notEmpty))
-   (* put spaces between each chunk
-      (PDF text content is often broken into words, or more, per ()) *)
-   |> (String.concat " ")
+   text
+   |>=
+   (* split into pages by ascii form-feed char : (string list) ress *)
+   ((String.split_on_char '\x0C') %> Result.ok)
 
 
 let regulariseDashs (replacement:string) (text:string) : string =
@@ -382,115 +356,7 @@ let regulariseDashs (replacement:string) (text:string) : string =
    Str.global_replace rx replacement text
 
 
-let rec getPageStreamString (pdf:Pdf.t) (obj:Pdf.pdfobject) : string =
-
-   try
-
-      match obj with
-
-      (* ignore *)
-      | Pdf.Null   | Pdf.Boolean _    | Pdf.Integer _  | Pdf.Real _
-      | Pdf.Name _ | Pdf.Dictionary _ | Pdf.String _ ->
-         ""
-
-      (* merge a 'sub-tree' *)
-      | Pdf.Array objs ->
-         let strs = List.map (getPageStreamString pdf) objs in
-         String.concat "\n" strs
-
-      (* follow 'pointer' *)
-      | Pdf.Indirect _ ->
-         getPageStreamString pdf (Pdf.direct pdf obj)
-
-      (* this is the main thing *)
-      | Pdf.Stream stream ->
-         Pdfcodec.decode_pdfstream pdf (Pdf.Stream stream) ;
-         begin match stream with
-         | {contents = (_, Pdf.Got data)} -> Pdfio.string_of_bytes data
-         | {contents = (_, Pdf.ToGet _ )} -> ""
-         end
-
-   with
-   | _ -> ""
-
-
-let getTextPages (pdf:Pdf.t) (pageCount:int) : string list =
-
-   (* get first few pages *)
-   let pages : Pdfpage.t list =
-      try
-         let pages = Pdfpage.pages_of_pagetree pdf in
-         fst (List_.bisect pages (max 0 pageCount))
-      with
-      | _ -> []
-   in
-
-   (* map pages to streams *)
-   let streams : string list =
-      List.map
-         (fun (page : Pdfpage.t) : string ->
-            let objs : Pdf.pdfobject list = page.Pdfpage.content in
-            let strings : string list =
-               List.map
-                  (fun (obj : Pdf.pdfobject) -> getPageStreamString pdf obj)
-                  objs
-            in
-            String.concat "\n" strings )
-         pages
-   in
-
-   (* map streams to texts *)
-   List.map extractTextFromPdfStream streams
-
-
-let getTextPagesExternal (pdfPathname:string) (pageCount:int) : string list =
-
-   (*
-      using xpdf pdftotext tool:
-      * https://www.xpdfreader.com/pdftotext-man.html
-
-      with the command:
-      $ pdftotext -q -enc UTF-8 -eol unix -l 10 somedocument.pdf -
-
-      ie:
-      * no error messages
-      * UTF-8 encoding
-      * unix line-endings
-      * first 10 pages
-      * input file somedocument.pdf
-      * output to stdout
-   *)
-
-   let text : string =
-      try
-         let toolOutChannel : in_channel =
-            let command : string =
-               let _TOOL_AND_OPTIONS =
-                  "pdftotext -q -enc UTF-8 -eol unix -l " ^
-                  (string_of_int (max 0 pageCount))
-               and _FILES_IO = pdfPathname ^ " -" in
-               _TOOL_AND_OPTIONS ^ " " ^ _FILES_IO
-            in
-            (* exceptions: Unix.Unix_error *)
-            Unix.open_process_in command
-         in
-
-         let toolOutput : string = HxaGeneral.inputString toolOutChannel 512 in
-
-         (* exceptions: Unix.Unix_error *)
-         let _ = Unix.close_process_in toolOutChannel in
-
-         toolOutput
-      with
-      | Unix.Unix_error _ ->
-         ""
-   in
-
-   (* split into pages by ascii form-feed char *)
-   String.split_on_char '\x0C' text
-
-
-let getIsbnsFromTextPages (texts:string list) : string list =
+let getIsbnsFromText (texts:string list) : string list =
 
    (* map texts to isbns *)
    let isbnsAll : string list list =
@@ -564,7 +430,7 @@ let getIsbnsFromTextPages (texts:string list) : string list =
                (* remove all spaces *)
                %> (String_.filter ((<>)' '))
                (* search for marker *)
-               %> (Rx.regexFirst "libraryofcongress" ~pos:0 ~caseInsens:true)
+               %> (Rx.regexSeek "libraryofcongress" ~pos:0 ~caseInsens:true)
                %> Option_.toBool
             )
             texts)
@@ -582,24 +448,13 @@ let getIsbnsFromTextPages (texts:string list) : string list =
    isbns
 
 
-let getIsbns (pdf:Pdf.t) (pdfPathname:string) : string list =
+let getIsbns (metadata:string*string) (texts:string list) : string list =
 
-   let isbnsFromTextPages =
-      let _NUMBER_OF_PAGES_TO_INSPECT = 10 (* 7 *) in
-      let internalSourced =
-         getIsbnsFromTextPages (getTextPages pdf _NUMBER_OF_PAGES_TO_INSPECT)
-      in
-      (* if text extraction fails, try external method *)
-      if List_.notEmpty internalSourced
-      then
-         internalSourced
-      else
-         getIsbnsFromTextPages
-            (getTextPagesExternal pdfPathname _NUMBER_OF_PAGES_TO_INSPECT)
-   in
-
-   (List.append isbnsFromTextPages (getIsbnsFromMetadata pdf))
-   |> List_.deduplicate
+   (List.append
+      (getIsbnsFromText texts)
+      (getIsbnsFromMetadata metadata))
+   |>
+   List_.deduplicate
 
 
 
@@ -612,17 +467,21 @@ let extractTadist (pdfPathname:string) : (Tadist.nameStructRaw option) ress =
    | Error _ as e -> e
    | Ok false     -> Ok None
    | Ok true      ->
-      try
-         let pdf = Pdfread.pdf_of_file None None pdfPathname in
 
+      (* try to get basic data *)
+      (getMetadata pdfPathname , getTextPages pdfPathname)
+      |>
+      (* if either data source failed, make the best of it with one,
+         unless both failed, then concede defeat *)
+      (Result_.ressOr2 "\n" (("",""),[]))
+      |>=
+      (fun (metadata , text) ->
+         (* extract and package chosen data *)
          Ok (Some Tadist.{
-            titleRaw  = [ lookupInfoUtf8 pdf "/Title" ] ;
-            authorRaw = [ lookupInfoUtf8 pdf "/Author" ] ;
-            dateRaw   = [ getDate pdf ] ;
-            idRaw     = getIsbns pdf pdfPathname ;
-            subtypRaw = string_of_int (getPagecount pdf) ;
+            titleRaw  = [ lookupMetadataValue metadata "Title" ] ;
+            authorRaw = [ lookupMetadataValue metadata "Author" ] ;
+            dateRaw   = [ getDate metadata ] ;
+            idRaw     = getIsbns metadata text ;
+            subtypRaw = getPagecount metadata ;
             typRaw    = _TYPE ;
-         } )
-
-      with
-      | _ -> Error "PDF read failed"
+         } ) )

@@ -3,10 +3,10 @@ TADIST tool ***UNFINISHED***
 ======================================================================
 
 
-Harrison Ainsworth / HXA7241 : 2015, 2020  
+Harrison Ainsworth / HXA7241 : 2015, 2020-2021  
 http://www.hxa.name/tools
 
-2020-04-10
+2021-01-29
 
 
 
@@ -62,10 +62,10 @@ Requirements:
 
 Library dependencies (other versions might suffice):
 * camlzip 1.10
-* camlpdf 2.3.1
 * utf8filter 3
 
 Runtime dependencies:
+* https://www.xpdfreader.com/download.html
 * http://openlibrary.org/api/books
 
 Run make, to produce:
@@ -77,7 +77,7 @@ Run make, to produce:
 Changes
 -------
 
-### Version 1.2 : ... ###
+### Version 1.2 : 2021 ###
 
 Supports PDF files.
 
@@ -109,9 +109,8 @@ Uses:
 * CamlZip 1.10
    * https://opam.ocaml.org/packages/camlzip/
    * https://github.com/xavierleroy/camlzip
-* CamlPDF 2.3.1
-   * https://opam.ocaml.org/packages/camlpdf/
-   * https://github.com/johnwhitington/camlpdf
+* Xpdf tools
+   * https://www.xpdfreader.com/download.html
 * Utf8filter 3
    * http://www.hxa.name/tools/index.html#utf8filter
    * https://github.com/hxa7241/utf8filter
@@ -125,6 +124,7 @@ DC:`
    title:`TADIST tool ***UNFINISHED***`
    creator:`Harrison Ainsworth / HXA7241`
 
+   date:`2021-01-29`
    date:`2020-04-10`
    date:`2015-05-30`
    date:`2015-05-23`
@@ -143,6 +143,6 @@ DC:`
 
    references:`https://openlibrary.org/dev/docs/api/books`
    references:`https://opam.ocaml.org/packages/camlzip/`
-   references:`https://opam.ocaml.org/packages/camlpdf/`
+   references:`https://www.xpdfreader.com/about.html`
    references:`http://www.hxa.name/tools/index.html#utf8filter`
 `
