@@ -710,6 +710,8 @@ sig
    val resAnd        : (('o,'e) result list) -> ('o list , 'e list) result
    val unfoldl       : (int->'a) -> int -> 'a list
    val unfoldo       : (int->'a option) -> 'a list
+   val equalenTruncate : 'a list -> 'b list -> ('a list * 'b list)
+   val equalenExtend   : 'a -> 'b -> 'a list -> 'b list -> ('a list * 'b list)
    val ofStringAscii : string -> char list
    val toStringAscii : (char list) -> string
    val ofOpt         : 'a option -> 'a list
@@ -866,6 +868,21 @@ struct
          | None         -> List.rev list
       in
       recur [] 0 f
+
+   let equalenTruncate (la:'a list) (lb:'b list) : ('a list * 'b list) =
+      let aLen , bLen = List.length la , List.length lb in
+      match compare aLen bLen with
+      | +1 -> (fst (bisect la bLen) , lb)
+      | -1 -> (la , fst (bisect lb aLen))
+      |  _ -> (la , lb)
+
+   let equalenExtend (da:'a) (db:'b) (la:'a list) (lb:'b list)
+      : ('a list * 'b list) =
+      let aLen , bLen = List.length la , List.length lb in
+      match compare aLen bLen with
+      | -1 -> (la @ (unfoldl (Fun.const da) (bLen - aLen)) , lb)
+      | +1 -> (la , lb @ (unfoldl (Fun.const db) (aLen - bLen)))
+      |  _ -> (la , lb)
 
    let ofStringAscii (s:string) : char list =
       unfoldo (fun i -> try Some s.[i] with | Invalid_argument _ -> None)

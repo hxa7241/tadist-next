@@ -501,6 +501,13 @@ sig
        Length is extended until generator function returns None. *)
    val unfoldo : (int->'a option) -> 'a list
 
+   (** Equalize the length of two lists, by truncating the longer one. *)
+   val equalenTruncate : 'a list -> 'b list -> ('a list * 'b list)
+
+   (** Equalize the length of two lists, by extending the shorter one with
+       default values. *)
+   val equalenExtend : 'a -> 'b -> 'a list -> 'b list -> ('a list * 'b list)
+
    (** Convert string (of bytes) to list-of-chars. *)
    val ofStringAscii : string -> char list
 
