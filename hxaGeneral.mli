@@ -158,9 +158,10 @@ val hemap2 : (('a0 -> 'b0) * ('a1 -> 'b1)) -> ('a0 * 'a1) -> ('b0 * 'b1)
 module Option_ :
 sig
    (** Unify an option with a default for None. *)
-   val valuef  : (unit -> 'a) -> 'a option -> 'a
-   val unify   : (unit -> 'a) -> 'a option -> 'a
-   val default : (unit -> 'a) -> 'a option -> 'a
+   val default  : 'a           -> 'a option -> 'a
+   val valuef   : (unit -> 'a) -> 'a option -> 'a
+   val unify    : (unit -> 'a) -> 'a option -> 'a
+   val defaultf : (unit -> 'a) -> 'a option -> 'a
 
    (** Diverge an option to a tuple of options (non-case -> None). *)
    val diverge : 'a option -> ('a option * unit option)

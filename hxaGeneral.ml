@@ -144,9 +144,10 @@ let hemap2 (f0,f1:('a0 -> 'b0) * ('a1 -> 'b1)) (a0,a1:'a0 * 'a1) : ('b0 * 'b1) =
 
 module Option_ :
 sig
+   val default  : 'a           -> 'a option -> 'a
    val valuef   : (unit -> 'a) -> 'a option -> 'a
    val unify    : (unit -> 'a) -> 'a option -> 'a
-   val default  : (unit -> 'a) -> 'a option -> 'a
+   val defaultf : (unit -> 'a) -> 'a option -> 'a
    val diverge  : 'a option -> ('a option * unit option)
    val mapUnify : ('a -> 'b) -> (unit -> 'b) -> 'a option -> 'b
    val toBool   : 'a option -> bool
@@ -163,6 +164,9 @@ sig
 end
 =
 struct
+   let default (d:'a) (o:'a option) : 'a =
+      Option.value ~default:d o
+
    let valuef (f:unit -> 'a) (o:'a option) : 'a =
       match o with
       | Some v -> v
@@ -170,7 +174,7 @@ struct
 
    let unify = valuef
 
-   let default = valuef
+   let defaultf = valuef
 
    let diverge (o:'a option) : ('a option * unit option) =
       match o with
@@ -178,7 +182,7 @@ struct
       | None   -> (None   , Some ())
 
    let mapUnify (fs:'a -> 'b) (fn:unit -> 'b) (o:'a option) : 'b =
-      (Option.map fs o) |> (default fn)
+      (Option.map fs o) |> (defaultf fn)
 
    let toBool = Option.is_some
    (*let toBool (o:'a option) : bool =
@@ -563,10 +567,10 @@ struct
       recur (if start < 0 then len else start) s
 
    let indexl (c:char) ?(start:int = 0) (s:string) : int =
-      Option_.default (fun () -> String.length s) (index c ~start s)
+      Option_.defaultf (fun () -> String.length s) (index c ~start s)
 
    let indexpl (pred: char -> bool) ?(start:int = 0) (s:string) : int =
-      Option_.default (fun () -> String.length s) (indexp pred ~start s)
+      Option_.defaultf (fun () -> String.length s) (indexp pred ~start s)
 
    let rindexp (pred: char -> bool) (s:string) : int option =
       let rec recur (s:string) (i:int) : int option =
