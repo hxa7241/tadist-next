@@ -309,22 +309,25 @@ let lookupMetadataValue (metadata:string*string) (key:string) : string =
    (Option_.default "")
 
 
-let getDate (metadata:string*string) : string =
+let getDates (metadata:string*string) : string list =
 
    (* format:
     * D:YYYYMMDDHHmmSSOHH'mm'
     * with optionalness: D:YYYY[MM[DD[HH[mm[SS[O[HH'[mm']]]]]]]] *)
-   let s = lookupMetadataValue metadata "CreationDate" in
 
-   (* take yearmonthday, or just year *)
-   if (String.length s) >= 10
-   then
-      String.sub s 2 8
-   else if (String.length s) >= 6
-   then
-      String.sub s 2 4
-   else
-      ""
+   (lookupMetadataValues metadata "CreationDate")
+   |>
+   List.map
+      (fun (s:string) ->
+         (* take yearmonthday, or just year *)
+         if (String.length s) >= 10
+         then
+            String.sub s 2 8
+         else if (String.length s) >= 6
+         then
+            String.sub s 2 4
+         else
+            "" )
 
 
 let getPagecount (metadata:string*string) : string =
@@ -611,7 +614,7 @@ let extractTadist (pdfPathname:string) : (Tadist.nameStructRaw option) ress =
          Ok (Some Tadist.{
             titleRaw  = [ lookupMetadataValue metadata "Title" ] ;
             authorRaw = [ lookupMetadataValue metadata "Author" ] ;
-            dateRaw   = [ getDate metadata ] ;
+            dateRaw   = getDates metadata ;
             idRaw     = getIsbns metadata text ;
             subtypRaw = getPagecount metadata ;
             typRaw    = _TYPE ;
