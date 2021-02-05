@@ -608,7 +608,7 @@ let extractTadist (pdfPathname:string) : (Tadist.nameStructRaw option) ress =
          (* extract and package chosen data *)
          Ok (Some Tadist.{
             titleRaw  = [ lookupMetadataValue metadata "Title" ] ;
-            authorRaw = [ lookupMetadataValue metadata "Author" ] ;
+            authorRaw = lookupMetadataValues metadata "Author" ;
             dateRaw   = getDates metadata ;
             idRaw     = getIsbns metadata text ;
             subtypRaw = lookupMetadataValue metadata "Pages" ;
