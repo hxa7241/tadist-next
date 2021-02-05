@@ -56,7 +56,7 @@ let toolInvoke (command:string) : string ress =
    let environ : string list =
       (* use path and this dir so tool can be found *)
       let path = try Unix.getenv "PATH" with | _ -> "" in
-      if path <> "" then [ ("PATH=.:" ^ path) ] else []
+      [ "PATH=." ^ (if path <> "" then (":" ^ path) else "") ]
    in
 
    (commandLineInvoke command environ "" 1024)
