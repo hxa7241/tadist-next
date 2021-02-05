@@ -220,11 +220,93 @@ let lookupXmlValue (xmp:string) (regex:string) (group:int) : string =
    String_.ofOpt
 
 
+let lookupMetadataValues (metadata:string*string) (key:string) : string list =
+
+   (* merge info and xmp items by choosing one, not accumulating both *)
+
+   let info , xmp = metadata in
+
+   (* first, look in info dictionary *)
+   match (lookupInfoValue info key) with
+   | ""    ->
+      (* if nothing found, try equivalents in xmp *)
+      begin match key with
+      | "Title" ->
+         (* <dc:title>
+              <rdf:Alt>
+                <rdf:li xml:lang="x-default">Six Easy Pieces</rdf:li>
+              </rdf:Alt>
+            </dc:title> *)
+         (extractXmlArrayFirstFlat "dc:title" xmp)
+         |> (fun s -> [ s ])
+      | "Author" ->
+         (* <dc:creator>
+              <rdf:Seq>
+                <rdf:li>Richard Feynman</rdf:li>
+              </rdf:Seq>
+            </dc:creator> *)
+         extractXmlArrayFlat "dc:creator" xmp
+      | "CreationDate" ->
+         let dcDate =
+            (* <dc:date>
+                 <rdf:Seq>
+                   <rdf:li>YYYY-MM-DDThh:mm:ss.sTZD</rdf:li>
+                 </rdf:Seq>
+               </dc:date> *)
+            extractXmlArrayFlat "dc:date" xmp
+         and xmpDate =
+            (* <xmp:CreateDate>YYYY-MM-DDThh:mm:ss.sTZD</xmp:CreateDate> *)
+            [ extractXmlOneTagFlat "xmp:CreateDate" xmp ]
+         in
+         (dcDate @ xmpDate)
+         |>
+         (List.map
+            (fun date ->
+               (* convert from "YYYY-MM-DDThh:mm:ss.sTZD" to "D:YYYYMMDD" *)
+               (String_.lead date 10)
+               |>
+               (String_.filter ((<>)'-'))
+               |>
+               ((^) "D:") ))
+      | "Subject"->
+         (* <dc:description>
+              <rdf:Alt>
+                <rdf:li xml:lang="x-default"> ... </rdf:li>
+              </rdf:Alt>
+            </dc:description> *)
+         (extractXmlArrayFirstFlat "dc:description" xmp)
+         |> (fun s -> [ s ])
+      | "Keywords" ->
+         let subject =
+            (* <dc:subject>
+                 <rdf:Bag>
+                   <rdf:li> ... </rdf:li>
+                 </rdf:Bag>
+               </dc:subject> *)
+            extractXmlArrayFlat "dc:subject" xmp
+         and keywords =
+            (* <pdf:keywords> ... </pdf:keywords> *)
+            [ extractXmlOneTagFlat "pdf:keywords" xmp ]
+         in
+         (subject @ keywords)
+         |> (List.filter String_.notEmpty)
+         |> (String.concat ", ")
+         |> (fun s -> [ s ])
+      | _ -> [ "" ]
+      end
+   | value ->
+      [ value ]
+
+
 let lookupMetadataValue (metadata:string*string) (key:string) : string =
 
-   let info , _ = metadata in
+   (* take the first only, defaulting none to an empty string *)
 
-   lookupInfoValue info key
+   (lookupMetadataValues metadata key)
+   |>
+   List_.hd
+   |>
+   (Option_.default "")
 
 
 let getDate (metadata:string*string) : string =
