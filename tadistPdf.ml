@@ -330,11 +330,6 @@ let getDates (metadata:string*string) : string list =
             "" )
 
 
-let getPagecount (metadata:string*string) : string =
-
-   lookupMetadataValue metadata "Pages"
-
-
 let getIsbnsFromMetadata (metadata:string*string) : string list =
 
    (* main metadata fields: XMP rdf/xml: *)
@@ -616,6 +611,6 @@ let extractTadist (pdfPathname:string) : (Tadist.nameStructRaw option) ress =
             authorRaw = [ lookupMetadataValue metadata "Author" ] ;
             dateRaw   = getDates metadata ;
             idRaw     = getIsbns metadata text ;
-            subtypRaw = getPagecount metadata ;
+            subtypRaw = lookupMetadataValue metadata "Pages" ;
             typRaw    = _TYPE ;
          } ) )
