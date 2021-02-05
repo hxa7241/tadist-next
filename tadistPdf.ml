@@ -134,7 +134,7 @@ let getMetadata (pdfPathname:string) : (string * string) ress =
             Some (String_.subpc str openTagPos closeTagEnd))
          |>
          (* default to empty string *)
-         (Option.value ~default:"") ))
+         String_.ofOpt ))
    in
 
    let xmpNoNewlines = Result.map Blanks.unifySpaces xmpRaw in
@@ -153,12 +153,12 @@ let lookupInfoValue (info:string) (key:string) : string =
    ((Fun.flip Rx.groupFound) 1)
    |>
    (* : string *)
-   (Option.value ~default:"")
+   String_.ofOpt
 
    (*
    (List.assoc_opt key info)
    |>
-   (Option.value ~default:"")
+   String_.ofOpt
    *)
 
 
@@ -168,7 +168,7 @@ let lookupXmlValue (xmp:string) (regex:string) (group:int) : string =
    |>-
    (Fun.flip Rx.groupFound group)
    |>
-   (Option.value ~default:"")
+   String_.ofOpt
 
 
 let lookupMetadataValue (metadata:string*string) (key:string) : string =
