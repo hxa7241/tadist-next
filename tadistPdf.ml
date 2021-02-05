@@ -162,6 +162,55 @@ let lookupInfoValue (info:string) (key:string) : string =
    *)
 
 
+(* A flattened sequence of all matched tags -- so they must not be nesting. *)
+let extractXmlTagsFlat (tagName:string) (xml:string) : string list =
+
+   (* expecting successive pairs of open and close (no nesting) *)
+
+   let opens : (string * int) list =
+      Rx.allMatchesPos (Rx.compile ("<"  ^ tagName ^ "[ >]")) xml
+   and closes : (string * int) list =
+      Rx.allMatchesPos (Rx.compile ("</" ^ tagName ^ "[ >]")) xml
+   in
+   (* : (string * int) list * (string * int) list *)
+   (List_.equalenTruncate opens closes)
+   |>
+   (* : ((string * int) * (string * int)) list *)
+   (fun (opens , closes) -> (List.combine opens closes))
+   |>
+   (* get contents only, not enclosing tags : string list *)
+   (List.map
+      (fun ((_ , openPos) , (_, closePos)) ->
+         let openAndContent = String_.subpc xml openPos closePos in
+         match (String_.halve '>' openAndContent) with
+         | Some (_ , second) -> second
+         | None              -> openAndContent ))
+
+
+(* A single matched tag -- must not be nestable. *)
+let extractXmlOneTagFlat (tagName:string) (xml:string) : string =
+
+   (extractXmlTagsFlat tagName xml)
+   |>
+   (List_.hd %> String_.ofOpt)
+
+
+(* Array in a single matched tag -- must not be nestable. *)
+let extractXmlArrayFlat (tagName:string) (xml:string) : string list =
+
+   (extractXmlOneTagFlat tagName xml)
+   |>
+   (extractXmlTagsFlat "rdf:li")
+
+
+(* First of array in a single matched tag -- must not be nestable. *)
+let extractXmlArrayFirstFlat (tagName:string) (xml:string) : string =
+
+   (extractXmlOneTagFlat tagName xml)
+   |>
+   (extractXmlOneTagFlat "rdf:li")
+
+
 let lookupXmlValue (xmp:string) (regex:string) (group:int) : string =
 
    (Rx.regexSeek regex ~caseInsens:true ~pos:0 xmp)
