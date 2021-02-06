@@ -144,6 +144,7 @@ let getMetadata (pdfPathname:string) : (string * string) ress =
 
 let lookupInfoValue (info:string) (key:string) : string =
 
+   (* for lines of: "key: value\n" *)
    let rxs = {|^|} ^ key ^ {| *: *\(.*\)$|} in
 
    (* : rxmatch option *)
@@ -209,15 +210,6 @@ let extractXmlArrayFirstFlat (tagName:string) (xml:string) : string =
    (extractXmlOneTagFlat tagName xml)
    |>
    (extractXmlOneTagFlat "rdf:li")
-
-
-let lookupXmlValue (xmp:string) (regex:string) (group:int) : string =
-
-   (Rx.regexSeek regex ~caseInsens:true ~pos:0 xmp)
-   |>-
-   (Fun.flip Rx.groupFound group)
-   |>
-   String_.ofOpt
 
 
 let lookupMetadataValues (metadata:string*string) (key:string) : string list =
@@ -335,17 +327,17 @@ let getIsbnsFromMetadata (metadata:string*string) : string list =
    (* main metadata fields: XMP rdf/xml: *)
 
    let identifierDc (xmp:string) : string list =
-      let tag =
-         (* <dc:identifier ...>[content]</dc:identifier> *)
-         lookupXmlValue
-            xmp
-            {|<dc:identifier\([^>]*\)?>\([^<]*\)</dc:identifier>|}
-            2
-      in
-      Tadist.Isbn.searchByChecksum 0 tag
+      (Rx.regexSeek
+         {|<dc:identifier\([^>]*\)?>\([^<]*\)</dc:identifier>|}
+         xmp)
+      |>-
+      (Fun.flip Rx.groupFound 2)
+      |>
+      String_.ofOpt
+      |>
+      (Tadist.Isbn.searchByChecksum 0)
 
    and identifierXmp (xmp:string) : string list =
-      (* TODO: check and test extract array elements *)
       (* <xmp:Identifier ...>
             <rdf:Bag ...>
                <rdf:li ...>
@@ -356,16 +348,14 @@ let getIsbnsFromMetadata (metadata:string*string) : string list =
             </rdf:Bag>
          </xmp:Identifier> *)
       (* find element containing value array : string *)
-      (lookupXmlValue
-         xmp
-         ({|<xmp:Identifier\([^>]*\)?>|}
-         ^ {|[^<]*<rdf:\(Alt\|Bag\|Seq\)\([^>]*\)?>|}
-         ^ {|\(.*\)|}
-         ^ {|</rdf:\(Alt\|Bag\|Seq\)>|})
-         4)
+      (* : string list *)
+      (extractXmlTagsFlat "xmp:Identifier" xmp)
+      |>
+      (* there should be only 1 *)
+      (List_.hd %> String_.ofOpt)
       |>
       (* find all <rdf:li>s : string list *)
-      (Rx.allMatches (Rx.compile {|<rdf:li\([^>]*\)?>.</rdf:li>|}))
+      (extractXmlTagsFlat "rdf:li")
       |>
       (* map to label and value : (string * string) list *)
       (List.map
@@ -390,10 +380,9 @@ let getIsbnsFromMetadata (metadata:string*string) : string list =
       (* sort by ISBN labelled before not : (string * string) list *)
       (List.stable_sort
          (fun (lbl0 , _) (lbl1 , _) ->
-            compare
+            ~-(compare
                (Option_.toBool (Rx.regexSeek ~caseInsens:true "isbn" lbl0))
-               (Option_.toBool (Rx.regexSeek ~caseInsens:true "isbn" lbl1))
-               ))
+               (Option_.toBool (Rx.regexSeek ~caseInsens:true "isbn" lbl1)))))
       |>
       (* discard labels : string list *)
       (List.split %> snd)
@@ -401,12 +390,14 @@ let getIsbnsFromMetadata (metadata:string*string) : string list =
    (* other inappropriate metadata fields (unlikely but possible) *)
 
    and subject (metadata:string*string) : string list =
-      let field = lookupMetadataValue metadata "Subject" in
-      Tadist.Isbn.searchByChecksum 0 field
+      (lookupMetadataValue metadata "Subject")
+      |>
+      (Tadist.Isbn.searchByChecksum 0)
 
    and keywords (metadata:string*string) : string list =
-      let field = lookupMetadataValue metadata "Keywords" in
-      Tadist.Isbn.searchByChecksum 0 field
+      (lookupMetadataValue metadata "Keywords")
+      |>
+      (Tadist.Isbn.searchByChecksum 0)
    in
 
    let _ , xmp = metadata in
