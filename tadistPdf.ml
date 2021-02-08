@@ -188,7 +188,7 @@ let extractXmlTagsFlat (tagName:string) (xml:string) : string list =
          | None              -> openAndContent ))
 
 
-(* A single matched tag -- must not be nestable. *)
+(* First matched tag -- must not be nestable. *)
 let extractXmlOneTagFlat (tagName:string) (xml:string) : string =
 
    (extractXmlTagsFlat tagName xml)
@@ -196,7 +196,7 @@ let extractXmlOneTagFlat (tagName:string) (xml:string) : string =
    (List_.hd %> String_.ofOpt)
 
 
-(* Array in a single matched tag -- must not be nestable. *)
+(* Array inside a single matched tag -- must not be nestable. *)
 let extractXmlArrayFlat (tagName:string) (xml:string) : string list =
 
    (extractXmlOneTagFlat tagName xml)
@@ -204,7 +204,7 @@ let extractXmlArrayFlat (tagName:string) (xml:string) : string list =
    (extractXmlTagsFlat "rdf:li")
 
 
-(* First of array in a single matched tag -- must not be nestable. *)
+(* First of array inside a single matched tag -- must not be nestable. *)
 let extractXmlArrayFirstFlat (tagName:string) (xml:string) : string =
 
    (extractXmlOneTagFlat tagName xml)
@@ -287,6 +287,7 @@ let lookupMetadataValues (metadata:string*string) (key:string) : string list =
       | _ -> [ "" ]
       end
    | value ->
+      (* use the value in info dictionary, and ignore xmp *)
       [ value ]
 
 
@@ -296,9 +297,7 @@ let lookupMetadataValue (metadata:string*string) (key:string) : string =
 
    (lookupMetadataValues metadata key)
    |>
-   List_.hd
-   |>
-   (Option_.default "")
+   (List_.hd %> String_.ofOpt)
 
 
 let getDates (metadata:string*string) : string list =
@@ -327,15 +326,9 @@ let getIsbnsFromMetadata (metadata:string*string) : string list =
    (* main metadata fields: XMP rdf/xml: *)
 
    let identifierDc (xmp:string) : string list =
-      (Rx.regexSeek
-         {|<dc:identifier\([^>]*\)?>\([^<]*\)</dc:identifier>|}
-         xmp)
-      |>-
-      (Fun.flip Rx.groupFound 2)
+      (extractXmlOneTagFlat "dc:identifier" xmp)
       |>
-      String_.ofOpt
-      |>
-      (Tadist.Isbn.searchByChecksum 0)
+      (Tadist.Isbn.searchByChecksum 0 ~len:(-1))
 
    and identifierXmp (xmp:string) : string list =
       (* <xmp:Identifier ...>
@@ -392,12 +385,12 @@ let getIsbnsFromMetadata (metadata:string*string) : string list =
    and subject (metadata:string*string) : string list =
       (lookupMetadataValue metadata "Subject")
       |>
-      (Tadist.Isbn.searchByChecksum 0)
+      (Tadist.Isbn.searchByChecksum 0 ~len:(-1))
 
    and keywords (metadata:string*string) : string list =
       (lookupMetadataValue metadata "Keywords")
       |>
-      (Tadist.Isbn.searchByChecksum 0)
+      (Tadist.Isbn.searchByChecksum 0 ~len:(-1))
    in
 
    let _ , xmp = metadata in
