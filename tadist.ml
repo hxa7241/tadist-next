@@ -648,24 +648,39 @@ let normaliseAuthor (authors:string list) : StringT.t array =
 
 let normaliseDate (dates:string list) : DateIso8601e.t array =
 
+   (* (does not recognise negative/BC or 5+ digit years) *)
+
    dates
-   |> List.map (Utf8filter.replace % Blanks.unifySpaces)
-   (* truncate time from presumed iso8601 dateTtime *)
-   |> (List.map (fun s ->
-      let s = String.trim s in
-      let i =
-         try String.index s 'T' with
-         | Not_found ->
-            try String.index s ' ' with
-            | Not_found -> String.length s
-      in
-      String.sub s 0 i))
-   (* check, and just keep OK, sorted, unique years *)
-   |> (List.map DateIso8601e.make)
-   |> (List_.filtmap Result_.toOpt)
+   (* extract years : (DateIso8601e.t option) list *)
+   |> List.map
+      (fun rawDateString ->
+         rawDateString
+         (* : string *)
+         |> (Utf8filter.replace % Blanks.unifySpaces)
+         |> (fun s -> " " ^ s ^ " ")
+         (* : string option *)
+         |> (fun searchableDateString ->
+            (* first 4-digit chunk (general conventional year) *)
+            (  (Rx.regexSeek
+                  {|[^0-9]\([0-9][0-9][0-9][0-9]\)[^0-9]|}
+                  searchableDateString)
+               |>-
+               ((Fun.flip Rx.groupFound) 1)  )
+            ||>
+            (* or, first 4-digits of first 8-digit chunk (iso8601 compact) *)
+            (fun () ->
+               (Rx.regexSeek
+                  {|[^0-9]\([0-9][0-9][0-9][0-9]\)[0-9][0-9][0-9][0-9][^0-9]|}
+                  searchableDateString)
+               |>-
+               ((Fun.flip Rx.groupFound) 1) ) )
+         (* check : DateIso8601e.t option *)
+         |>- (DateIso8601e.make %> Result_.toOpt) )
+   (* keep sorted, unique years *)
+   |> (List_.filtmap id)
    |> (List.map DateIso8601e.yearOnly)
    |> (List.sort_uniq DateIso8601e.compare)
-   (* first and last only *)
+   (* take first and last only *)
    |> List_.hdft
    |> Array.of_list
 
