@@ -498,7 +498,7 @@ let parseNamelist (names:string) : string list =
    names
 
    (* clean a little *)
-   |> Utf8filter.replace |> Blanks.blankSpacyCtrlChars
+   |> Utf8.Filter.replace |> Blanks.blankSpacyCtrlChars
    |> replaceAmp
 
    (* split into semicolon segments *)
@@ -589,7 +589,7 @@ let normaliseTitle (titles:string list) : StringT.t array =
    | []         -> [||]
    | first :: _ ->
       first
-      |> Utf8filter.replace
+      |> Utf8.Filter.replace
       |> Blanks.blankSpacyCtrlChars
       |> Blanks.unifySpaces
       |> String.trim
@@ -656,7 +656,7 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
       (fun rawDateString ->
          rawDateString
          (* : string *)
-         |> (Utf8filter.replace % Blanks.unifySpaces)
+         |> (Utf8.Filter.replace % Blanks.unifySpaces)
          |> (fun s -> " " ^ s ^ " ")
          (* : string option *)
          |> (fun searchableDateString ->
@@ -688,7 +688,7 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
 let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =
 
    isbns
-   |> List.map (Utf8filter.filter % Blanks.unifySpaces)
+   |> List.map (Utf8.Filter.filter % Blanks.unifySpaces)
    (* to machine-readable form *)
    |> List.map (String_.filter (function | ' ' | '-' -> false | _ -> true))
    (* remove bad ones *)
@@ -717,7 +717,7 @@ let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =
 let normaliseSubtyp (s:string) : StringT.t option =
 
    s
-   |> Utf8filter.filter |> Blanks.blankSpacyCtrlChars |> String.trim
+   |> Utf8.Filter.filter |> Blanks.blankSpacyCtrlChars |> String.trim
 
    (* drop if contains invalid chars or is negative *)
    |> (fun s ->
@@ -742,12 +742,12 @@ let normaliseSubtyp (s:string) : StringT.t option =
 let normaliseString (s:string) : StringT.t option =
 
    s
-   |> Utf8filter.replace |> Blanks.blankSpacyCtrlChars |> StringT.filter
+   |> Utf8.Filter.replace |> Blanks.blankSpacyCtrlChars |> StringT.filter
    (* truncate utf8 chars to max byte length *)
    |> (fun st ->
       st
       |> (let _MAXLEN = 24 in String_.truncate _MAXLEN)
-      |> Utf8filter.filter)
+      |> Utf8.Filter.filter)
    |> StringT.make |> Result_.toOpt
 
 

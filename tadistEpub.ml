@@ -294,7 +294,7 @@ let getIsbns (epubPathname:string) (contentopfpath:string)
             (* for easier searching: coerce to UTF-8; blank-out line-ends,
                tabs, markup; translate en-dashs to hyphens *)
             let text = html
-               |> Utf8filter.filter
+               |> Utf8.Filter.filter
                |> Blanks.unifySpaces
                |> (Str.global_replace (Str.regexp "<[^>]+>") " ")
                |> (Str.global_replace (Str.regexp_string "\xE2\x80\x93") "-")

@@ -6,7 +6,7 @@ TADIST tool ***UNFINISHED***
 Harrison Ainsworth / HXA7241 : 2015, 2020-2021  
 http://www.hxa.name/tools
 
-2021-01-29
+2021-02-16
 
 
 
@@ -62,7 +62,6 @@ Requirements:
 
 Library dependencies (other versions might suffice):
 * camlzip 1.10
-* utf8filter 3
 
 Runtime dependencies:
 * https://www.xpdfreader.com/download.html
@@ -111,9 +110,6 @@ Uses:
    * https://github.com/xavierleroy/camlzip
 * Xpdf tools
    * https://www.xpdfreader.com/download.html
-* Utf8filter 3
-   * http://www.hxa.name/tools/index.html#utf8filter
-   * https://github.com/hxa7241/utf8filter
 
 
 
@@ -144,5 +140,4 @@ DC:`
    references:`https://openlibrary.org/dev/docs/api/books`
    references:`https://opam.ocaml.org/packages/camlzip/`
    references:`https://www.xpdfreader.com/about.html`
-   references:`http://www.hxa.name/tools/index.html#utf8filter`
 `

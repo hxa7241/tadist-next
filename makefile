@@ -3,9 +3,9 @@
 
 
 EXE=tadist
-SRC=hxaGeneral.mli hxaGeneral.ml tadist.mli tadist.ml tadistEpub.mli tadistEpub.ml tadistPdf.mli tadistPdf.ml tadistQuerier.mli tadistQuerier.ml tadistMelder.mli tadistMelder.ml tadistTool.mli tadistTool.ml
-LIBSN=unix.cmxa str.cmxa utf8filter.cmxa zip.cmxa
-LIBSB=unix.cma  str.cma  utf8filter.cma  zip.cma
+SRC=utf8.mli utf8.ml hxaGeneral.mli hxaGeneral.ml tadist.mli tadist.ml tadistEpub.mli tadistEpub.ml tadistPdf.mli tadistPdf.ml tadistQuerier.mli tadistQuerier.ml tadistMelder.mli tadistMelder.ml tadistTool.mli tadistTool.ml
+LIBSN=unix.cmxa str.cmxa zip.cmxa
+LIBSB=unix.cma  str.cma  zip.cma
 OPTS=-principal -strict-sequence -strict-formats -w +A
 OPTS2=-I libs/
 

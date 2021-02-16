@@ -4,7 +4,6 @@
 
 #load "str.cma" ;;
 #directory "/home/hxa/projects/tadist/libs" ;;
-#load "utf8filter.cma" ;;
 #mod_use "hxaGeneral.ml" ;;
 #mod_use "tadist.ml" ;;
 
