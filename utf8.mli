@@ -21,6 +21,34 @@ val _REPLACEMENT_CHAR_UTF8 : string
 
 (* --- modules --- *)
 
+module Codec :
+sig
+
+   (* --- functions --- *)
+
+   (* inner *)
+
+
+   (* outer *)
+
+   (* Translates codepoint to UTF-8. *)
+   val ofCode : Uchar.t -> string
+
+   (* Translates any non-ASCII into codepoints. *)
+   (*val toCode : string -> Uchar.t list*)
+
+   (* Translates any '\uXXXX' escaped UTF-16 codes into UTF-8.
+    * @param  false: leave invalids untranslated; true: replacement-char them
+    * @param  string with escapes
+    * @return string translated to UTF-8
+    *)
+   val ofU16Esc : bool -> string -> string
+
+end
+
+
+
+
 module Filter :
 sig
    (* --- types --- *)

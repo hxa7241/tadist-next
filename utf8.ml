@@ -21,6 +21,93 @@ let _REPLACEMENT_CHAR_UTF8 = "\xEF\xBF\xBD"
 
 (* --- modules --- *)
 
+module Codec :
+sig
+
+   (* --- functions --- *)
+
+   (* inner *)
+
+
+   (* outer *)
+
+   (* Translates codepoint to UTF-8. *)
+   val ofCode : Uchar.t -> string
+
+   (* Translates any non-ASCII into codepoints. *)
+   (*val toCode : string -> Uchar.t list*)
+
+   (* Translates any '\uXXXX' escaped UTF-16 codes into UTF-8.
+    * @param  false: leave invalids untranslated; true: replacement-char them
+    * @param  string with escapes
+    * @return string translated to UTF-8
+    *)
+   val ofU16Esc : bool -> string -> string
+
+end
+=
+struct
+
+   (* --- functions --- *)
+
+   (* inner *)
+
+
+   (* outer *)
+
+   let ofCode (code:Uchar.t) : string =
+      (* TODO *)
+      ""
+
+      (*
+      (U+0000..U+10FFFF) -> utf-8
+
+      Char. number range  |        UTF-8 octet sequence
+         (hexadecimal)    |              (binary)
+      --------------------+---------------------------------------------
+      0000 0000-0000 007F | 0xxxxxxx
+      0000 0080-0000 07FF | 110xxxxx 10xxxxxx
+      0000 0800-0000 FFFF | 1110xxxx 10xxxxxx 10xxxxxx
+      0001 0000-0010 FFFF | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+
+      but not:  D800 - DFFF ((utf16) surrogate pairs)
+
+      (high surrogate: D800 - DBFF)
+      (low  surrogate: DC00 - DFFF)
+      *)
+
+
+   let ofU16Esc (replace:bool) (escs:string) : string =
+      (* TODO *)
+      ""
+
+      (*
+      general: [0-9A-F][0-9A-F][0-9A-F][0-9A-F]
+
+      exhaustive, mutually exclusive:
+         norm 1: [0-9A-C][0-9A-F][0-9A-F][0-9A-F]  \|
+                 D[0-7][0-9A-F][0-9A-F]
+                 [E-F][0-9A-F][0-9A-F][0-9A-F]
+         surr p: D[8-9A-F][0-9A-F][0-9A-F]D[8-9A-F][0-9A-F][0-9A-F]
+
+      | n | ss
+      | sn | s
+
+      rx match single or surrogate pair: u \| uu
+      if pair is partial match, so invalid, and ultimately non-matching, then
+      just leave it
+
+      1:
+      - input escs string
+      - make labelled segmentation with/like Str.full_split
+      - map labelled esc chunks to utf8 chunks
+      *)
+
+end
+
+
+
+
 module Filter :
 sig
    (* --- types --- *)
