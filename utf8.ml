@@ -19,6 +19,51 @@ let _REPLACEMENT_CHAR_UTF8 = "\xEF\xBF\xBD"
 
 
 
+(* --- functions --- *)
+
+(* from HxaGeneral *)
+
+let clamp ~(lo:'a) ~(up:'a) (n:'a) : 'a =
+   (min (max lo n) up)
+
+let option_defaultf (f:unit -> 'a) (o:'a option) : 'a =
+   match o with
+   | Some v -> v
+   | None   -> f ()
+
+let option_mapUnify (fs:'a -> 'b) (fn:unit -> 'b) (o:'a option) : 'b =
+   (Option.map fs o) |> (option_defaultf fn)
+
+let string_subo (pos:int) (len:int) (s:string) : string option =
+   try Some (String.sub s pos len) with
+   | Invalid_argument _ -> None
+
+let string_leadTrail (pos:int) (s:string) : (string * string) =
+   let lead (pos:int) (s:string) : string =
+      let posc = clamp ~lo:0 ~up:(String.length s) pos in
+      String.sub s 0 posc
+   and trail (pos:int) (s:string) : string =
+      let posc = clamp ~lo:0 ~up:(String.length s) pos in
+      String.sub s posc ((String.length s) - posc)
+   in
+   ( lead pos s , trail pos s )
+
+let list_optAnd (lo:('a option) list) : ('a list) option =
+   let la    = List.filter_map Fun.id lo in
+   let laLen = List.length la in
+   (* Some if: all Some, or empty *)
+   if (laLen = (List.length lo))
+   then Some la else None
+
+let ( |>- ) = Option.bind
+
+let uchar_ofInt (code:int) : Uchar.t option =
+   try Some (Uchar.of_int code) with
+   | Invalid_argument _ -> None
+
+
+
+
 (* --- modules --- *)
 
 module Codec :
