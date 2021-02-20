@@ -357,6 +357,9 @@ sig
        @exceptions: on empty string: Invalid_argument "index out of bounds" *)
    val last : string -> char
 
+   (** Like sub, but return option instead of exception. *)
+   val subo : int -> int -> string -> string option
+
    (** Like sub, but clamped params. *)
    val subc : string -> int -> int -> string
 

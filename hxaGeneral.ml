@@ -480,6 +480,7 @@ sig
    val trail       : string -> int -> string
    val leadTrail   : string -> int -> (string * string)
    val last        : string -> char
+   val subo        : int -> int -> string -> string option
    val subc        : string -> int -> int -> string
    val subp        : string -> int -> int -> string
    val subpc       : string -> int -> int -> string
@@ -534,6 +535,10 @@ struct
 
    let last (s:string) : char =
       s.[(String.length s) - 1]
+
+   let subo (pos:int) (len:int) (s:string) : string option =
+      try Some (String.sub s pos len) with
+      | Invalid_argument _ -> None
 
    let subc (s:string) (pos:int) (len:int) : string =
       let wholeLen = String.length s in
