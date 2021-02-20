@@ -19,39 +19,6 @@ val _REPLACEMENT_CHAR_UTF8 : string
 
 
 
-(* --- functions --- *)
-
-(* from HxaGeneral *)
-
-(** Clamp number to: lower <= num <= upper. *)
-val clamp : lo:'a -> up:'a -> 'a -> 'a
-
-(** Unify an option with a default for None. *)
-val option_defaultf : (unit -> 'a) -> 'a option -> 'a
-
-(** Map and unify option -- map Some, and default None. *)
-val option_mapUnify : ('a -> 'b) -> (unit -> 'b) -> 'a option -> 'b
-
-(** Like String.sub, but clamped params. *)
-val string_subo : int -> int -> string -> string option
-
-(** First n elements, and rest of elements from pos, with clamped pos. *)
-val string_leadTrail : int -> string -> (string * string)
-
-(** Gather options with an 'and': yield Some when all Some, else None.
-    (Or call it a 'transpose': list of options -> option of a list.).
-    (Empty list yields Some.). *)
-val list_optAnd : ('a option) list -> ('a list) option
-
-(** Option-handling pipeline (option monad 'bind'). *)
-val ( |>- ) : 'o1 option -> ('o1 -> 'o2 option) -> 'o2 option
-
-(** Like Uchar.of_int, but return option instead of exception. *)
-val uchar_ofInt : int -> Uchar.t option
-
-
-
-
 (* --- modules --- *)
 
 module Codec :
