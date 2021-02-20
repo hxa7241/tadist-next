@@ -31,16 +31,16 @@ sig
 
    (* --- functions --- *)
 
-   (* inner *)
+   (**
+    * Translates codepoint to UTF-8.
+    * According to: RFC-3629 -- http://tools.ietf.org/html/rfc3629
+    * returns empty string for an invalid codepoint
+    * (valid codepoints: 0x0000..0xD7FF and 0xE000..0x10FFFF)
+    *)
+   val ofCode : int -> string
 
-
-   (* outer *)
-
-   (* Translates codepoint to UTF-8. *)
-   val ofCode : Uchar.t -> string
-
-   (* Translates any non-ASCII into codepoints. *)
-   (*val toCode : string -> Uchar.t list*)
+   (** Translates UTF-8 byte group into a codepoint. *)
+   (*val toCode : string -> Uchar.t*)
 
    (* Translates any '\uXXXX' escaped UTF-16 codes into UTF-8.
     * @param  false: leave invalids untranslated; true: replacement-char them
@@ -55,31 +55,60 @@ struct
 
    (* --- functions --- *)
 
-   (* inner *)
-
-
-   (* outer *)
-
-   let ofCode (code:Uchar.t) : string =
-      (* TODO *)
-      ""
+   let ofCode (codeInt:int) : string =
 
       (*
-      (U+0000..U+10FFFF) -> utf-8
+      (0x0000..0xD7FF and 0xE000..0x10FFFF) -> UTF-8
 
-      Char. number range  |        UTF-8 octet sequence
-         (hexadecimal)    |              (binary)
-      --------------------+---------------------------------------------
-      0000 0000-0000 007F | 0xxxxxxx
-      0000 0080-0000 07FF | 110xxxxx 10xxxxxx
-      0000 0800-0000 FFFF | 1110xxxx 10xxxxxx 10xxxxxx
-      0001 0000-0010 FFFF | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+      RFC-3629 -- http://tools.ietf.org/html/rfc3629
 
-      but not:  D800 - DFFF ((utf16) surrogate pairs)
+       Char. number range   |        UTF-8 octet sequence
+          (hexadecimal)     |              (binary)
+      ----------------------+-------------------------------------------
+      0000 0000 - 0000 007F | 0xxxxxxx
+      0000 0080 - 0000 07FF | 110xxxxx 10xxxxxx
+      0000 0800 - 0000 FFFF | 1110xxxx 10xxxxxx 10xxxxxx
+      0001 0000 - 0010 FFFF | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
 
-      (high surrogate: D800 - DBFF)
-      (low  surrogate: DC00 - DFFF)
+      but not:  D800 - DFFF (UTF-16 surrogate pairs)
       *)
+
+      (* prefix , mask , shift -- constants for each possible UTF-8 form *)
+      let oneOctetsForm   =
+         [  (0b00000000 , 0b000000000000001111111 ,  0) ]
+      and twoOctetsForm   =
+         [  (0b11000000 , 0b000000000011111000000 ,  6)
+         ;  (0b10000000 , 0b000000000000000111111 ,  0) ]
+      and threeOctetsForm =
+         [  (0b11100000 , 0b000001111000000000000 , 12)
+         ;  (0b10000000 , 0b000000000111111000000 ,  6)
+         ;  (0b10000000 , 0b000000000000000111111 ,  0) ]
+      and fourOctetsForm  =
+         [  (0b11110000 , 0b111000000000000000000 , 18)
+         ;  (0b10000000 , 0b000111111000000000000 , 12)
+         ;  (0b10000000 , 0b000000000111111000000 ,  6)
+         ;  (0b10000000 , 0b000000000000000111111 ,  0) ]
+      in
+
+      let dueOctetForm : (int * int * int) list =
+         if      codeInt <       0x0 then [] (* too small *)
+         else if codeInt <=   0x007F then oneOctetsForm
+         else if codeInt <=   0x07FF then twoOctetsForm
+         else if codeInt <=   0xD7FF then threeOctetsForm
+         else if codeInt <=   0xDFFF then [] (* surrogate pair *)
+         else if codeInt <=   0xFFFF then threeOctetsForm
+         else if codeInt <= 0x10FFFF then fourOctetsForm
+         else                             [] (* too large *)
+      in
+      (* chop code into List.len pieces, and convert each to a char *)
+      let octets : string list =
+         List.map
+            (fun (prefix , mask , shift) : string ->
+               let octet : int = ((codeInt land mask) lsr shift) lor prefix in
+               String.make 1 (char_of_int octet))
+            dueOctetForm
+      in
+      String.concat "" octets
 
 
    let ofU16Esc (replace:bool) (escs:string) : string =

@@ -26,16 +26,16 @@ sig
 
    (* --- functions --- *)
 
-   (* inner *)
+   (**
+    * Translates codepoint to UTF-8.
+    * According to: RFC-3629 -- http://tools.ietf.org/html/rfc3629
+    * returns empty string for an invalid codepoint
+    * (valid codepoints: 0x0000..0xD7FF and 0xE000..0x10FFFF)
+    *)
+   val ofCode : int -> string
 
-
-   (* outer *)
-
-   (* Translates codepoint to UTF-8. *)
-   val ofCode : Uchar.t -> string
-
-   (* Translates any non-ASCII into codepoints. *)
-   (*val toCode : string -> Uchar.t list*)
+   (** Translates UTF-8 byte group into a codepoint. *)
+   (*val toCode : string -> Uchar.t*)
 
    (* Translates any '\uXXXX' escaped UTF-16 codes into UTF-8.
     * @param  false: leave invalids untranslated; true: replacement-char them
@@ -51,6 +51,7 @@ end
 
 module Filter :
 sig
+
    (* --- types --- *)
 
    type charResult = Char of string | Bad of string | EOF of string
