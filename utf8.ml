@@ -388,3 +388,70 @@ struct
    let replace : string -> string = scanString _REPLACEMENT_CHAR_UTF8
 
 end
+
+
+
+
+(* --- tests --- *)
+
+let test_Codec_ofCode (trace:bool) : bool =
+
+   let ofStringAscii (s:string) : char list =
+      let unfoldo (f:int->'a option) : 'a list =
+         let rec recur (list:'a list) (index:int) (f:int->'a option) : 'a list =
+            match (f index) with
+            | Some element -> recur (element :: list) (index + 1) f
+            | None         -> List.rev list
+         in
+         recur [] 0 f
+      in
+      unfoldo (fun i -> try Some s.[i] with | Invalid_argument _ -> None)
+   in
+
+   let charToHex (c:char) : string =
+      Printf.sprintf "%02X" (int_of_char c)
+   in
+
+   let stringToHex (sep:string) (str:string) : string =
+      let chars = ofStringAscii str in
+      (List.map charToHex chars)
+      |> (String.concat sep)
+   in
+
+   let correctPairs : (int * string) list =
+      [ ( Int.min_int , "" )                 (* too small *)
+      ; ( (-1)        , "" )                 (* too small *)
+      ; ( 0x0000      , "\x00" )
+      ; ( 0x007F      , "\x7F" )
+      ; ( 0x0080      , "\xC2\x80" )
+      ; ( 0x07FF      , "\xDF\xBF" )
+      ; ( 0x0800      , "\xE0\xA0\x80" )
+      ; ( 0xFFFF      , "\xEF\xBF\xBF" )
+      ; ( 0x010000    , "\xF0\x90\x80\x80" )
+      ; ( 0x10FFFF    , "\xF4\x8F\xBF\xBF" )
+      ; ( 0x110000    , "" )                 (* too large *)
+      ; ( Int.max_int , "" )                 (* too large *)
+      ; ( 0xD7FF      , "\xED\x9F\xBF" )
+      ; ( 0xD800      , "" )                 (* surrogate pair *)
+      ; ( 0xDFFF      , "" )                 (* surrogate pair *)
+      ; ( 0xE000      , "\xEE\x80\x80" ) ]
+   in
+
+   (* compare with some correct values *)
+   let failMessages : string list =
+      List.filter_map
+         (fun ((code , utf8):(int * string)) ->
+            let result : string = Codec.ofCode code in
+            if result = utf8
+            then
+               None
+            else
+               Some (
+                  Printf.sprintf "*** fail: %#x should be (%s) was (%s)"
+                     code (stringToHex " " utf8) (stringToHex " " result) ))
+         correctPairs
+   in
+   if trace then List.iter print_endline failMessages ;
+
+   (* any failures ? *)
+   (List.length failMessages) = 0

@@ -102,3 +102,16 @@ sig
    val replace : string -> string
 
 end
+
+
+
+
+(* --- tests --- *)
+
+(**
+ * Test Codec.ofCode.
+ *
+ * @param  print stuff
+ * @return true for success, false for failure
+ *)
+val test_Codec_ofCode : bool -> bool
