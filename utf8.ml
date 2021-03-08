@@ -42,9 +42,10 @@ sig
    (** Translates UTF-8 byte group into a codepoint. *)
    (*val toCode : string -> Uchar.t*)
 
-   (* Translates any '\uXXXX' escaped UTF-16 codes into UTF-8.
+   (**
+    * Translates any '\uXXXX' escaped UTF-16 codes into UTF-8.
     * @param  false: leave invalids untranslated; true: replacement-char them
-    * @param  string with escapes
+    * @param  string containing escapes
     * @return string translated to UTF-8
     *)
    val ofU16Esc : bool -> string -> string
@@ -90,6 +91,7 @@ struct
          ;  (0b10000000 , 0b000000000000000111111 ,  0) ]
       in
 
+      (* choose the appropriate form for the code *)
       let dueOctetForm : (int * int * int) list =
          if      codeInt <       0x0 then [] (* too small *)
          else if codeInt <=   0x007F then oneOctetsForm
@@ -112,30 +114,98 @@ struct
 
 
    let ofU16Esc (replace:bool) (escs:string) : string =
-      (* TODO *)
-      ""
 
-      (*
-      general: [0-9A-F][0-9A-F][0-9A-F][0-9A-F]
+      let escCodeToNumber (codeStr:string) : int option =
+         (* "\uXXXX" (hex) -> int *)
+         (String_.subo 2 4 codeStr)
+         |>- (fun s -> int_of_string_opt ("0x" ^ s))
+      and numberToUtf8 : int -> string option =
+         ofCode %> (Option_.classify ((<>)""))
+      and replaceCodeEscs (text:string) : string =
+         (* any \u followed by 0-4 hex digits *)
+         let rx = Str.regexp_case_fold
+            (  {|\(\\u[0-9A-F][0-9A-F][0-9A-F][0-9A-F]\)|}
+               ^ {|\|\(\\u[0-9A-F][0-9A-F][0-9A-F]\)|}
+               ^ {|\|\(\\u[0-9A-F][0-9A-F]\)|}
+               ^ {|\|\(\\u[0-9A-F]\)|}
+               ^ {|\|\(\\u\)|}  )
+         in
+         Str.global_replace rx _REPLACEMENT_CHAR_UTF8 text
+      in
 
-      exhaustive, mutually exclusive:
-         norm 1: [0-9A-C][0-9A-F][0-9A-F][0-9A-F]  \|
-                 D[0-7][0-9A-F][0-9A-F]
-                 [E-F][0-9A-F][0-9A-F][0-9A-F]
-         surr p: D[8-9A-F][0-9A-F][0-9A-F]D[8-9A-F][0-9A-F][0-9A-F]
+      (* valid escape finder (6 or 12 char sequences) *)
+      let rx = Str.regexp_case_fold
+         (* four alternatives that are mutually exclusive and exhaustive
+            codepoint sub-ranges:
+            * normal:    0000 - CFFF, D000 - D7FF
+            * surrogate: D800 - DBFF, DC00 - DFFF
+            * normal:    E000 - FFFF
+            (10000 - 10FFFF is encoded with surrogate pair) *)
+         (* normal codepoint regions:
+            lower (in two parts), and upper below 5 digits *)
+         (  {|\(\\u[0-9A-C][0-9A-F][0-9A-F][0-9A-F]\)|}
+            ^ {|\|\(\\uD[0-7][0-9A-F][0-9A-F]\)|}
+            ^ {|\|\(\\u[E-F][0-9A-F][0-9A-F][0-9A-F]\)|}
+            (* surrogate region, in a pair:
+               (which encodes 5 digit upper region) *)
+            ^ {|\|\(\\uD[8-9A-B][0-9A-F][0-9A-F]\\uD[C-F][0-9A-F][0-9A-F]\)|}  )
 
-      | n | ss
-      | sn | s
+      and translateCodepoint (codeStr:string) : string option =
+         (* "\uXXXX" (Basic Multilingual Plane) *)
+         codeStr |> escCodeToNumber |>- numberToUtf8
 
-      rx match single or surrogate pair: u \| uu
-      if pair is partial match, so invalid, and ultimately non-matching, then
-      just leave it
+      and translateSurrogatePair (codeStr:string) : string option =
+         (* get both as numbers, or nothing : ('o0 * 'o1) option *)
+         optAnd2p
+            (fst %> escCodeToNumber)
+            (snd %> escCodeToNumber)
+            (String_.leadTrail codeStr 6)
+         (* combine into single code : int option *)
+         |>- (fun (lead , trail) ->
+            (* check range conformance:
+               high/leading: D800 - DBFF
+               low/trailing: DC00 - DFFF *)
+            if (lead = (clamp ~lo:0xD800 ~up:0xDBFF lead))
+               && (trail = (clamp ~lo:0xDC00 ~up:0xDFFF trail))
+            then
+               (* get each's 10-bit payload *)
+               let high = lead  - 0xD800
+               and low  = trail - 0xDC00 in
+               (* combine bits *)
+               let _20bits = (high lsl 10) lor low in
+               (* offset *)
+               Some (_20bits + 0x10000)
+            else
+               None)
+         (* translate code *)
+         |>- numberToUtf8
+      in
 
-      1:
-      - input escs string
-      - make labelled segmentation with/like Str.full_split
-      - map labelled esc chunks to utf8 chunks
-      *)
+      (* analyse into (valid) escs and text : Str.split_result *)
+      (Str.full_split rx escs)
+      |>
+      (* translate escs (leave/replace invalids) : string list *)
+      (List.map
+         (fun (chunk : Str.split_result) : string ->
+            match chunk with
+            | Str.Text text ->
+               (* basic text, and invalid code-escs left by the regex analysis:
+                  leave text, but maybe replace invalid code-escs *)
+               if replace then replaceCodeEscs text else text
+            | Str.Delim codeStr ->
+               (* code-escapes (valid ones): translate *)
+               begin match String.length codeStr with
+               |  6 -> translateCodepoint     codeStr
+               | 12 -> translateSurrogatePair codeStr
+               |  _ -> None
+               end
+               |>
+               (* regex should not allow this (so replace or leave) *)
+               (Option_.default
+                  (if replace then _REPLACEMENT_CHAR_UTF8 else codeStr)) ))
+      |>
+      (* re-concat them : string *)
+      (String.concat "")
 
 end
 

@@ -37,9 +37,10 @@ sig
    (** Translates UTF-8 byte group into a codepoint. *)
    (*val toCode : string -> Uchar.t*)
 
-   (* Translates any '\uXXXX' escaped UTF-16 codes into UTF-8.
+   (**
+    * Translates any '\uXXXX' escaped UTF-16 codes into UTF-8.
     * @param  false: leave invalids untranslated; true: replacement-char them
-    * @param  string with escapes
+    * @param  string containing escapes
     * @return string translated to UTF-8
     *)
    val ofU16Esc : bool -> string -> string
