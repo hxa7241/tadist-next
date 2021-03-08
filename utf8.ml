@@ -464,6 +464,77 @@ end
 
 (* --- tests --- *)
 
+let test_Codec_ofU16Esc (trace:bool) : bool =
+
+   let stringToHex (sep:string) (str:string) : string =
+      let charToHex (c:char) : string =
+         Printf.sprintf "%02X" (int_of_char c)
+      and chars =
+         List_.unfoldo
+            (fun i -> try Some str.[i] with | Invalid_argument _ -> None)
+      in
+      (List.map charToHex chars)
+      |> (String.concat sep)
+   in
+
+   let functionToBeTested (correct:string) (input:string)
+      : (string * string * string * string) =
+      let result : string = Codec.ofU16Esc true input in
+      ( correct , input , result , result )
+
+   and correctPairs : (string * string) list =
+      [ ( "" , "" )
+      (* no escs *)
+      ; ( "s8-23\x00&4d sa9* ^8fa\xE0\xA0\x80u$!sh23gs >a.asd" ,
+          "s8-23\x00&4d sa9* ^8fa\xE0\xA0\x80u$!sh23gs >a.asd" )
+      (* escs *)
+      ; ( "F\\u0000F" , "F\x00F" )
+      ; ( "0\\uFFFF0" , "0\xEF\xBF\xBF0" )
+      ; ( "\\u07FF\\u0800" , "\xDF\xBF\xE0\xA0\x80" )
+      (* surr pair (valid) U+010437 U+10FC01 *)
+      ; ( "\\uD801\\uDC37" , "\xF0\x90\x90\xB7" )
+      ; ( "\\uDBFF\\uDC01" , "\xF4\x8F\xB0\x81" )
+      (* surr pair reversed *)
+      ; ( "\\uDC00\\uDBFF" , "\xEF\xBF\xBD\xEF\xBF\xBD" )
+      (* two of one, two of other *)
+      ; ( "\\uD800\\uDBFF" , "\xEF\xBF\xBD\xEF\xBF\xBD" )
+      ; ( "\\uDC00\\uDFFF" , "\xEF\xBF\xBD\xEF\xBF\xBD" )
+      (* lone surrs *)
+      ; ( "\\uD800 \\uDFFF" , "\xEF\xBF\xBD \xEF\xBF\xBD" )
+      (* lone surrs next to singles *)
+      ; ( "\\uD800\\u0068" , "\xEF\xBF\xBDh" )
+      ; ( "\\u0068\\uDC00" , "h\xEF\xBF\xBD" )
+      (* truncated esc-codes *)
+      ; ( "xx xx \\uxx \\u\\u3\\u4Axxx \\u2C4xx xx" ,
+          "xx xx \xEF\xBF\xBDxx \
+          \xEF\xBF\xBD\xEF\xBF\xBD\xEF\xBF\xBDxxx \xEF\xBF\xBDxx xx" ) ]
+   in
+
+   (* compare test function results with some correct values *)
+   let failMessages : string list =
+      List.filter_map
+         (fun (input , correct) ->
+            let correct_s , input_s , result_s , result =
+               functionToBeTested correct input
+            in
+            if result = correct
+            then
+               None
+            else
+               Some (
+                  Printf.sprintf
+                     "*** fail: %s\n   should be (%s)\n   was       (%s)"
+                     input_s
+                     (stringToHex " " correct_s)
+                     (stringToHex " " result_s) ))
+         correctPairs
+   in
+   if trace then List.iter print_endline failMessages ;
+
+   (* any failures ? *)
+   (List.length failMessages) = 0
+
+
 let test_Codec_ofCode (trace:bool) : bool =
 
    let ofStringAscii (s:string) : char list =
