@@ -110,18 +110,18 @@ end
 (* --- tests --- *)
 
 (**
- * Test Codec.ofU16Esc.
- *
- * @param  print stuff
- * @return true for success, false for failure
- *)
-val test_Codec_ofU16Esc : bool -> bool
-
-
-(**
  * Test Codec.ofCode.
  *
- * @param  print stuff
+ * @param  whether to print messages/stuff
  * @return true for success, false for failure
  *)
 val test_Codec_ofCode : bool -> bool
+
+
+(**
+ * Test Codec.ofU16Esc.
+ *
+ * @param  whether to print messages/stuff
+ * @return true for success, false for failure
+ *)
+val test_Codec_ofU16Esc : bool -> bool
