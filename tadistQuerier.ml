@@ -322,14 +322,49 @@ $ curl 'http://openlibrary.org/api/books?bibkeys=ISBN:9780691118802&format=json&
 let parseOpenLib (json:string)
    : (string option * string list * string option * string option) =
 
+   let unescapeJson (json:string) : string =
+      let unescapeSimples (json:string) : string =
+         (*  \""  \\  \/  \b  \f  \n  \r  \t  *)
+         let rx = Str.regexp_case_fold {|\\["\/bfnrt]|} in
+         Str.global_substitute
+            rx
+            (fun wholeString ->
+               let esc = Str.matched_string wholeString in
+               match esc with
+               | "\\\""       -> "\""
+               | "\\\\"       -> "\\"
+               | "\\/"        -> "/"
+               | "\\f"        -> "\x0C"
+               | "\\b"        -> "\b"
+               | "\\n"        -> "\n"
+               | "\\r"        -> "\r"
+               | "\\t"        -> "\t"
+               | unrecognised -> unrecognised )
+            json
+      in
+      json
+      |>
+      unescapeSimples
+      |>
+      (Utf8.Codec.ofU16Esc true)
+   in
+
    let stringValueRx = "\"\\([^\"]*\\)\""
-   and numberValueRx = "\\([^ ,]+\\),"
    and extractElement (json:string) (name:string) (form:string)
       : string option =
       let rx = Rx.compile ("\"" ^ name ^ "\" *: *" ^ form) in
       (Rx.seek rx json)
       |>-
       (fun rxmatch -> Rx.groupFound rxmatch 1)
+   in
+
+   let extractString (json:string) (name:string) : string option =
+      (extractElement json name stringValueRx)
+      |>
+      (Option.map unescapeJson)
+   and extractNumber (json:string) (name:string) : string option =
+      let numberValueRx = "\\([^ ,]+\\)," in
+      extractElement json name numberValueRx
    in
 
    let extractTitle (json:string) : string option =
@@ -354,13 +389,15 @@ let parseOpenLib (json:string)
       (List.find_map
          (fun (elem , _ , depth) ->
             if depth = 2
-            then extractElement elem "title" stringValueRx
+            then extractString elem "title"
             else None))
+
    and extractAuthors (json:string) : string list =
       let rx = Rx.compile "\"name\" *: *\"\\([^\"]*\\)\"" in
       (* get authors json array : string option *)
       (extractElement json "authors" "\\[\\([^]]*\\)\\]" )
       |>-
+      (* DEBUG *)
       (*(fun s ->
          print_endline ("* Q-authsjson: " ^ s) ;
          Some s)
@@ -368,6 +405,7 @@ let parseOpenLib (json:string)
       (* get all 'name' sub elements (name-value pairs) : string list1 option *)
       (fun s -> (Rx.allMatches rx s) |> toList1)
       |>-
+      (* DEBUG *)
       (*(fun l1s ->
          print_endline ("* Q-authsnames: "
             ^ (String.concat " | " (ofList1 l1s))) ;
@@ -375,11 +413,8 @@ let parseOpenLib (json:string)
       |>-*)
       (* from the name-value pairs, extract just the value strings *)
       (ofList1
-         %>
-         (List_.filtmap
-            (fun s -> (Rx.apply rx s) |>- ((Fun.flip Rx.groupFound) 1)))
-         %>
-         toList1)
+         %> (List_.filtmap ((Fun.flip extractString) "name"))
+         %> toList1)
       |>
       ofList1o
    in
@@ -388,8 +423,8 @@ let parseOpenLib (json:string)
 
    let titleo  = extractTitle json
    and authors = extractAuthors json
-   and dateo   = extractElement json "publish_date" stringValueRx
-   and pageso  = extractElement json "number_of_pages" numberValueRx in
+   and dateo   = extractString json "publish_date"
+   and pageso  = extractNumber json "number_of_pages" in
 
    ( titleo , authors, dateo, pageso )
 
