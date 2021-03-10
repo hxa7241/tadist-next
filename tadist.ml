@@ -809,7 +809,40 @@ let normaliseMetadata (nsl:nameStructLax) : nameStruct ress =
 
 
 
-(* ---- outer functions ---- *)
+(* ---- functions ---- *)
+
+let unescapeJsonString (json:string) : string =
+
+   let unescapeSimples (json:string) : string =
+      (*  \""  \\  \/  \b  \f  \n  \r  \t  *)
+      let rx = Str.regexp_case_fold {|\\["\/bfnrt]|} in
+      Str.global_substitute
+         rx
+         (fun wholeString ->
+            let esc = Str.matched_string wholeString in
+            match esc with
+            | "\\\""       -> "\""
+            | "\\\\"       -> "\\"
+            | "\\/"        -> "/"
+            | "\\f"        -> "\x0C"
+            | "\\b"        -> "\b"
+            | "\\n"        -> "\n"
+            | "\\r"        -> "\r"
+            | "\\t"        -> "\t"
+            | unrecognised -> unrecognised )
+         json
+   in
+
+   json
+   |>
+   unescapeSimples
+   |>
+   (Utf8.Codec.ofU16Esc true)
+
+
+
+
+(* ---- other functions ---- *)
 
 (* nameStruct related *)
 

@@ -322,33 +322,6 @@ $ curl 'http://openlibrary.org/api/books?bibkeys=ISBN:9780691118802&format=json&
 let parseOpenLib (json:string)
    : (string option * string list * string option * string option) =
 
-   let unescapeJson (json:string) : string =
-      let unescapeSimples (json:string) : string =
-         (*  \""  \\  \/  \b  \f  \n  \r  \t  *)
-         let rx = Str.regexp_case_fold {|\\["\/bfnrt]|} in
-         Str.global_substitute
-            rx
-            (fun wholeString ->
-               let esc = Str.matched_string wholeString in
-               match esc with
-               | "\\\""       -> "\""
-               | "\\\\"       -> "\\"
-               | "\\/"        -> "/"
-               | "\\f"        -> "\x0C"
-               | "\\b"        -> "\b"
-               | "\\n"        -> "\n"
-               | "\\r"        -> "\r"
-               | "\\t"        -> "\t"
-               | unrecognised -> unrecognised )
-            json
-      in
-      json
-      |>
-      unescapeSimples
-      |>
-      (Utf8.Codec.ofU16Esc true)
-   in
-
    let stringValueRx = "\"\\([^\"]*\\)\""
    and extractElement (json:string) (name:string) (form:string)
       : string option =
@@ -361,7 +334,7 @@ let parseOpenLib (json:string)
    let extractString (json:string) (name:string) : string option =
       (extractElement json name stringValueRx)
       |>
-      (Option.map unescapeJson)
+      (Option.map Tadist.unescapeJsonString)
    and extractNumber (json:string) (name:string) : string option =
       let numberValueRx = "\\([^ ,]+\\)," in
       extractElement json name numberValueRx

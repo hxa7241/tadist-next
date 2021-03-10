@@ -237,6 +237,8 @@ sig
 end
 
 
+
+
 (* ---- types ---- *)
 
 type nameStruct = {
@@ -320,6 +322,14 @@ val normaliseString : string -> StringT.t option
 val normaliseMetadataLax : nameStructRaw -> nameStructLax
 
 val normaliseMetadata : nameStructLax -> nameStruct HxaGeneral.ress
+
+
+
+
+(* ---- functions ---- *)
+
+(** Translate \""  \\  \/  \b  \f  \n  \r  \t  into actual chars. *)
+val unescapeJsonString : string -> string
 
 
 
