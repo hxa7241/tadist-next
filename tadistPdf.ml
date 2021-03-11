@@ -85,7 +85,10 @@ let getMetadata (pdfPathname:string) : (string * string) ress =
    *)
 
    let invoke (options:string) : string ress =
-      toolInvoke ("pdfinfo -enc UTF-8 -rawdates " ^ options ^ " " ^ pdfPathname)
+      (toolInvoke
+         ("pdfinfo -enc UTF-8 -rawdates " ^ options ^ " " ^ pdfPathname))
+      |>
+      (Result.map Utf8.Filter.replace)
    in
 
    let infoRaw : string ress =
@@ -422,10 +425,12 @@ let getTextPages (pdfPathname:string) : (string list) ress =
 
    let text : string ress =
       let _NUMBER_OF_PAGES_TO_INSPECT = 10 (* 7 *) in
-      toolInvoke
+      (toolInvoke
          ("pdftotext -q -enc UTF-8 -eol unix -l "
          ^ (string_of_int _NUMBER_OF_PAGES_TO_INSPECT) ^ " "
-         ^ pdfPathname ^ " -")
+         ^ pdfPathname ^ " -"))
+      |>
+      (Result.map Utf8.Filter.replace)
    in
 
    text

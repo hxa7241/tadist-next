@@ -392,7 +392,7 @@ let parseOpenLib (json:string)
       ofList1o
    in
 
-   let json = Blanks.blankSpacyCtrlChars json in
+   let json = json |> Utf8.Filter.replace |> Blanks.blankSpacyCtrlChars in
 
    let titleo  = extractTitle json
    and authors = extractAuthors json

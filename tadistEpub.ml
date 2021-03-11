@@ -149,7 +149,9 @@ let getContentOpf (epubPathname:string) : (string * string) ress =
             match Zip.readZippedItem zipfile contentopfFilepathname with
             | Error _ as e  -> e
             | Ok contentopf ->
-               Ok ( FileName.getPath contentopfFilepathname , contentopf )
+               Ok (
+                  FileName.getPath contentopfFilepathname ,
+                  Utf8.Filter.replace contentopf )
       )
 
 
@@ -294,7 +296,7 @@ let getIsbns (epubPathname:string) (contentopfpath:string)
             (* for easier searching: coerce to UTF-8; blank-out line-ends,
                tabs, markup; translate en-dashs to hyphens *)
             let text = html
-               |> Utf8.Filter.filter
+               |> Utf8.Filter.replace
                |> Blanks.unifySpaces
                |> (Str.global_replace (Str.regexp "<[^>]+>") " ")
                |> (Str.global_replace (Str.regexp_string "\xE2\x80\x93") "-")
