@@ -462,6 +462,18 @@ end
 
 
 
+(* --- functions --- *)
+
+let removeReplacementChars (input:string) : string =
+
+   Str.global_replace
+      (Str.regexp_string _REPLACEMENT_CHAR_UTF8)
+      ""
+      input
+
+
+
+
 (* --- test support --- *)
 
 (**

@@ -107,6 +107,13 @@ end
 
 
 
+(* --- functions --- *)
+
+val removeReplacementChars : string -> string
+
+
+
+
 (* --- tests --- *)
 
 (**
