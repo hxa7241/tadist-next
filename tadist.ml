@@ -688,7 +688,8 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
 let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =
 
    isbns
-   |> List.map (Utf8.Filter.filter % Blanks.unifySpaces)
+   |> List.map
+      (Utf8.Filter.filter % Utf8.removeReplacementChars % Blanks.unifySpaces)
    (* to machine-readable form *)
    |> List.map (String_.filter (function | ' ' | '-' -> false | _ -> true))
    (* remove bad ones *)
@@ -717,7 +718,8 @@ let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =
 let normaliseSubtyp (s:string) : StringT.t option =
 
    s
-   |> Utf8.Filter.filter |> Blanks.blankSpacyCtrlChars |> String.trim
+   |> Utf8.Filter.filter |> Utf8.removeReplacementChars
+   |> Blanks.blankSpacyCtrlChars |> String.trim
 
    (* drop if contains invalid chars or is negative *)
    |> (fun s ->
@@ -747,7 +749,8 @@ let normaliseString (s:string) : StringT.t option =
    |> (fun st ->
       st
       |> (let _MAXLEN = 24 in String_.truncate _MAXLEN)
-      |> Utf8.Filter.filter)
+      |> Utf8.Filter.filter
+      |> Utf8.removeReplacementChars)
    |> StringT.make |> Result_.toOpt
 
 
