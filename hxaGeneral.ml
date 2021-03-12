@@ -501,6 +501,7 @@ sig
    val split       : (char -> bool) -> string -> string list
    val trimTrunc   : (string * int) -> (string , string) result
    val truncate    : int -> string -> string
+   val capitalise  : string -> string
    val toInt       : ?zeroPadded:(bool * int) -> ?widthMaxed:int ->
                      ?signed:bool -> string -> int option
    val ofOpt       : string option -> string
@@ -639,6 +640,21 @@ struct
 
    let truncate (max:int) (s:string) : string =
       if String.length s <= max then s else String.sub s 0 max
+
+   let capitalise (input:string) : string =
+      let rx = Str.regexp {|^[a-z]\|[^a-zA-Z][a-z]|}
+      and adjuster (whole:string) : string =
+         let wordStart = Str.matched_string whole in
+         match (String.length wordStart) with
+         | 1 ->
+            String.capitalize_ascii wordStart
+         | 2 ->
+            (String.sub wordStart 0 1)
+            ^ (String.capitalize_ascii (String.sub wordStart 1 1))
+         | _ ->
+            wordStart
+      in
+      Str.global_substitute rx adjuster input
 
    let toInt ?(zeroPadded:(bool * int) option) ?(widthMaxed:int option)
       ?(signed:bool option) (input:string) : int option =
