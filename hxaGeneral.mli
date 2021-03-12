@@ -425,8 +425,8 @@ sig
    val truncate : int -> string -> string
 
    (** Like capitalize_ascii, but all words, not only first letter.
-    *  (The start of a word is the first alphabetic after a non-alphabetic.) *)
-   val capitalise : string -> string
+    *  (Words start after: blank, '_', '-'.) *)
+   val capitaliseAll : string -> string
 
    (** Parse int, with some optional restrictions.
        (optional bools express forbidden or required (or allowed if absent)). *)
