@@ -37,15 +37,12 @@ struct
    type t = string
 
    let isAllowedChar (c:char) : bool =
-      (* whitelist: alpha numeric *)
+      (* disallow: TADIST format chars, unix bad filename chars (and '\') *)
       match c with
-      | 'a'..'z' | 'A'..'Z' | '0'..'9' -> true
-      | _                              -> false
-      (* blacklist: TADIST format chars, unix bad filename chars, (and '\') *)
-      (*match c with
-      | '-' | '_' | '.' | ' ' | ',' | ';' | '/' | '"'
-      | (*'/' | '\x00' |*) '\x00'..'\x1F' | '\x7F' | '\\' -> false
-      | _                                                 -> true*)
+      | '-' | '_' | '.'
+      | ' ' | ',' | ';' | '/' | '"' | '\\'
+      | '\x00'..'\x1F' | '\x7F'            -> false
+      | _                                  -> true
 
    let filter (s:string) : string =
       String_.filter isAllowedChar s
