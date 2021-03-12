@@ -633,12 +633,12 @@ let normaliseAuthor (authors:string list) : StringT.t array =
    (* remove parenthised *)
    |> (List.map (Str.global_replace (Str.regexp "([^)]*)") ""))
 
-   (* extract last names *)
+   (* extract and regularise last names *)
    |> (List.map getLastName)
+   |> (List.map (String.lowercase_ascii %> String_.capitaliseAll))
 
    (* constrain *)
    |> nonEmpties |> (truncateWords 32)
-   |> (List.map (String.lowercase_ascii %> String.capitalize_ascii))
    |> (List_.filtmap (StringT.make % Result_.toOpt))
    |> Array.of_list
 
