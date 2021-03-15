@@ -71,7 +71,7 @@ let toolInvoke (command:string) : string ress =
 let getMetadata (pdfPathname:string) : (string * string) ress =
 
    (*
-      using xpdf pdftotext tool:
+      using xpdf pdfinfo tool:
       * https://www.xpdfreader.com/pdfinfo-man.html
 
       with the command:
@@ -86,7 +86,9 @@ let getMetadata (pdfPathname:string) : (string * string) ress =
 
    let invoke (options:string) : string ress =
       (toolInvoke
-         ("pdfinfo -enc UTF-8 -rawdates " ^ options ^ " " ^ pdfPathname))
+         ("pdfinfo -enc UTF-8 -rawdates "
+         ^ options ^ " "
+         ^ (quoteShellPathname pdfPathname)))
       |>
       (Result.map Utf8.Filter.replace)
    in
@@ -428,7 +430,8 @@ let getTextPages (pdfPathname:string) : (string list) ress =
       (toolInvoke
          ("pdftotext -q -enc UTF-8 -eol unix -l "
          ^ (string_of_int _NUMBER_OF_PAGES_TO_INSPECT) ^ " "
-         ^ pdfPathname ^ " -"))
+         ^ (quoteShellPathname pdfPathname)
+         ^ " -"))
       |>
       (Result.map Utf8.Filter.replace)
    in
