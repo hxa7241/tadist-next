@@ -869,6 +869,15 @@ val inputString : in_channel -> int -> string
 (* -- command-line invoke -- *)
 
 (**
+ * Protect special chars in a pathname.
+ *
+ * A two part recipe:
+ * * replace each ' with '\'' (exit quote, escape ', enter quote)
+ * * surround all with ' like so: '...'.
+ *)
+val quoteShellPathname : string -> string
+
+(**
  * Run the command (on the shell), and return its results.
  *
  * @param command and options etc

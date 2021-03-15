@@ -1538,6 +1538,13 @@ let inputString (inChannel:in_channel) (expectedLength:int) : string =
 
 (* -- command-line invoke -- *)
 
+let quoteShellPathname (pathname:string) : string =
+
+   let quotesRemoved     = String.split_on_char '\'' pathname in
+   let reinsertedEscaped = String.concat {|'\''|} quotesRemoved in
+   "'" ^ reinsertedEscaped ^ "'"
+
+
 let commandLineInvoke2 (command:string) (environ:string list) (input:string)
    (expectedLength:int)
    : ((string * string * int) , (Unix.process_status * Unix.error)) result =
