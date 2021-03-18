@@ -951,6 +951,8 @@ sig
    val partition : ('a -> bool) -> 'a array -> ('a array * 'a array)
    val printc_x  : ('a -> out_channel -> unit) -> 'a array -> out_channel ->
                    unit
+   val ofOpt     : 'a option -> 'a array
+   val toOpt     : 'a array  -> 'a option
    (*
    val printks_x : ('a -> unit -> string) -> 'a array -> unit -> string
    *)
@@ -996,6 +998,14 @@ struct
    let printc_x (printer:('a -> out_channel -> unit)) (a:'a array)
       (out:out_channel) : unit =
       Array.iter (fun e -> Printf.fprintf out "%t " (printer e)) a
+
+   let ofOpt (o:'a option) : 'a array =
+      match o with
+      | Some a -> [|a|]
+      | None   -> [||]
+
+   let toOpt (a:'a array) : 'a option =
+      Option_.fromExc (fun () -> Array.get a 0)
 
    (*
    let printks_x (p:('a -> unit -> string)) (a:'a array) () : string =

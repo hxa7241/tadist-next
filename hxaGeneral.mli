@@ -562,6 +562,12 @@ sig
    val printc_x  : ('a -> out_channel -> unit) -> 'a array -> out_channel
       -> unit
 
+   (** Convert an option to a singletonian/empty array. *)
+   val ofOpt : 'a option -> 'a array
+
+   (** Convert a singletonian/empty array to an option. *)
+   val toOpt : 'a array -> 'a option
+
    (*
    (** For use (curried) with ksprintf %t .
        @exceptions: whatever can be raised by Printf.sprintf *)
