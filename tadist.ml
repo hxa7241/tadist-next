@@ -430,7 +430,7 @@ type nameStructLax = {
    titleLax  : StringT.t array ;
    authorLax : StringT.t array ;
    dateLax   : DateIso8601e.t array ;
-   idLax     : (StringT.t * StringT.t) option ;
+   idLax     : (StringT.t * StringT.t) array ;
    subtypLax : StringT.t option ;
    typLax    : StringT.t option ;
 }
@@ -682,7 +682,7 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
    |> Array.of_list
 
 
-let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =
+let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) array =
 
    isbns
    |> List.map
@@ -702,14 +702,16 @@ let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) option =
          in
          (String_.check Char_.isDigit main) && (String_.check isDigitOrX last)
       | _ -> false)
-   (* choose first 13-form one *)
+   (* prioritise 13-form ones *)
    |> List.sort (fun a b -> compare (String.length b) (String.length a))
-   |> (function
-      | first :: _ ->
-         (Ok first)
-         |^^= ( (fun _ -> StringT.make "ISBN") , StringT.make )
-         |> Result_.toOpt
-      | _ -> None)
+   (* pair with label *)
+   |> List.map
+         (fun isbn ->
+            (Ok isbn)
+            |^^= ( (fun _ -> StringT.make "ISBN") , StringT.make )
+            |> Result_.toOpt)
+   |> List_.filtmap id
+   |> Array.of_list
 
 
 let normaliseSubtyp (s:string) : StringT.t option =
@@ -782,7 +784,7 @@ let normaliseMetadata (nsl:nameStructLax) : nameStruct ress =
       {  title  = title ;
          author = nsl.authorLax ;
          date   = nsl.dateLax ;
-         id     = nsl.idLax ;
+         id     = Array_.toOpt nsl.idLax ;
          subtyp = nsl.subtypLax ;
          typ    = typ  } )
 

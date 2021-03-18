@@ -254,7 +254,7 @@ type nameStructLax = {
    titleLax  : StringT.t array ;
    authorLax : StringT.t array ;
    dateLax   : DateIso8601e.t array ;
-   idLax     : (StringT.t * StringT.t) option ;
+   idLax     : (StringT.t * StringT.t) array ;
    subtypLax : StringT.t option ;
    typLax    : StringT.t option ;
 }
@@ -310,7 +310,7 @@ val normaliseAuthor : string list -> StringT.t array
 
 val normaliseDate : string list -> DateIso8601e.t array
 
-val normaliseIsbn : string list -> (StringT.t * StringT.t) option
+val normaliseIsbn : string list -> (StringT.t * StringT.t) array
 
 (**
  * Subtyp taken to be page-count.
