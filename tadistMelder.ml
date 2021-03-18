@@ -133,17 +133,28 @@ let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
       typLax    = metadata.typLax    ;  }
 
 
-let getIsbn (nsl:nameStructLax) : Isbn.t ress =
+let queryForIsbn (nsLax:nameStructLax) : nameStructRaw ress =
 
-   (Option_.toRes "no isbn to use" nsl.idLax)
-   |>=
-   (snd %> StringT.toString %> Isbn.make)
-
-   (*
-   match nsl.idLax with
-   | None          -> Error "no isbn"
-   | Some (_ , id) -> id |> StringT.toString |> Isbn.make
-   *)
+   (* only try first few : 'a array *)
+   (Array_.lead 2 nsLax.idLax)
+   |>
+   (* try successive ISBNs until good result : nameStructRaw ress *)
+   (Array.fold_left
+      (fun lastResult (thisItem:(StringT.t * StringT.t)) ->
+         match lastResult with
+         | Error _ ->
+            thisItem
+            |>  (snd %> StringT.toString %> Isbn.make)
+            |>= TadistQuerier.getBasicTadForIsbn
+            |>= (fun nsr ->
+               (* fail if query result is (nigh) empty *)
+               if
+                  List_.isEmpty nsr.titleRaw
+                  || String_.isEmpty (List.hd nsr.titleRaw)
+               then Error "inadequate info from ISBN query"
+               else Ok nsr)
+         | Ok nsr -> Ok nsr)
+      (Error "no ISBN to use"))
 
 
 
@@ -168,9 +179,7 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
       (fun (metadataLax:nameStructLax) ->
          (Ok metadataLax)
          |>=
-         getIsbn
-         |>=
-         TadistQuerier.getBasicTadForIsbn
+         queryForIsbn
          |>=?
          (printQueryError trace "Remote ISBN query")
          |>=-
