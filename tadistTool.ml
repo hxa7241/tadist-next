@@ -280,7 +280,7 @@ let suggestRename ~(rename:bool) ?(quiet:bool = false) ?(verbose:bool = false)
                "Do you want to rename:\n  %s\nto:\n  %s\n(Y or N) ?\n%!"
                nameOld nameNew ;
             let response = input_char stdin in
-            response = 'Y'
+            (response = 'y') || (response = 'Y')
          in
          if quiet || (ask ())
          then
