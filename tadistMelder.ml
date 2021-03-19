@@ -109,25 +109,26 @@ let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
       in
       interleavedSet |> List.rev |> Array.of_list
 
-   and dateSetUnionEnds =
-      (* lump them together *)
-      ( (Array.append metadata.dateLax querydata.dateLax) |> Array.to_list )
-      |>
-      (* sort all *)
-      (List.sort_uniq DateIso8601e.compare)
-      |>
+   and datePriorityEnds =
+      (* prioritise query *)
+      (if not (Array_.isEmpty querydata.dateLax)
+      then querydata.dateLax
+      else metadata.dateLax)
+      |> Array.to_list
+      (* sort *)
+      |> (List.sort_uniq DateIso8601e.compare)
       (* take first and last only *)
-      List_.hdft
-      |>
-      Array.of_list
+      |> List_.hdft
+      |> Array.of_list
 
    and subtypPriority =
+      (* prioritise metadata *)
       Option_.or2 metadata.subtypLax querydata.subtypLax
    in
 
    {  titleLax  = titlePriority ;
       authorLax = authorSetUnion ;
-      dateLax   = dateSetUnionEnds ;
+      dateLax   = datePriorityEnds ;
       idLax     = metadata.idLax ;
       subtypLax = subtypPriority ;
       typLax    = metadata.typLax    ;  }
