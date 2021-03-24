@@ -41,13 +41,14 @@ File-types supported: Epub, PDF.
 Usage:
   tadist [-?|--help]
   tadist (-??|--doc)
-  tadist [-(m|s|r|R)] (-|<filename>)
+  tadist [-(m|j|s|r|R)] (-|<filename>)
   tadist -c (-|<string>)
 
 Options:
 -?  | --help  help
 -?? | --doc   more doc
--m  print: output metadata (default)
+-m  print: output metadata as INI (default)
+-j  print: output metadata as JSON
 -s  suggest: print inferred name
 -r  rename: ask to rename file to inferred name
 -R  rename: go ahead and rename file to inferred name
@@ -212,7 +213,7 @@ let readInput (s:string) : string =
       | _           -> fail "input failure"
 
 
-let printMetadata (input:string) : unit =
+let printMetadata (json:bool) (input:string) : unit =
 
    let filePathname = readInput input in
 
@@ -222,33 +223,71 @@ let printMetadata (input:string) : unit =
    | Ok nameStruct ->
       let open Tadist in
 
-      let arrayPrinter (label:string) (sep:string) (sa:string array) : unit =
-         let content = sa |> Array.to_list |> (String.concat sep) in
-         print_endline (label ^ content) ;
+      let stringToString (str:string) : string =
+         if not json then str else "\"" ^ str ^ "\""
+      in
+      let arrayToString (json:bool) (sep:string) (sa:string array) : string =
+         let opn , cls =
+            if not json then "" , "" else "[ " , " ]"
+         and concatenation =
+            sa
+            |> Array.to_list |> (List.map stringToString) |> (String.concat sep)
+         in
+         opn ^ concatenation ^ cls
       in
 
-      (* section header *)
-      print_endline "\n[metadata]" ;
-
-      (* title, authors, dates *)
-      arrayPrinter "title    = " " "
-         ((nameStruct.title |> ArrayNe.toArray)
-            |> (Array.map StringT.toString)) ;
-      arrayPrinter "authors  = "  ", "
-         (nameStruct.author |> (Array.map StringT.toString)) ;
-      arrayPrinter "dates    = " ", "
-         (nameStruct.date |> (Array.map (DateIso8601e.toString false))) ;
-
-      (* isbns, pages, filetype *)
-      print_endline ("isbn     = " ^
+      let title =
+         nameStruct.title |> ArrayNe.toArray |> (Array.map StringT.toString)
+         |> Array.to_list |> (String.concat " ")
+      and authors =
+         arrayToString json ", "
+            (nameStruct.author |> (Array.map StringT.toString))
+      and dates =
+         arrayToString json ", "
+            (nameStruct.date |> (Array.map (DateIso8601e.toString false))) ;
+      and isbn =
          (Option_.mapUnify
-            (snd %> StringT.toString) (Fun.const "") nameStruct.id) ) ;
-      print_endline ("pages    = " ^
-         (Option_.mapUnify StringT.toString (Fun.const "") nameStruct.subtyp) ) ;
-      print_endline ("filetype = " ^
-         (StringT.toString nameStruct.typ) ) ;
+            (snd %> StringT.toString %> stringToString)
+            (Fun.const "") nameStruct.id)
+      and pages =
+         (Option_.mapUnify
+            (StringT.toString %> (String_.filter Char_.isDigit))
+            (Fun.const "") nameStruct.subtyp)
+      and filetype =
+         (StringT.toString nameStruct.typ) |> stringToString
+      in
 
-      print_endline "" ;
+      if not json
+      then
+         Printf.printf
+{|
+[metadata]
+title    = %s
+authors  = %s
+dates    = %s
+isbn     = %s
+pages    = %s
+filetype = %s
+
+|}
+            title authors dates isbn pages filetype
+      else
+         Printf.printf
+{|
+{
+   "metadata" :
+      {
+         "title"    : %s ,
+         "authors"  : %s ,
+         "dates"    : %s ,
+         "isbn"     : %s ,
+         "pages"    : %s ,
+         "filetype" : %s
+      }
+}
+
+|}
+            title authors dates isbn pages filetype
 
    | Error s ->
       fail s
@@ -339,7 +378,8 @@ try
 
       match _argv with
       | [| input |]
-      | [| "-m" ; input |] -> printMetadata input
+      | [| "-m" ; input |] -> printMetadata false input
+      | [| "-j" ; input |] -> printMetadata true input
       | [| "-s" ; input |] -> suggestRename ~rename:false input
       | [| "-r" ; input |] -> suggestRename ~rename:true  input
       | [| "-R" ; input |] -> suggestRename ~rename:true  ~quiet:true input
