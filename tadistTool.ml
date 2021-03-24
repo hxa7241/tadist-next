@@ -29,9 +29,9 @@ let _HELP =
   http://www.hxa.name
 
 Does one of three things:
-* suggests a name for a file, from file metadata and internet query
-* renames a file, from examined file metadata and internet query
-* converts a string between 'name-form' and 'text-form'
+* prints metadata for an ebook, from file and internet query
+* suggests a file name for an ebook, from file metadata and internet query
+* renames an ebook file, from file metadata and internet query
 
 ... according to the TADIST format definition:
 http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
@@ -41,14 +41,14 @@ File-types supported: Epub, PDF.
 Usage:
   tadist [-?|--help]
   tadist (-??|--doc)
-  tadist [-(s|S|r|R)] (-|<filename>)
+  tadist [-(m|s|r|R)] (-|<filename>)
   tadist -c (-|<string>)
 
 Options:
 -?  | --help  help
 -?? | --doc   more doc
--s  suggest: print inferred name (default)
--S  suggest: verbosely print inferred name
+-m  print: output metadata (default)
+-s  suggest: print inferred name
 -r  rename: ask to rename file to inferred name
 -R  rename: go ahead and rename file to inferred name
 -c  convert: between name and text form
@@ -212,39 +212,49 @@ let readInput (s:string) : string =
       | _           -> fail "input failure"
 
 
-let printNamestructData (trace:bool) (ns:Tadist.nameStruct) : unit =
+let printMetadata (input:string) : unit =
 
-   if trace
-   then begin
-      print_endline "\nTadist form (merged data)" ;
+   let filePathname = readInput input in
+
+   match
+      TadistMelder.makeNameStructFromFileName false filePathname
+   with
+   | Ok nameStruct ->
+      let open Tadist in
 
       let arrayPrinter (label:string) (sep:string) (sa:string array) : unit =
          let content = sa |> Array.to_list |> (String.concat sep) in
-         print_endline (label ^ "   " ^ content) ;
+         print_endline (label ^ content) ;
       in
 
-      let open Tadist in
+      (* section header *)
+      print_endline "\n[metadata]" ;
 
-      arrayPrinter "* title: " " "
-         ((ns.title |> ArrayNe.toArray) |> (Array.map StringT.toString)) ;
-      arrayPrinter "* author:" " | "
-         (ns.author |> (Array.map StringT.toString)) ;
-      arrayPrinter "* date:  " " | "
-         (ns.date |> (Array.map (DateIso8601e.toString false))) ;
+      (* title, authors, dates *)
+      arrayPrinter "title    = " " "
+         ((nameStruct.title |> ArrayNe.toArray)
+            |> (Array.map StringT.toString)) ;
+      arrayPrinter "authors  = "  ", "
+         (nameStruct.author |> (Array.map StringT.toString)) ;
+      arrayPrinter "dates    = " ", "
+         (nameStruct.date |> (Array.map (DateIso8601e.toString false))) ;
 
-      print_endline ("* id:       " ^
+      (* isbns, pages, filetype *)
+      print_endline ("isbn     = " ^
          (Option_.mapUnify
-            (fun (il,ic) -> (StringT.toString il) ^ "-" ^ (StringT.toString ic))
-            (Fun.const "") ns.id) ) ;
-      print_endline ("* subtyp:   " ^
-         (Option_.mapUnify StringT.toString (Fun.const "") ns.subtyp) ) ;
-      print_endline ("* typ:      " ^
-         (StringT.toString ns.typ) ) ;
-   end
+            (snd %> StringT.toString) (Fun.const "") nameStruct.id) ) ;
+      print_endline ("pages    = " ^
+         (Option_.mapUnify StringT.toString (Fun.const "") nameStruct.subtyp) ) ;
+      print_endline ("filetype = " ^
+         (StringT.toString nameStruct.typ) ) ;
+
+      print_endline "" ;
+
+   | Error s ->
+      fail s
 
 
-let suggestRename ~(rename:bool) ?(quiet:bool = false) ?(verbose:bool = false)
-   (input:string) : unit =
+let suggestRename ~(rename:bool) ?(quiet:bool = false) (input:string) : unit =
 
    (* get old name *)
    let filePathnameOld = readInput input in
@@ -253,13 +263,9 @@ let suggestRename ~(rename:bool) ?(quiet:bool = false) ?(verbose:bool = false)
    (* get new name *)
    let nameNew , textNew =
       match
-         TadistMelder.makeNameStructFromFileName verbose filePathnameOld
+         TadistMelder.makeNameStructFromFileName false filePathnameOld
       with
-      | Ok ns ->
-         begin
-            printNamestructData verbose ns ;
-            ( Tadist.toStringName ns , Tadist.toStringText ns )
-         end
+      | Ok ns   -> ( Tadist.toStringName ns , Tadist.toStringText ns )
       | Error s -> fail s
    in
    let filePathnameNew = path ^ nameNew in
@@ -333,8 +339,8 @@ try
 
       match _argv with
       | [| input |]
+      | [| "-m" ; input |] -> printMetadata input
       | [| "-s" ; input |] -> suggestRename ~rename:false input
-      | [| "-S" ; input |] -> suggestRename ~rename:false ~verbose:true input
       | [| "-r" ; input |] -> suggestRename ~rename:true  input
       | [| "-R" ; input |] -> suggestRename ~rename:true  ~quiet:true input
       | [| "-c" ; input |] -> convert input

@@ -6,7 +6,8 @@ TADIST tool ***UNFINISHED***
 Harrison Ainsworth / HXA7241 : 2015, 2020-2021  
 http://www.hxa.name/tools
 
-2021-02-16
+2021-03-24
+
 
 
 
@@ -26,9 +27,9 @@ Description
 -----------
 
 A small command-line tool that does one of three things:
-* suggests a name for a file, from examined file data/metadata
-* renames a file, from examined file data/metadata
-* converts a string between 'name-form' and 'text-form'
+* prints metadata for an ebook, from file and internet query
+* suggests a file name for an ebook, from file metadata and internet query
+* renames an ebook file, from file metadata and internet query
 
 ... according to the TADIST format definition:
 http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
@@ -38,14 +39,14 @@ File-types supported: Epub, PDF.
 Usage:
    tadist [-?|--help]
    tadist (-??|--doc)
-   tadist [-(s|S|r|R)] (-|<filename>)
+   tadist [-(m|s|r|R)] (-|<filename>)
    tadist -c (-|<string>)
 
 Options:
    -?  | --help  help
    -?? | --doc   more doc
-   -s  suggest: print inferred name (default)
-   -S  suggest: verbosely print inferred name
+   -m  print: output metadata (default)
+   -s  suggest: print inferred name
    -r  rename: ask to rename file to inferred name
    -R  rename: go ahead and rename file to inferred name
    -c  convert: between name and text form
@@ -120,12 +121,12 @@ DC:`
    title:`TADIST tool ***UNFINISHED***`
    creator:`Harrison Ainsworth / HXA7241`
 
-   date:`2021-01-29`
+   date:`2021-03-24`
    date:`2020-04-10`
    date:`2015-05-30`
    date:`2015-05-23`
 
-   description:`A small command-line tool that: suggests a name, or renames a file, from examined file data/metadata; and converts between name formats.`
+   description:`A small command-line tool that: prints ebook metadata, suggests a file name for an ebook, or renames an ebook file.`
    subject:`command-line, file-metadata, renaming, Epub, PDF, OCaml, TADIST`
 
    type:`software`
