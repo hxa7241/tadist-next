@@ -55,8 +55,8 @@ Usage:
   $ tadist -c (-|<string>)
 
 Options:
-  -?  | --help  help
-  -?? | --doc   more doc
+  -h | -? | --help  help
+  -??     | --doc   more doc
   -m  print: output metadata as INI (default)
   -j  print: output metadata as JSON
   -s  suggest: print inferred name
@@ -380,8 +380,8 @@ try
 
    (* print help / doc *)
    | [||]
-   | [|"-?"|]  | [|"--help"|] -> print_endline _HELP
-   | [|"-??"|] | [|"--doc"|]  -> print_endline _DOC
+   | [|"-h"|]  | [|"-?"|] | [|"--help"|] -> print_endline _HELP
+   | [|"-??"|] | [|"--doc"|]             -> print_endline _DOC
 
    (* execute *)
    | _ as _argv ->

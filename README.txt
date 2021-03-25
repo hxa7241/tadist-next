@@ -53,8 +53,8 @@ Usage:
   $ tadist -c (-|<string>)
 
 Options:
-  -?  | --help  help
-  -?? | --doc   more doc
+  -h | -? | --help  help
+  -??     | --doc   more doc
   -m  print: output metadata as INI (default)
   -j  print: output metadata as JSON
   -s  suggest: print inferred name
