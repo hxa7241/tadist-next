@@ -300,7 +300,7 @@ let suggestRename ~(rename:bool) ?(quiet:bool = false) (input:string) : unit =
    let path , nameOld = FileName.splitPath filePathnameOld in
 
    (* get new name *)
-   let nameNew , textNew =
+   let nameNew , _ =
       match
          TadistMelder.makeNameStructFromFileName false filePathnameOld
       with
@@ -316,7 +316,7 @@ let suggestRename ~(rename:bool) ?(quiet:bool = false) (input:string) : unit =
 
       (* suggest name *)
       then
-         Printf.printf "\n%s\n%s\n%!" nameNew textNew
+         Printf.printf "%s\n%!" nameNew
 
       (* rename file *)
       else begin
