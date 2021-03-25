@@ -22,6 +22,16 @@ open HxaGeneral
 
 (* ---- values ---- *)
 
+let _VERSION =
+{|
+TADIST tool 1.2
+Harrison Ainsworth / HXA7241 : 2015, 2021 : http://www.hxa.name
+License GNU AGPLv3 : http://www.gnu.org/licenses/agpl-3.0.html
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+|} ;;
+
+
 let _HINT =
 {|
 TADIST tool 1.2 (OCaml 4.10) : 2021 : http://www.hxa.name
@@ -60,13 +70,14 @@ Examples:
 
 Usage:
   $ tadist [-h|-?|--help]
-  $ tadist (-??|--doc)
+  $ tadist -v | (-??|--doc)
   $ tadist [-(m|j|s|r|R)] (-|<filename>)
   $ tadist -c (-|<string>)
 
 Options:
   -h | -? | --help  help
   -??     | --doc   more doc (144 lines)
+  -v  version info
   -m  print: output metadata as INI (default)
   -j  print: output metadata as JSON
   -s  suggest: print inferred name
@@ -402,6 +413,7 @@ try
    | [||]                                -> print_endline _HINT
    | [|"-h"|]  | [|"-?"|] | [|"--help"|] -> print_endline _HELP
    | [|"-??"|] | [|"--doc"|]             -> print_endline _DOC
+   | [|"-v"|]                            -> print_endline _VERSION
 
    (* execute *)
    | _ as _argv ->

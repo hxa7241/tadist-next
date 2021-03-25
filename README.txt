@@ -48,13 +48,14 @@ Examples:
 
 Usage:
   $ tadist [-h|-?|--help]
-  $ tadist (-??|--doc)
+  $ tadist -v | (-??|--doc)
   $ tadist [-(m|j|s|r|R)] (-|<filename>)
   $ tadist -c (-|<string>)
 
 Options:
   -h | -? | --help  help
   -??     | --doc   more doc (144 lines)
+  -v  version info
   -m  print: output metadata as INI (default)
   -j  print: output metadata as JSON
   -s  suggest: print inferred name
