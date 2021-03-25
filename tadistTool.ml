@@ -263,6 +263,7 @@ let printMetadata (json:bool) (input:string) : unit =
          Printf.printf
 {|
 [metadata]
+; string, csv, csv, string, number, string
 title    = %s
 authors  = %s
 dates    = %s
