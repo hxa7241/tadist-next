@@ -238,7 +238,7 @@ let printMetadata (json:bool) (input:string) : unit =
 
       let title =
          nameStruct.title |> ArrayNe.toArray |> (Array.map StringT.toString)
-         |> Array.to_list |> (String.concat " ")
+         |> Array.to_list |> (String.concat " ") |> stringToString
       and authors =
          arrayToString json ", "
             (nameStruct.author |> (Array.map StringT.toString))
@@ -247,12 +247,13 @@ let printMetadata (json:bool) (input:string) : unit =
             (nameStruct.date |> (Array.map (DateIso8601e.toString false))) ;
       and isbn =
          (Option_.mapUnify
-            (snd %> StringT.toString %> stringToString)
+            (snd %> StringT.toString)
             (Fun.const "") nameStruct.id)
+          |> stringToString
       and pages =
          (Option_.mapUnify
             (StringT.toString %> (String_.filter Char_.isDigit))
-            (Fun.const "") nameStruct.subtyp)
+            (Fun.const "0") nameStruct.subtyp)
       and filetype =
          (StringT.toString nameStruct.typ) |> stringToString
       in
