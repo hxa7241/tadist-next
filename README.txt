@@ -54,7 +54,7 @@ Usage:
 
 Options:
   -h | -? | --help  help
-  -??     | --doc   more doc
+  -??     | --doc   more doc (144 lines)
   -m  print: output metadata as INI (default)
   -j  print: output metadata as JSON
   -s  suggest: print inferred name

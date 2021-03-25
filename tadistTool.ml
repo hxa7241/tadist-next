@@ -66,7 +66,7 @@ Usage:
 
 Options:
   -h | -? | --help  help
-  -??     | --doc   more doc
+  -??     | --doc   more doc (144 lines)
   -m  print: output metadata as INI (default)
   -j  print: output metadata as JSON
   -s  suggest: print inferred name
@@ -80,10 +80,20 @@ Options:
 
 let _DOC =
 {|
+
+TADIST file naming pattern
+==========================
+
+
+2014-12-31T11:01Z
+
+(490 words)
+
+
 Original document:
 
-"TADIST file naming pattern"; HXA7241; 2014-12-31 / html.
-http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
+   "TADIST file naming pattern"; HXA7241; 2014-12-31 / html.
+   http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
 
 
 
