@@ -22,6 +22,16 @@ open HxaGeneral
 
 (* ---- values ---- *)
 
+let _HINT =
+{|
+TADIST tool 1.2 (OCaml 4.10) : 2021 : http://www.hxa.name
+
+$ tadist -m <filename>   : for metadata (epub/pdf)
+$ tadist -r <filename>   : to rename (epub/pdf)
+$ tadist -?              : for help
+|} ;;
+
+
 let _HELP =
 {|
   TADIST tool 1.2 (OCaml 4.10) ***UNFINISHED***
@@ -49,7 +59,7 @@ Examples:
     $ tadist -r An-Ebook.pdf
 
 Usage:
-  $ tadist [-?|--help]
+  $ tadist [-h|-?|--help]
   $ tadist (-??|--doc)
   $ tadist [-(m|j|s|r|R)] (-|<filename>)
   $ tadist -c (-|<string>)
@@ -379,7 +389,7 @@ try
    match Array.sub Sys.argv 1 ((Array.length Sys.argv) - 1) with
 
    (* print help / doc *)
-   | [||]
+   | [||]                                -> print_endline _HINT
    | [|"-h"|]  | [|"-?"|] | [|"--help"|] -> print_endline _HELP
    | [|"-??"|] | [|"--doc"|]             -> print_endline _DOC
 

@@ -47,7 +47,7 @@ Examples:
     $ tadist -r An-Ebook.pdf
 
 Usage:
-  $ tadist [-?|--help]
+  $ tadist [-h|-?|--help]
   $ tadist (-??|--doc)
   $ tadist [-(m|j|s|r|R)] (-|<filename>)
   $ tadist -c (-|<string>)
