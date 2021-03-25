@@ -51,7 +51,7 @@ Options:
 -j  print: output metadata as JSON
 -s  suggest: print inferred name
 -r  rename: ask to rename file to inferred name
--R  rename: go ahead and rename file to inferred name
+-R  rename: immediately rename file to inferred name
 -c  convert: between name and text form
 -   take filename/string from stdin
 <string>  (use single quotes to quote)
@@ -331,11 +331,13 @@ let suggestRename ~(rename:bool) ?(quiet:bool = false) (input:string) : unit =
          then
             try
                Unix.rename filePathnameOld filePathnameNew ;
-               Printf.printf "\n%s\n%s\n%!" nameNew textNew
+               Printf.printf "%s  --renamed-to->  %s\n%!" nameOld nameNew
             with
             | Unix.Unix_error (e , sF , sP) ->
                ignore (fail ((Unix.error_message e) ^ ": " ^ sF ^ " " ^ sP))
-         end
+      end
+   else
+      Printf.printf "(%s  -- already properly named)\n%!" nameOld
 
 
 let convert (input:string) : unit =

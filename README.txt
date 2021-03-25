@@ -49,7 +49,7 @@ Options:
    -j  print: output metadata as JSON
    -s  suggest: print inferred name
    -r  rename: ask to rename file to inferred name
-   -R  rename: go ahead and rename file to inferred name
+   -R  rename: immediately rename file to inferred name
    -c  convert: between name and text form
    -   take filename/string from stdin
    <string>  (use single quotes to quote)
