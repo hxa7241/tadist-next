@@ -1,9 +1,9 @@
 
-TADIST tool ***UNFINISHED***
+TADIST tool 1.2 (OCaml 4.10) ***UNFINISHED***
 ======================================================================
 
 
-Harrison Ainsworth / HXA7241 : 2015, 2020-2021  
+Harrison Ainsworth / HXA7241 : 2015, 2021  
 http://www.hxa.name/tools
 
 2021-03-24
@@ -27,32 +27,42 @@ Description
 -----------
 
 A small command-line tool that does one of three things:
-* prints metadata for an ebook, from file and internet query
-* suggests a file name for an ebook, from file metadata and internet query
-* renames an ebook file, from file metadata and internet query
+  * prints metadata for an ebook, from file and internet query
+  * suggests a file name for an ebook, from file metadata and internet query
+  * renames an ebook file, from file metadata and internet query
 
-... according to the TADIST format definition:
-http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
+According to the TADIST format definition:
+  http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
 
-File-types supported: Epub, PDF.
+Ebook file-types supported:
+  Epub
+  PDF
+
+Examples:
+  print metadata:
+    $ tadist -m An-Ebook.pdf
+  suggest a file name:
+    $ tadist -s An-Ebook.pdf
+  rename an ebook file:
+    $ tadist -r An-Ebook.pdf
 
 Usage:
-   tadist [-?|--help]
-   tadist (-??|--doc)
-   tadist [-(m|j|s|r|R)] (-|<filename>)
-   tadist -c (-|<string>)
+  $ tadist [-?|--help]
+  $ tadist (-??|--doc)
+  $ tadist [-(m|j|s|r|R)] (-|<filename>)
+  $ tadist -c (-|<string>)
 
 Options:
-   -?  | --help  help
-   -?? | --doc   more doc
-   -m  print: output metadata as INI (default)
-   -j  print: output metadata as JSON
-   -s  suggest: print inferred name
-   -r  rename: ask to rename file to inferred name
-   -R  rename: immediately rename file to inferred name
-   -c  convert: between name and text form
-   -   take filename/string from stdin
-   <string>  (use single quotes to quote)
+  -?  | --help  help
+  -?? | --doc   more doc
+  -m  print: output metadata as INI (default)
+  -j  print: output metadata as JSON
+  -s  suggest: print inferred name
+  -r  rename: ask to rename file to inferred name
+  -R  rename: immediately rename file to inferred name
+  -c  convert: between name and text form
+  -   take filename/string from stdin
+  <string>  (use single quotes to quote)
 
 
 
@@ -119,7 +129,7 @@ Metadata
 --------
 
 DC:`
-   title:`TADIST tool ***UNFINISHED***`
+   title:`TADIST tool 1.2 (OCaml 4.10) ***UNFINISHED***`
    creator:`Harrison Ainsworth / HXA7241`
 
    date:`2021-03-24`
