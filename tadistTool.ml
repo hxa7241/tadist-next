@@ -254,6 +254,24 @@ let readInput (s:string) : string =
       | _           -> fail "input failure"
 
 
+let getOldAndNewFilenames (input:string) : (string * string * string) =
+
+   (* get old name *)
+   let filePathnameOld = readInput input in
+   let path , nameOld = FileName.splitPath filePathnameOld in
+
+   (* get new name *)
+   let nameNew =
+      match
+         TadistMelder.makeNameStructFromFileName false filePathnameOld
+      with
+      | Ok nameStruct -> Tadist.toStringName nameStruct
+      | Error msg     -> fail msg
+   in
+
+   ( path , nameOld , nameNew )
+
+
 let printMetadata (json:bool) (input:string) : unit =
 
    let filePathname = readInput input in
@@ -336,48 +354,39 @@ filetype = %s
       fail s
 
 
-let suggestRename ~(rename:bool) ?(quiet:bool = false) (input:string) : unit =
+let suggest (input:string) : unit =
 
-   (* get old name *)
-   let filePathnameOld = readInput input in
-   let path , nameOld = FileName.splitPath filePathnameOld in
+   let _ , nameOld , nameNew = getOldAndNewFilenames input in
 
-   (* get new name *)
-   let nameNew , _ =
-      match
-         TadistMelder.makeNameStructFromFileName false filePathnameOld
-      with
-      | Ok ns   -> ( Tadist.toStringName ns , Tadist.toStringText ns )
-      | Error s -> fail s
-   in
-   let filePathnameNew = path ^ nameNew in
-
-   (* only act if name different *)
    if nameOld <> nameNew
    then
-      if not rename
+      Printf.printf "%s\n%!" nameNew
+   else
+      Printf.printf "(%s  -- already properly named)\n%!" nameOld
 
-      (* suggest name *)
+
+let rename (quiet:bool) (input:string) : unit =
+
+   let path , nameOld , nameNew = getOldAndNewFilenames input in
+
+   if nameOld <> nameNew
+   then
+      let ask () : bool =
+         Printf.printf
+            "Do you want to rename:\n  %s\nto:\n  %s\n(Y or N) ?\n%!"
+            nameOld nameNew ;
+         let response = input_char stdin in
+         (response = 'y') || (response = 'Y')
+      in
+
+      begin if quiet || (ask ())
       then
-         Printf.printf "%s\n%!" nameNew
-
-      (* rename file *)
-      else begin
-         let ask () : bool =
-            Printf.printf
-               "Do you want to rename:\n  %s\nto:\n  %s\n(Y or N) ?\n%!"
-               nameOld nameNew ;
-            let response = input_char stdin in
-            (response = 'y') || (response = 'Y')
-         in
-         if quiet || (ask ())
-         then
-            try
-               Unix.rename filePathnameOld filePathnameNew ;
-               Printf.printf "%s  --renamed-to->  %s\n%!" nameOld nameNew
-            with
-            | Unix.Unix_error (e , sF , sP) ->
-               ignore (fail ((Unix.error_message e) ^ ": " ^ sF ^ " " ^ sP))
+         try
+            Unix.rename (path ^ nameOld) (path ^ nameNew) ;
+            Printf.printf "%s  --renamed-to->  %s\n%!" nameOld nameNew
+         with
+         | Unix.Unix_error (code , funct , param) ->
+            fail ((Unix.error_message code) ^ " (" ^ funct ^ "): " ^ param)
       end
    else
       Printf.printf "(%s  -- already properly named)\n%!" nameOld
@@ -428,10 +437,9 @@ try
          begin match flag with
          | "-m" | "--metadata"     -> printMetadata false input
          | "-j" | "--json"         -> printMetadata true input
-         | "-s" | "--suggest"      -> suggestRename ~rename:false input
-         | "-r" | "--rename"       -> suggestRename ~rename:true  input
-         | "-R" | "--rename-quiet" ->
-            suggestRename ~rename:true ~quiet:true input
+         | "-s" | "--suggest"      -> suggest input
+         | "-r" | "--rename"       -> rename false input
+         | "-R" | "--rename-quiet" -> rename true  input
          | "-c" | "--convert"      -> convert input
          | _                       ->
             fail ("invalid command: " ^ flag ^ " ...")
