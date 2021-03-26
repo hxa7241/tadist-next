@@ -75,17 +75,17 @@ Usage:
   $ tadist -c (-|<string>)
 
 Options:
-  -h | -? | --help  help
-  -??     | --doc   more doc (144 lines)
-  -v  version info
-  -m  print: output metadata as INI (default)
-  -j  print: output metadata as JSON
-  -s  suggest: print inferred name
-  -r  rename: ask to rename file to inferred name
-  -R  rename: immediately rename file to inferred name
-  -c  convert: between name and text form
-  -   take filename/string from stdin
-  <string>  (use single quotes to quote)
+  -h | -? | --help     help
+  -??     | --doc      more doc (144 lines)
+  -v | --version       version info
+  -m | --metadata      print: output metadata as INI (default)
+  -j | --json          print: output metadata as JSON
+  -s | --suggest       suggest: print inferred name
+  -r | --rename        rename: ask to rename file to inferred name
+  -R | --rename-quiet  rename: immediately rename file to inferred name
+  -c | --convert       convert: between name and text form
+  -                    take filename/string from stdin
+  <string>             (use single quotes to quote)
 |} ;;
 
 
@@ -413,7 +413,7 @@ try
    | [||]                                -> print_endline _HINT
    | [|"-h"|]  | [|"-?"|] | [|"--help"|] -> print_endline _HELP
    | [|"-??"|] | [|"--doc"|]             -> print_endline _DOC
-   | [|"-v"|]                            -> print_endline _VERSION
+   | [|"-v"|]  | [|"--version"|]         -> print_endline _VERSION
 
    (* execute *)
    | _ as _argv ->
@@ -423,14 +423,20 @@ try
       set_binary_mode_out stderr true ;
 
       match _argv with
-      | [| input |]
-      | [| "-m" ; input |] -> printMetadata false input
-      | [| "-j" ; input |] -> printMetadata true input
-      | [| "-s" ; input |] -> suggestRename ~rename:false input
-      | [| "-r" ; input |] -> suggestRename ~rename:true  input
-      | [| "-R" ; input |] -> suggestRename ~rename:true  ~quiet:true input
-      | [| "-c" ; input |] -> convert input
-      | _ as av            ->
+      | [| input |]        -> printMetadata false input
+      | [| flag ; input |] ->
+         begin match flag with
+         | "-m" | "--metadata"     -> printMetadata false input
+         | "-j" | "--json"         -> printMetadata true input
+         | "-s" | "--suggest"      -> suggestRename ~rename:false input
+         | "-r" | "--rename"       -> suggestRename ~rename:true  input
+         | "-R" | "--rename-quiet" ->
+            suggestRename ~rename:true ~quiet:true input
+         | "-c" | "--convert"      -> convert input
+         | _                       ->
+            fail ("invalid command: " ^ flag ^ " ...")
+         end
+      | _ as av ->
          let first = if (Array.length av) > 0 then av.(0) else "" in
          fail ("unrecognised command: " ^ first ^ " ...")
 

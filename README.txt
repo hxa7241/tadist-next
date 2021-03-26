@@ -53,17 +53,17 @@ Usage:
   $ tadist -c (-|<string>)
 
 Options:
-  -h | -? | --help  help
-  -??     | --doc   more doc (144 lines)
-  -v  version info
-  -m  print: output metadata as INI (default)
-  -j  print: output metadata as JSON
-  -s  suggest: print inferred name
-  -r  rename: ask to rename file to inferred name
-  -R  rename: immediately rename file to inferred name
-  -c  convert: between name and text form
-  -   take filename/string from stdin
-  <string>  (use single quotes to quote)
+  -h | -? | --help     help
+  -??     | --doc      more doc (144 lines)
+  -v | --version       version info
+  -m | --metadata      print: output metadata as INI (default)
+  -j | --json          print: output metadata as JSON
+  -s | --suggest       suggest: print inferred name
+  -r | --rename        rename: ask to rename file to inferred name
+  -R | --rename-quiet  rename: immediately rename file to inferred name
+  -c | --convert       convert: between name and text form
+  -                    take filename/string from stdin
+  <string>             (use single quotes to quote)
 
 
 
