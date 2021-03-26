@@ -78,7 +78,7 @@ Options:
   -h | -? | --help     help
   -??     | --doc      more doc (144 lines)
   -v | --version       version info
-  -m | --metadata      print: output metadata as INI (default)
+  -m | --metadata      print: output metadata as INI
   -j | --json          print: output metadata as JSON
   -s | --suggest       suggest: print inferred name
   -r | --rename        rename: ask to rename file to inferred name
@@ -418,13 +418,13 @@ try
 
    match Array.sub Sys.argv 1 ((Array.length Sys.argv) - 1) with
 
-   (* print help / doc *)
+   (* print help (0 or 1 param) *)
    | [||]                                -> print_endline _HINT
    | [|"-h"|]  | [|"-?"|] | [|"--help"|] -> print_endline _HELP
    | [|"-??"|] | [|"--doc"|]             -> print_endline _DOC
    | [|"-v"|]  | [|"--version"|]         -> print_endline _VERSION
 
-   (* execute *)
+   (* execute (2 params) *)
    | _ as _argv ->
 
       set_binary_mode_in  stdin  true ;
@@ -432,7 +432,6 @@ try
       set_binary_mode_out stderr true ;
 
       match _argv with
-      | [| input |]        -> printMetadata false input
       | [| flag ; input |] ->
          begin match flag with
          | "-m" | "--metadata"     -> printMetadata false input
@@ -441,12 +440,16 @@ try
          | "-r" | "--rename"       -> rename false input
          | "-R" | "--rename-quiet" -> rename true  input
          | "-c" | "--convert"      -> convert input
-         | _                       ->
-            fail ("invalid command: " ^ flag ^ " ...")
+         | _                       -> fail ("unrecognised command: " ^ flag)
          end
-      | _ as av ->
-         let first = if (Array.length av) > 0 then av.(0) else "" in
-         fail ("unrecognised command: " ^ first ^ " ...")
+      | [| str |] ->
+         if String_.isFirstChar ((=)'-') str
+         then fail "missing filename/string"
+         else fail "missing command"
+      | [||] -> fail "missing command"
+      | _    -> fail "too many params"
 
 with
-| e -> prerr_string "*** General failure: " ; raise e
+
+| e ->
+   prerr_string "*** General failure: " ; raise e

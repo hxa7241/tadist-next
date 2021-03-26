@@ -56,7 +56,7 @@ Options:
   -h | -? | --help     help
   -??     | --doc      more doc (144 lines)
   -v | --version       version info
-  -m | --metadata      print: output metadata as INI (default)
+  -m | --metadata      print: output metadata as INI
   -j | --json          print: output metadata as JSON
   -s | --suggest       suggest: print inferred name
   -r | --rename        rename: ask to rename file to inferred name
