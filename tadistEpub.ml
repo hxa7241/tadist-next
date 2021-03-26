@@ -354,13 +354,14 @@ let extractTadist (epubPathname:string)
             getContentopfMetadata contentopf
          in
 
+         let htmlPathnames = getHtmlPathnames contentopf in
+         let sections = string_of_int (List.length htmlPathnames) in
+
          (* maybe look for ISBN elsewhere *)
-         let isbns = if isbns <> []
+         let isbns =
+            if isbns <> []
             then isbns
-            else let htmlPathnames = getHtmlPathnames contentopf in
-               let isbns = getIsbns epubPathname contentopfpath
-                  htmlPathnames in
-               isbns
+            else getIsbns epubPathname contentopfpath htmlPathnames
          in
 
          Ok (Some Tadist.( {
@@ -368,5 +369,5 @@ let extractTadist (epubPathname:string)
             authorRaw = authors ;
             dateRaw   = dates ;
             idRaw     = isbns ;
-            subtypRaw = "" ;
+            subtypRaw = sections ;
             typRaw    = _TYPE } ) )
