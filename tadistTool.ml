@@ -49,17 +49,18 @@ let _HELP =
   Harrison Ainsworth / HXA7241 : 2015, 2021
   http://www.hxa.name
 
-A small command-line tool that does one of three things:
+Description:
+  TADIST Tool is a small command-line tool that does one of three things:
   * prints metadata for an ebook, from file and internet query
   * suggests a file name for an ebook, from file metadata and internet query
   * renames an ebook file, from file metadata and internet query
 
-According to the TADIST format definition:
+  According to the TADIST format definition:
   http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
 
-Ebook file-types supported:
-  Epub
-  PDF
+  Ebook file-types supported:
+  * Epub
+  * PDF
 
 Examples:
   print metadata:

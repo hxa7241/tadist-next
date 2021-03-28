@@ -26,17 +26,17 @@ Contents
 Description
 -----------
 
-A small command-line tool that does one of three things:
-  * prints metadata for an ebook, from file and internet query
-  * suggests a file name for an ebook, from file metadata and internet query
-  * renames an ebook file, from file metadata and internet query
+TADIST Tool is a small command-line tool that does one of three things:
+* prints metadata for an ebook, from file and internet query
+* suggests a file name for an ebook, from file metadata and internet query
+* renames an ebook file, from file metadata and internet query
 
 According to the TADIST format definition:
-  http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
+http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
 
 Ebook file-types supported:
-  Epub
-  PDF
+* Epub
+* PDF
 
 Examples:
   print metadata:
