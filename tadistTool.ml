@@ -24,8 +24,9 @@ open HxaGeneral
 
 let _VERSION =
 {|
-TADIST tool 1.2
+TADIST tool (OCaml 4.10) 1.2
 Harrison Ainsworth / HXA7241 : 2015, 2021 : http://www.hxa.name
+
 License GNU AGPLv3 : http://www.gnu.org/licenses/agpl-3.0.html
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
