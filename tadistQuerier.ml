@@ -179,6 +179,10 @@ let requestOpenLib (isbn:Isbn.t) : string ress =
    try
       let socket = Unix.(socket PF_INET SOCK_STREAM 0) in
       try
+         (* set timeout durations *)
+         Unix.setsockopt_float socket Unix.SO_SNDTIMEO 30.0 ;
+         Unix.setsockopt_float socket Unix.SO_RCVTIMEO 30.0 ;
+
          (* connect *)
          begin
             let address =
