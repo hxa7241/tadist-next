@@ -22,14 +22,14 @@ open Tadist
 
 
 
-let extractMetadata (filePathname:string) : nameStructRaw ress =
+let extractMetadata (trace:bool) (filePathname:string) : nameStructRaw ress =
 
    let rec fileTryer (filePathname:string)
-      (extractors:(string -> (Tadist.nameStructRaw option) ress) list)
+      (extractors:(bool -> string -> (Tadist.nameStructRaw option) ress) list)
       : nameStructRaw ress =
       match extractors with
       | extractor :: rest ->
-         begin match extractor filePathname with
+         begin match (extractor trace filePathname) with
          (* recurse to try next extractor *)
          | Ok None      -> fileTryer filePathname rest
          (* return the extracted data *)
@@ -134,7 +134,7 @@ let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
       typLax    = metadata.typLax    ;  }
 
 
-let queryForIsbn (nsLax:nameStructLax) : nameStructRaw ress =
+let queryForIsbn (trace:bool) (nsLax:nameStructLax) : nameStructRaw ress =
 
    (* only try first few : 'a array *)
    (Array_.lead 2 nsLax.idLax)
@@ -146,7 +146,7 @@ let queryForIsbn (nsLax:nameStructLax) : nameStructRaw ress =
          | Error _ ->
             thisItem
             |>  (snd %> StringT.toString %> Isbn.make)
-            |>= TadistQuerier.getBasicTadForIsbn
+            |>= (TadistQuerier.getBasicTadForIsbn trace)
             |>= (fun nsr ->
                (* fail if query result is (nigh) empty *)
                if
@@ -166,7 +166,7 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
    : nameStruct ress =
 
    (* : nameStructRaw ress *)
-   (extractMetadata filePathname)
+   (extractMetadata trace filePathname)
    |>=
    (* : nameStruct ress *)
    (fun (metadataRaw:nameStructRaw) ->
@@ -180,7 +180,7 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
       (fun (metadataLax:nameStructLax) ->
          (Ok metadataLax)
          |>=
-         queryForIsbn
+         (queryForIsbn trace)
          |>=?
          (printQueryError trace "Remote ISBN query")
          |>=-

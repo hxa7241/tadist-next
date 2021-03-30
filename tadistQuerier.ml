@@ -410,7 +410,7 @@ let parseOpenLib (json:string)
 
 (* ---- public functions ---- *)
 
-let getBasicTadForIsbn (isbn:Isbn.t) : nameStructRaw ress =
+let getBasicTadForIsbn (trace:bool) (isbn:Isbn.t) : nameStructRaw ress =
 
    (* : string ress *)
    (requestOpenLib isbn)

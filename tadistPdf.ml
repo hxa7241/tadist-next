@@ -68,7 +68,7 @@ let toolInvoke (command:string) : string ress =
          "tool failure" ^ (if msg <> "" then (": " ^ msg) else "")))
 
 
-let getMetadata (pdfPathname:string) : (string * string) ress =
+let getMetadata (trace:bool) (pdfPathname:string) : (string * string) ress =
 
    (*
       using xpdf pdfinfo tool:
@@ -407,7 +407,7 @@ let getIsbnsFromMetadata (metadata:string*string) : string list =
    @ (keywords metadata)
 
 
-let getTextPages (pdfPathname:string) : (string list) ress =
+let getTextPages (trace:bool) (pdfPathname:string) : (string list) ress =
 
    (*
       using xpdf pdftotext tool:
@@ -477,7 +477,7 @@ let regulariseDashs (replacement:string) (text:string) : string =
    Str.global_replace rx replacement text
 
 
-let getIsbnsFromText (texts:string list) : string list =
+let getIsbnsFromText (trace:bool) (texts:string list) : string list =
 
    (* map texts to isbns *)
    let isbnsAll : string list list =
@@ -569,10 +569,11 @@ let getIsbnsFromText (texts:string list) : string list =
    isbns
 
 
-let getIsbns (metadata:string*string) (texts:string list) : string list =
+let getIsbns (trace:bool) (metadata:string*string) (texts:string list)
+   : string list =
 
    (List.append
-      (getIsbnsFromText texts)
+      (getIsbnsFromText trace texts)
       (getIsbnsFromMetadata metadata))
    |>
    List_.deduplicate
@@ -582,7 +583,8 @@ let getIsbns (metadata:string*string) (texts:string list) : string list =
 
 (* ---- public functions ---- *)
 
-let extractTadist (pdfPathname:string) : (Tadist.nameStructRaw option) ress =
+let extractTadist (trace:bool) (pdfPathname:string)
+   : (Tadist.nameStructRaw option) ress =
 
    match recognisePdf pdfPathname with
    | Error _ as e -> e
@@ -590,7 +592,7 @@ let extractTadist (pdfPathname:string) : (Tadist.nameStructRaw option) ress =
    | Ok true      ->
 
       (* try to get basic data *)
-      (getMetadata pdfPathname , getTextPages pdfPathname)
+      (getMetadata trace pdfPathname , getTextPages trace pdfPathname)
       |>
       (* if either data source failed, make the best of it with one,
          unless both failed, then concede defeat *)
@@ -602,7 +604,7 @@ let extractTadist (pdfPathname:string) : (Tadist.nameStructRaw option) ress =
             titleRaw  = [ lookupMetadataValue metadata "Title" ] ;
             authorRaw = lookupMetadataValues metadata "Author" ;
             dateRaw   = getDates metadata ;
-            idRaw     = getIsbns metadata text ;
+            idRaw     = getIsbns trace metadata text ;
             subtypRaw = lookupMetadataValue metadata "Pages" ;
             typRaw    = _TYPE ;
          } ) )

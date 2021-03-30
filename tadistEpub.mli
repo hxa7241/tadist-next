@@ -33,7 +33,8 @@ val _TYPE : string
  * (Epub has quite good metadata, but data can always be a bit messy.
  * ISBN often must be sought in the body of the text.).
  *
+ * @param bool verbose trace
  * @param string Epub filepathname
  *)
-val extractTadist : string ->
+val extractTadist : bool -> string ->
    (Tadist.nameStructRaw option) HxaGeneral.ress

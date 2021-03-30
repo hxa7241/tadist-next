@@ -274,12 +274,12 @@ let getOldAndNewFilenames (input:string) : (string * string * string) =
    ( path , nameOld , nameNew )
 
 
-let printMetadata (json:bool) (input:string) : unit =
+let printMetadata ?(trace:bool = false) (json:bool) (input:string) : unit =
 
    let filePathname = readInput input in
 
    match
-      TadistMelder.makeNameStructFromFileName false filePathname
+      TadistMelder.makeNameStructFromFileName trace filePathname
    with
    | Ok nameStruct ->
       let open Tadist in
@@ -442,6 +442,7 @@ try
          | "-r" | "--rename"       -> rename false input
          | "-R" | "--rename-quiet" -> rename true  input
          | "-c" | "--convert"      -> convert input
+         | "-!"                    -> printMetadata ~trace:true false input
          | _                       -> fail ("unrecognised command: " ^ flag)
          end
       | [| str |] ->

@@ -118,7 +118,7 @@ let recogniseEpub (epubPathname:string) : bool ress =
    | _ -> Error ("cannot open/read file: " ^ epubPathname)
 
 
-let getContentOpf (epubPathname:string) : (string * string) ress =
+let getContentOpf (trace:bool) (epubPathname:string) : (string * string) ress =
 
    Zip.withZipfile epubPathname
       (fun zipfile ->
@@ -217,7 +217,7 @@ let getContentopfMetadata (contentopf:string)
       matcherIsbn             contentopf )
 
 
-let getHtmlPathnames (contentopf:string) : string list =
+let getHtmlPathnames (trace:bool) (contentopf:string) : string list =
 
    let manifest =
       (* remove line-ends for easier regexps *)
@@ -228,7 +228,8 @@ let getHtmlPathnames (contentopf:string) : string list =
          Str.matched_group 1 contentopf
       with
       | Not_found -> ""
-   and head , foot = "<item[ \t\n]+[^<>]*" , "[^<>]*/>"
+   and head , foot =
+      "<item[ \t\n]+[^<>]*" , "[^<>]*/>"
    in
 
    let htmlItems =
@@ -237,10 +238,13 @@ let getHtmlPathnames (contentopf:string) : string list =
       in
       let l = Str_.allMatches rx manifest (Str.matched_string) in
       String.concat "\n" l
-   and rx = Str.regexp (head ^ "href=[\"']\\([^\"']*\\)[\"']" ^ foot)
+   and rx =
+      Str.regexp (head ^ "href=[\"']\\([^\"']*\\)[\"']" ^ foot)
    in
 
-   Str_.allMatches rx htmlItems (Str.matched_group 1)
+   let htmlPathnames = Str_.allMatches rx htmlItems (Str.matched_group 1) in
+
+   htmlPathnames
 
 
 let findFirstIsbn (text:string) : (string option) =
@@ -261,7 +265,7 @@ let findFirstIsbn (text:string) : (string option) =
    | None     -> None
 
 
-let getIsbns (epubPathname:string) (contentopfpath:string)
+let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
    (htmlPathnames:string list)
    : string list =
 
@@ -273,8 +277,9 @@ let getIsbns (epubPathname:string) (contentopfpath:string)
       Otherwise, not much more is tried: if there are multiple pages
       containing ISBNs, the one with "Library of Congress" is chosen; if
       there are multiple pages of *that* case, then give up. *)
+
    (* get HTML files *)
-   let htmls =
+   let htmls : (string ress) list =
       match
          Zip.withZipfile epubPathname
             (fun zipfile ->
@@ -286,10 +291,8 @@ let getIsbns (epubPathname:string) (contentopfpath:string)
       | Error _ -> []
    in
 
-   (*print_endline ("html files: " ^ (string_of_int (List.length htmls))) ;*)
-
    (* filter for ISBN presence *)
-   let isbnFiles =
+   let isbnFiles : (string * string) list =
       List_.filtmap (function
          | Error _  -> None
          | Ok html  ->
@@ -304,8 +307,6 @@ let getIsbns (epubPathname:string) (contentopfpath:string)
             Option.map (fun isbn -> (text,isbn)) (findFirstIsbn text)
          ) htmls
    in
-
-   (*print_endline ("isbn files: " ^ (string_of_int (List.length isbnFiles))) ;*)
 
    match isbnFiles with
    | [] as empty        -> empty
@@ -338,7 +339,7 @@ let getIsbns (epubPathname:string) (contentopfpath:string)
 
 (* ---- public functions ---- *)
 
-let extractTadist (epubPathname:string)
+let extractTadist (trace:bool) (epubPathname:string)
    : (Tadist.nameStructRaw option) ress =
 
    match recogniseEpub epubPathname with
@@ -346,7 +347,7 @@ let extractTadist (epubPathname:string)
    | Ok false     -> Ok None
    | Ok true      ->
 
-      match getContentOpf epubPathname with
+      match getContentOpf trace epubPathname with
       | Error _ as e                     -> e
       | Ok (contentopfpath , contentopf) ->
 
@@ -354,14 +355,14 @@ let extractTadist (epubPathname:string)
             getContentopfMetadata contentopf
          in
 
-         let htmlPathnames = getHtmlPathnames contentopf in
+         let htmlPathnames = getHtmlPathnames trace contentopf in
          let sections = string_of_int (List.length htmlPathnames) in
 
          (* maybe look for ISBN elsewhere *)
          let isbns =
             if isbns <> []
             then isbns
-            else getIsbns epubPathname contentopfpath htmlPathnames
+            else getIsbns trace epubPathname contentopfpath htmlPathnames
          in
 
          Ok (Some Tadist.( {
