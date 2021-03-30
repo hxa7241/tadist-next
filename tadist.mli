@@ -234,6 +234,13 @@ sig
     * @params start pos, length to search, text to search in
     *)
    val searchByChecksum : int -> ?len:int -> string -> string list
+
+   (**
+    * Find and extract ISBNs from book text.
+    *
+    * @params trace, maximum count, pages
+    *)
+   val extractIsbnsFromText : bool -> int -> string list -> string list
 end
 
 

@@ -247,92 +247,43 @@ let getHtmlPathnames (trace:bool) (contentopf:string) : string list =
    htmlPathnames
 
 
-let findFirstIsbn (text:string) : (string option) =
-
-   match
-      (* find 'ISBN' (pos of last char) *)
-      try
-         let rx = Str.regexp_string_case_fold "isbn" in
-         let _  = Str.search_forward rx text 0 in
-         Some ((Str.match_end ()) - 1)
-      with
-         Not_found -> None
-   with
-   | Some pos ->
-      (* find number nearby *)
-      (*print_endline ("   'isbn' pos: " ^ (string_of_int pos)) ;*)
-      Tadist.Isbn.search pos 15 text
-   | None     -> None
-
-
-let getIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
+let getTextPages (trace:bool) (epubPathname:string) (contentopfpath:string)
    (htmlPathnames:string list)
    : string list =
 
-   (* Very usually, there is an obvious ISBN: there is a publishing details
-      page (often called the copyright page), near the beginning, containing
-      Library of Congress cataloging data, copyright data, and ISBN(s). The
-      ISBNs are fairly conformant and quite easily recognised and extracted.
-
-      Otherwise, not much more is tried: if there are multiple pages
-      containing ISBNs, the one with "Library of Congress" is chosen; if
-      there are multiple pages of *that* case, then give up. *)
-
-   (* get HTML files *)
-   let htmls : (string ress) list =
-      match
-         Zip.withZipfile epubPathname
-            (fun zipfile ->
-               Ok (List.map (fun htmlPathname ->
-                  Zip.readZippedItem zipfile (contentopfpath ^ htmlPathname))
-                  htmlPathnames))
-      with
-      | Ok a    -> a
-      | Error _ -> []
+   (* get HTML texts *)
+   let htmls : string list =
+      (Zip.withZipfile
+         epubPathname
+         (fun zipfile : (string ress) list ress ->
+            Ok
+               (List.map
+                  (fun htmlPathname ->
+                     Zip.readZippedItem
+                        zipfile (contentopfpath ^ htmlPathname))
+                  htmlPathnames)))
+      |>
+      (Result.value ~default:[])
+      |>
+      (List_.filtmap Result_.toOpt)
    in
 
-   (* filter for ISBN presence *)
-   let isbnFiles : (string * string) list =
-      List_.filtmap (function
-         | Error _  -> None
-         | Ok html  ->
-            (* for easier searching: coerce to UTF-8; blank-out line-ends,
-               tabs, markup; translate en-dashs to hyphens *)
-            let text = html
-               |> Utf8.Filter.replace
-               |> Blanks.unifySpaces
-               |> (Str.global_replace (Str.regexp "<[^>]+>") " ")
-               |> (Str.global_replace (Str.regexp_string "\xE2\x80\x93") "-")
-            in
-            Option.map (fun isbn -> (text,isbn)) (findFirstIsbn text)
-         ) htmls
+   (* remove tags *)
+   List.map
+      (fun html ->
+         let rx = Str.regexp {|<[^>]*>|} in
+         Str.global_replace rx "" html)
+      htmls
+
+
+let getTextIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
+   (htmlPathnames:string list)
+   : string list =
+
+   let pages : string list =
+      getTextPages trace epubPathname contentopfpath htmlPathnames
    in
-
-   match isbnFiles with
-   | [] as empty        -> empty
-   | (_ , unique) :: [] -> [unique]
-   | ambiguous          ->
-      (* filter for "library of congress" presence *)
-      let loc = List.filter (fun (text,_) ->
-         try
-            let rx = Str.regexp_string_case_fold "library of congress" in
-            let _  = Str.search_forward rx text 0 in
-            true
-         with Not_found -> false
-         ) ambiguous
-      in
-
-      (*begin
-         print_endline ("isbn ambiguous (" ^
-         (string_of_int (List.length loc)) ^ ")") ;
-         List.iter (fun (_,isbn) -> print_endline ("   loc: " ^ isbn)) loc
-      end ;*)
-
-      begin match loc with
-      | (_ , unique) :: [] -> [unique]
-      (* give up *)
-      | _                  -> []
-      end
+   Tadist.Isbn.extractIsbnsFromText trace 2 pages
 
 
 
@@ -351,18 +302,20 @@ let extractTadist (trace:bool) (epubPathname:string)
       | Error _ as e                     -> e
       | Ok (contentopfpath , contentopf) ->
 
+         (* get metadata *)
          let titles , authors , dates , isbns =
             getContentopfMetadata contentopf
          in
 
+         (* get list of html sections *)
          let htmlPathnames = getHtmlPathnames trace contentopf in
-         let sections = string_of_int (List.length htmlPathnames) in
+         let sectionCount = string_of_int (List.length htmlPathnames) in
 
-         (* maybe look for ISBN elsewhere *)
+         (* add ISBNs found in text *)
          let isbns =
-            if isbns <> []
-            then isbns
-            else getIsbns trace epubPathname contentopfpath htmlPathnames
+            (getTextIsbns trace epubPathname contentopfpath htmlPathnames)
+            |> (List.append isbns)
+            |> List_.deduplicate
          in
 
          Ok (Some Tadist.( {
@@ -370,5 +323,5 @@ let extractTadist (trace:bool) (epubPathname:string)
             authorRaw = authors ;
             dateRaw   = dates ;
             idRaw     = isbns ;
-            subtypRaw = sections ;
+            subtypRaw = sectionCount ;
             typRaw    = _TYPE } ) )
