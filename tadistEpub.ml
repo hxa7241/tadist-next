@@ -96,7 +96,9 @@ end
 
 (* ---- functions ---- *)
 
-let recogniseEpub (epubPathname:string) : bool ress =
+let recogniseEpub (trace:bool) (epubPathname:string) : bool ress =
+
+   tracePrintHead trace __MODULE__ "recogniseEpub" "" ;
 
    try
       (* (assuming this can fail) *)
@@ -107,18 +109,33 @@ let recogniseEpub (epubPathname:string) : bool ress =
             (* (assuming these cannot fail, in a deeper IO sense) *)
             try seek_in file pos ; really_input_string file len with _ -> ""
          in
+
          (* check zip id then epub id *)
-         ((readString file 0 4) = "\x50\x4B\x03\x04") &&
-            ((readString file 30 28) = "mimetypeapplication/epub+zip")
+         let isZipId = (readString file 0 4) = "\x50\x4B\x03\x04" in
+         let isEpubId =
+            (readString file 30 28) = "mimetypeapplication/epub+zip"
+         in
+
+         if trace
+         then Printf.printf "zip id:  %B\nepub id: %B\n%!" isZipId isEpubId ;
+
+         isZipId && isEpubId
       in
 
       close_in_noerr file ;
       Ok recognised
    with
-   | _ -> Error ("cannot open/read file: " ^ epubPathname)
+   | _ ->
+      begin
+         let msg = "cannot open/read file: " ^ epubPathname in
+         tracePrint trace "*** Error: " msg ;
+         Error msg
+      end
 
 
 let getContentOpf (trace:bool) (epubPathname:string) : (string * string) ress =
+
+   tracePrintHead trace __MODULE__ "getContentOpf" "" ;
 
    Zip.withZipfile epubPathname
       (fun zipfile ->
@@ -142,17 +159,30 @@ let getContentOpf (trace:bool) (epubPathname:string) : (string * string) ress =
                with
                | Not_found -> Error "content.opf FilePathname not found"
          with
-         | Error _ as e              -> e
+         | Error msg ->
+            begin
+               tracePrint trace "*** Error: " msg ;
+               Error msg
+            end
          | Ok contentopfFilepathname ->
 
             (* read metadata zipped-file *)
             match Zip.readZippedItem zipfile contentopfFilepathname with
-            | Error _ as e  -> e
+            | Error msg ->
+               begin
+                  tracePrint trace "*** Error: " msg ;
+                  Error msg
+               end
             | Ok contentopf ->
-               Ok (
-                  FileName.getPath contentopfFilepathname ,
-                  Utf8.Filter.replace contentopf )
-      )
+               begin
+                  tracePrint
+                     trace
+                     ((FileName.getPath contentopfFilepathname) ^ "\n")
+                     contentopf ;
+                  Ok (
+                     FileName.getPath contentopfFilepathname ,
+                     Utf8.Filter.replace contentopf )
+               end )
 
 
 let getContentopfMetadata (contentopf:string)
@@ -219,6 +249,8 @@ let getContentopfMetadata (contentopf:string)
 
 let getHtmlPathnames (trace:bool) (contentopf:string) : string list =
 
+   tracePrintHead trace __MODULE__ "getHtmlPathnames" "" ;
+
    let manifest =
       (* remove line-ends for easier regexps *)
       let contentopf = Blanks.blankNewlines contentopf in
@@ -244,6 +276,11 @@ let getHtmlPathnames (trace:bool) (contentopf:string) : string list =
 
    let htmlPathnames = Str_.allMatches rx htmlItems (Str.matched_group 1) in
 
+   tracePrint
+      trace
+      ((string_of_int (List.length htmlPathnames)) ^ "\n\n")
+      (String.concat "\n" htmlPathnames) ;
+
    htmlPathnames
 
 
@@ -251,22 +288,35 @@ let getTextPages (trace:bool) (epubPathname:string) (contentopfpath:string)
    (htmlPathnames:string list)
    : string list =
 
+   tracePrintHead trace __MODULE__ "getTextPages" "" ;
+
    (* get HTML texts *)
    let htmls : string list =
-      (Zip.withZipfile
-         epubPathname
-         (fun zipfile : (string ress) list ress ->
-            Ok
-               (List.map
-                  (fun htmlPathname ->
-                     Zip.readZippedItem
-                        zipfile (contentopfpath ^ htmlPathname))
-                  htmlPathnames)))
-      |>
-      (Result.value ~default:[])
-      |>
-      (List_.filtmap Result_.toOpt)
+      let strResList : (string ress) list =
+         (Zip.withZipfile
+            epubPathname
+            (fun zipfile : (string ress) list ress ->
+               Ok
+                  (List.map
+                     (fun htmlPathname ->
+                        Zip.readZippedItem
+                           zipfile (contentopfpath ^ htmlPathname))
+                     htmlPathnames)))
+         |>
+         (Result_.errorMap
+            (fun msg -> tracePrint trace "*** Error: " msg ; msg))
+         |>
+         (Result.value ~default:[])
+      in
+
+      List.iter
+         (Result.iter_error (fun msg -> tracePrint trace "*** Error: " msg ; ))
+         strResList ;
+
+      List_.filtmap Result_.toOpt strResList
    in
+
+   tracePrint trace "count: " (string_of_int (List.length htmls)) ;
 
    (* remove tags *)
    List.map
@@ -293,7 +343,7 @@ let getTextIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
 let extractTadist (trace:bool) (epubPathname:string)
    : (Tadist.nameStructRaw option) ress =
 
-   match recogniseEpub epubPathname with
+   match recogniseEpub trace epubPathname with
    | Error _ as e -> e
    | Ok false     -> Ok None
    | Ok true      ->
@@ -317,6 +367,9 @@ let extractTadist (trace:bool) (epubPathname:string)
             |> (List.append isbns)
             |> List_.deduplicate
          in
+
+         tracePrintHead trace __MODULE__ "extractTadist" "found ISBNs" ;
+         tracePrint trace "" (String.concat "\n" isbns) ;
 
          Ok (Some Tadist.( {
             titleRaw  = titles ;
