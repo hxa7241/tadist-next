@@ -84,11 +84,11 @@ val ( @< ) : 'a list -> 'a -> 'a list
 (** Like print_string, but with a flush. *)
 val print_string_flush : string -> unit
 
-(** Print log/trace heading. *)
+(** Print log/trace heading (module, function, title) conditionally. *)
 val tracePrintHead : bool -> string -> string -> string -> unit
 
-(** Print log/trace content. *)
-val tracePrint : bool -> string -> unit
+(** Print log/trace label and content conditionally. *)
+val tracePrint : bool -> string -> string -> unit
 
 (** Convert (by catching) exception to defaulter function
     (except: Out_of_memory, Stack_overflow, Sys.Break). *)

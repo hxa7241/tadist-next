@@ -65,9 +65,9 @@ let tracePrintHead (trace:bool) (module_:string) (function_:string)
    then Printf.printf "\n### %s.%s - %s\n\n%!" module_ function_ title
 
 
-let tracePrint (trace:bool) (content:string) : unit =
+let tracePrint (trace:bool) (label:string) (content:string) : unit =
    if trace
-   then Printf.printf "%s\n%!" content
+   then Printf.printf "%s%s\n%!" label content
 
 
 let excToDefaultf ~(default:unit -> 'a) ~(f:unit -> 'a) : 'a =
