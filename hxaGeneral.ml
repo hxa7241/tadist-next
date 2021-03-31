@@ -58,6 +58,18 @@ let print_string_flush (s:string) : unit =
    Printf.printf "%s%!" s
 
 
+let tracePrintHead (trace:bool) (module_:string) (function_:string)
+   (title:string)
+   : unit =
+   if trace
+   then Printf.printf "\n### %s.%s - %s\n\n%!" module_ function_ title
+
+
+let tracePrint (trace:bool) (content:string) : unit =
+   if trace
+   then Printf.printf "%s\n%!" content
+
+
 let excToDefaultf ~(default:unit -> 'a) ~(f:unit -> 'a) : 'a =
    try f () with
    | Out_of_memory | Stack_overflow | Sys.Break as x -> raise x
