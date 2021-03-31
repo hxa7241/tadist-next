@@ -453,7 +453,7 @@ struct
 
       (* map page texts to isbns *)
       let isbnsAll : string list list =
-         (List.map
+         List.map
             (fun (text : string) : string list ->
                (*
                   example stream fragment:
@@ -507,13 +507,14 @@ struct
                |> (List.map
                   (fun number ->
                      if String.length number < 13
-                     then number
+                     then
+                        number
                      else
                         if check number
                         then number
                         else String_.lead number 10) )
                )
-            texts)
+            texts
       in
 
       (* select priority isbns: first few on copyright page *)
@@ -537,11 +538,13 @@ struct
          |> (List.split %> snd)
          |> List.flatten
          |> List_.deduplicate
-         (* truncate *)
-         |> (((Fun.flip List_.bisect) maxCount) %> fst)
       in
 
-      isbns
+      tracePrintHead trace __MODULE__ "extractIsbnsFromText" "found ISBNs" ;
+      tracePrint trace "" (String.concat "\n" isbns) ;
+
+      (* truncate *)
+      fst (List_.bisect isbns maxCount)
 end
 
 

@@ -369,15 +369,19 @@ let extractTadist (trace:bool) (epubPathname:string)
          let htmlPathnames = getHtmlPathnames trace contentopf in
          let sectionCount = string_of_int (List.length htmlPathnames) in
 
+         tracePrintHead trace __MODULE__ "extractTadist" "raw metadata" ;
+         tracePrint trace "titles:  " (String.concat " | " titles) ;
+         tracePrint trace "authors: " (String.concat " | " authors) ;
+         tracePrint trace "dates:   " (String.concat " | " dates) ;
+         tracePrint trace "isbns:   " (String.concat " | " isbns) ;
+         tracePrint trace "pages:   " sectionCount ;
+
          (* add ISBNs found in text *)
          let isbns =
             (getTextIsbns trace epubPathname contentopfpath htmlPathnames)
             |> (List.append isbns)
             |> List_.deduplicate
          in
-
-         tracePrintHead trace __MODULE__ "extractTadist" "found ISBNs" ;
-         tracePrint trace "" (String.concat "\n" isbns) ;
 
          Ok (Some Tadist.( {
             titleRaw  = titles ;

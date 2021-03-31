@@ -44,27 +44,6 @@ let extractMetadata (trace:bool) (filePathname:string) : nameStructRaw ress =
       TadistPdf.extractTadist ; ]
 
 
-let printRawMetadata (trace:bool) (label:string) (nsr:nameStructRaw)
-   : nameStructRaw =
-
-   if trace
-   then begin
-      print_endline ("\n" ^ label ^ " (" ^ nsr.typRaw ^ ")") ;
-
-      let partPrinter (label:string) (sep:string) (ls:string list) : unit =
-         print_endline (label ^ "  " ^ (String.concat sep ls)) ;
-      in
-
-      partPrinter "* titles: " "\n   * " nsr.titleRaw ;
-      partPrinter "* authors:" " | "     nsr.authorRaw ;
-      partPrinter "* dates:  " " | "     nsr.dateRaw ;
-      partPrinter "* isbns:  " " | "     nsr.idRaw ;
-      partPrinter "* pages:  " " | "     [ nsr.subtypRaw ] ;
-   end ;
-
-   nsr
-
-
 let printQueryError (trace:bool) (label:string) (e:string)
    : nameStructRaw ress =
 
@@ -172,8 +151,6 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
    (fun (metadataRaw:nameStructRaw) ->
       metadataRaw
       |>
-      (printRawMetadata trace "Internal metadata")
-      |>
       Tadist.normaliseMetadataLax
       |>
       (* : nameStructLax *)
@@ -183,8 +160,6 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
          (queryForIsbn trace)
          |>=?
          (printQueryError trace "Remote ISBN query")
-         |>=-
-         (printRawMetadata trace "Remote ISBN query")
          |>=-
          Tadist.normaliseMetadataLax
          |>=-
