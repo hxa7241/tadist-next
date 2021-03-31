@@ -331,8 +331,16 @@ let getTextIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
    : string list =
 
    let pages : string list =
-      getTextPages trace epubPathname contentopfpath htmlPathnames
+      (* only inspect first 10 and last 5 pages *)
+      let leadAndtrail =
+         let lead , rest  = List_.bisect htmlPathnames 10 in
+         let restLen = List.length rest in
+         let _ , trail = List_.bisect rest (restLen - 5) in
+         List.append lead trail
+      in
+      getTextPages trace epubPathname contentopfpath leadAndtrail
    in
+
    Tadist.Isbn.extractIsbnsFromText trace 2 pages
 
 
