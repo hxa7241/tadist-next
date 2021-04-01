@@ -27,7 +27,9 @@ let _TYPE = "pdf"
 
 (* ---- functions ---- *)
 
-let recognisePdf (pdfPathname:string) : bool ress =
+let recognisePdf (trace:bool) (pdfPathname:string) : bool ress =
+
+   tracePrintHead trace __MODULE__ "recogniseEpub" "" ;
 
    try
       (* (assuming this can fail) *)
@@ -42,13 +44,24 @@ let recognisePdf (pdfPathname:string) : bool ress =
          in
          let first8Bytes = (readString file 0 8) in
          (* check pdf id as first, or BOM first then pdf id *)
-         ((String_.lead first8Bytes 5) = pdfId) || (first8Bytes = bom ^ pdfId)
+         let isPdfId =
+            ((String_.lead first8Bytes 5) = pdfId) ||
+            (first8Bytes                  = bom ^ pdfId)
+         in
+
+         tracePrint trace "pdf id: " (if isPdfId then "true" else "false") ;
+         isPdfId
       in
 
       close_in_noerr file ;
       Ok recognised
    with
-   | _ -> Error ("cannot open/read file: " ^ pdfPathname)
+   | _ ->
+      begin
+         let msg = "cannot open/read file: " ^ pdfPathname in
+         tracePrint trace "*** Error: " msg ;
+         Error msg
+      end
 
 
 let toolInvoke (command:string) : string ress =
@@ -83,6 +96,8 @@ let getMetadata (trace:bool) (pdfPathname:string) : (string * string) ress =
       * print xml metadata
       * input file somedocument.pdf
    *)
+
+   tracePrintHead trace __MODULE__ "getMetadata" "" ;
 
    let invoke (options:string) : string ress =
       (toolInvoke
@@ -141,6 +156,9 @@ let getMetadata (trace:bool) (pdfPathname:string) : (string * string) ress =
          (* default to empty string *)
          String_.ofOpt ))
    in
+
+   tracePrintRess trace ""   id infoRaw ;
+   tracePrintRess trace "\n" id xmpRaw ;
 
    let xmpNoNewlines = Result.map Blanks.unifySpaces xmpRaw in
 
@@ -425,6 +443,8 @@ let getTextPages (trace:bool) (pdfPathname:string) : (string list) ress =
       * output to stdout
    *)
 
+   tracePrintHead trace __MODULE__ "getTextPages" "" ;
+
    let text : string ress =
       let _NUMBER_OF_PAGES_TO_INSPECT = 10 (* 7 *) in
       (toolInvoke
@@ -436,20 +456,12 @@ let getTextPages (trace:bool) (pdfPathname:string) : (string list) ress =
       (Result.map Utf8.Filter.replace)
    in
 
+   tracePrintRess trace "" (String.length %> string_of_int) text ;
+
    text
    |>=
    (* split into pages by ascii form-feed char : (string list) ress *)
    ((String.split_on_char '\x0C') %> Result.ok)
-
-
-let getIsbns (trace:bool) (metadata:string*string) (texts:string list)
-   : string list =
-
-   (List.append
-      (Tadist.Isbn.extractIsbnsFromText trace 2 texts)
-      (getIsbnsFromMetadata metadata))
-   |>
-   List_.deduplicate
 
 
 
@@ -459,7 +471,7 @@ let getIsbns (trace:bool) (metadata:string*string) (texts:string list)
 let extractTadist (trace:bool) (pdfPathname:string)
    : (Tadist.nameStructRaw option) ress =
 
-   match recognisePdf pdfPathname with
+   match recognisePdf trace pdfPathname with
    | Error _ as e -> e
    | Ok false     -> Ok None
    | Ok true      ->
@@ -472,12 +484,34 @@ let extractTadist (trace:bool) (pdfPathname:string)
       (Result_.ressOr2 "\n" (("",""),[]))
       |>=
       (fun (metadata , text) ->
-         (* extract and package chosen data *)
+         (* extract chosen metadata *)
+         let titles  = [ lookupMetadataValue metadata "Title" ]
+         and authors = lookupMetadataValues metadata "Author"
+         and dates   = getDates metadata
+         and isbns   = getIsbnsFromMetadata metadata
+         and pages   = lookupMetadataValue metadata "Pages" in
+
+         tracePrintHead trace __MODULE__ "extractTadist" "raw metadata" ;
+         tracePrint trace "titles:  " (String.concat " | " titles) ;
+         tracePrint trace "authors: " (String.concat " | " authors) ;
+         tracePrint trace "dates:   " (String.concat " | " dates) ;
+         tracePrint trace "isbns:   " (String.concat " | " isbns) ;
+         tracePrint trace "pages:   " pages ;
+
+         (* add ISBNs found in text *)
+         let isbns =
+            (List.append
+               (Tadist.Isbn.extractIsbnsFromText trace 2 text)
+               isbns)
+            |>
+            List_.deduplicate
+         in
+
          Ok (Some Tadist.{
-            titleRaw  = [ lookupMetadataValue metadata "Title" ] ;
-            authorRaw = lookupMetadataValues metadata "Author" ;
-            dateRaw   = getDates metadata ;
-            idRaw     = getIsbns trace metadata text ;
-            subtypRaw = lookupMetadataValue metadata "Pages" ;
+            titleRaw  = titles ;
+            authorRaw = authors ;
+            dateRaw   = dates ;
+            idRaw     = isbns ;
+            subtypRaw = pages ;
             typRaw    = _TYPE ;
          } ) )
