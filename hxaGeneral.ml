@@ -270,9 +270,9 @@ end
 
 module Result_ :
 sig
-   val valuef       : ('e0 -> 'o) -> ('o, 'e0) result -> 'o
-   val unify        : ('e0 -> 'o) -> ('o, 'e0) result -> 'o
-   val errorDefault : ('e0 -> 'o) -> ('o, 'e0) result -> 'o
+   val default      : 'o         -> ('o,'e) result -> 'o
+   val valuef       : ('e -> 'o) -> ('o,'e) result -> 'o
+   val defaultf     : ('e -> 'o) -> ('o,'e) result -> 'o
    val map : (('a -> 'c) * ('b -> 'd)) -> ('a,'b) result -> ('c,'d) result
    (*val resMap_      : ?ok:('a -> 'c) -> ?er:('b -> 'd) -> ('a,'b) result ->
       ('c,'d) result*)
@@ -300,14 +300,15 @@ sig
 end
 =
 struct
-   let valuef (f:('e0 -> 'o)) (r:('o,'e0) result) : 'o =
+   let default (d:'o) (r:('o,'e) result) : 'o =
+      Result.value ~default:d r
+
+   let valuef (f:('e -> 'o)) (r:('o,'e) result) : 'o =
       match r with
       | Ok o    -> o
       | Error e -> f e
 
-   let unify = valuef
-
-   let errorDefault = valuef
+   let defaultf = valuef
 
    let map ((fo,fe):('o0 -> 'o1)*('e0 -> 'e1)) (r:('o0,'e0) result)
       : ('o1,'e1) result =

@@ -222,9 +222,9 @@ end
 module Result_ :
 sig
    (** Unify a result with a default for Error. *)
-   val valuef    : ('e0 -> 'o) -> ('o, 'e0) result -> 'o
-   val unify     : ('e0 -> 'o) -> ('o, 'e0) result -> 'o
-   val errorDefault : ('e0 -> 'o) -> ('o, 'e0) result -> 'o
+   val default  : 'o         -> ('o,'e) result -> 'o
+   val valuef   : ('e -> 'o) -> ('o,'e) result -> 'o
+   val defaultf : ('e -> 'o) -> ('o,'e) result -> 'o
 
    (** Map (o,e) result -> ((fo o),(fe e)) result. *)
    val map : (('a -> 'c) * ('b -> 'd)) -> ('a,'b) result -> ('c,'d) result
