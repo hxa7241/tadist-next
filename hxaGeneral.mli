@@ -90,6 +90,9 @@ val tracePrintHead : bool -> string -> string -> string -> unit
 (** Print log/trace label and content conditionally. *)
 val tracePrint : bool -> string -> string -> unit
 
+(** Print log/trace label and converted content conditionally. *)
+val tracePrintRess : bool -> string -> ('a -> string) -> 'a ress -> unit
+
 (** Convert (by catching) exception to defaulter function
     (except: Out_of_memory, Stack_overflow, Sys.Break). *)
 val excToDefaultf : default:(unit -> 'a) -> f:(unit -> 'a) -> 'a
