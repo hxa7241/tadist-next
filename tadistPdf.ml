@@ -57,11 +57,9 @@ let recognisePdf (trace:bool) (pdfPathname:string) : bool ress =
       Ok recognised
    with
    | _ ->
-      begin
-         let msg = "cannot open/read file: " ^ pdfPathname in
-         tracePrint trace "*** Error: " msg ;
-         Error msg
-      end
+      (Error ("cannot open/read file: " ^ pdfPathname))
+      |>
+      (bypass (tracePrintRess trace "" (ko "")))
 
 
 let toolInvoke (command:string) : string ress =
@@ -484,19 +482,15 @@ let extractTadist (trace:bool) (pdfPathname:string)
       (Result_.ressOr2 "\n" (("",""),[]))
       |>=
       (fun (metadata , text) ->
-         (* extract chosen metadata *)
+         (* get chosen metadata *)
          let titles  = [ lookupMetadataValue metadata "Title" ]
          and authors = lookupMetadataValues metadata "Author"
          and dates   = getDates metadata
          and isbns   = getIsbnsFromMetadata metadata
          and pages   = lookupMetadataValue metadata "Pages" in
 
-         tracePrintHead trace __MODULE__ "extractTadist" "raw metadata" ;
-         tracePrint trace "titles:  " (String.concat " | " titles) ;
-         tracePrint trace "authors: " (String.concat " | " authors) ;
-         tracePrint trace "dates:   " (String.concat " | " dates) ;
-         tracePrint trace "isbns:   " (String.concat " | " isbns) ;
-         tracePrint trace "pages:   " pages ;
+         tracePrintHead trace __MODULE__ "extractTadist" "ISBNs in metadata" ;
+         tracePrint trace "" (String.concat " | " isbns) ;
 
          (* add ISBNs found in text *)
          let isbns =
@@ -507,11 +501,19 @@ let extractTadist (trace:bool) (pdfPathname:string)
             List_.deduplicate
          in
 
-         Ok (Some Tadist.{
-            titleRaw  = titles ;
-            authorRaw = authors ;
-            dateRaw   = dates ;
-            idRaw     = isbns ;
-            subtypRaw = pages ;
-            typRaw    = _TYPE ;
-         } ) )
+         let nsr =
+            Tadist.{
+               titleRaw  = titles ;
+               authorRaw = authors ;
+               dateRaw   = dates ;
+               idRaw     = isbns ;
+               subtypRaw = pages ;
+               typRaw    = _TYPE }
+         in
+
+         tracePrintHead trace __MODULE__ "extractTadist" "raw metadata" ;
+         tracePrint trace "" (Tadist.rawToString nsr) ;
+
+         (Ok (Some nsr))
+         |>
+         (bypass (tracePrintRess trace "" (ko ""))) )
