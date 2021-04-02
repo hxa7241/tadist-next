@@ -1299,6 +1299,9 @@ end
 
 (* -- error-handling pipeline/monad -- *)
 
+let bypass (f:'a -> unit) (a:'a) : 'a =
+   (f a) ; a
+
 (*let ( |>=& ) (r0:('o0,string) result) (r1:('o1,string) result)
    : (('o1 * 'o0) , string) result =
 

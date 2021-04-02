@@ -758,6 +758,9 @@ end
 
 (* -- error-handling pipeline/monad -- *)
 
+(** Insert a side-effect, and pass through a value. *)
+val bypass : ('a -> unit) -> 'a -> 'a
+
 (** Augmented or: short-circuiting 'or' that returns more than a bool. *)
 val ( ||> ) : 'a option -> (unit -> 'a option) -> 'a option
 
