@@ -73,18 +73,17 @@ let tracePrint (trace:bool) (label:string) (content:string) : unit =
 let tracePrintRess (trace:bool) (label:string) (toString:'a -> string)
    (content:'a ress)
    : unit =
-   if trace
-   then
-      let content =
-         Result.fold ~ok:toString ~error:((^) "*** Error: ") content
-      in
-      Printf.printf "%s%s\n%!" label content
+   tracePrint
+      trace
+      label
+      (Result.fold ~ok:toString ~error:((^) "*** Error: ") content)
 
 
 let excToDefaultf ~(default:unit -> 'a) ~(f:unit -> 'a) : 'a =
    try f () with
    | Out_of_memory | Stack_overflow | Sys.Break as x -> raise x
    | _                                               -> default ()
+
 
 let excToDefault (default:'a) (f:unit -> 'a) : 'a =
    excToDefaultf ~default:(Fun.const default) ~f
