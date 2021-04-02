@@ -44,14 +44,6 @@ let extractMetadata (trace:bool) (filePathname:string) : nameStructRaw ress =
       TadistPdf.extractTadist ; ]
 
 
-let printQueryError (trace:bool) (label:string) (e:string)
-   : nameStructRaw ress =
-
-   if trace then print_endline ("\n" ^ label ^ ": " ^ e) ;
-
-   Error e
-
-
 let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
    : nameStructLax =
 
@@ -66,7 +58,8 @@ let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
        * (So the merge is an interleaving of two ordered lists,
        * but for any duplicate, only the first is kept.)
        * (Using asymptotically slow algo, but the lists are very small.) *)
-      let rec merge (result:StringT.t list) (a:StringT.t list) (b:StringT.t list)
+      let rec merge (result:StringT.t list) (a:StringT.t list)
+         (b:StringT.t list)
          : StringT.t list =
          (* append only if not already there -- like a set *)
          let setAppend (l:StringT.t list) (x:StringT.t) : StringT.t list =
@@ -158,8 +151,6 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
          (Ok metadataLax)
          |>=
          (queryForIsbn trace)
-         |>=?
-         (printQueryError trace "Remote ISBN query")
          |>=-
          Tadist.normaliseMetadataLax
          |>=-
@@ -170,3 +161,8 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
       |>
       (* : nameStruct ress *)
       Tadist.normaliseMetadata )
+   |>
+   (bypass
+      (fun value ->
+         tracePrintHead trace __MODULE__ "makeNameStructFromFileName" "" ;
+         tracePrintRess trace "" (ko "") value ; ))
