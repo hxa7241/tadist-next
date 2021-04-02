@@ -98,7 +98,7 @@ end
 
 let recogniseEpub (trace:bool) (epubPathname:string) : bool ress =
 
-   tracePrintHead trace __MODULE__ "recogniseEpub" "" ;
+   traceHead trace __MODULE__ "recogniseEpub" "" ;
 
    try
       (* (assuming this can fail) *)
@@ -128,12 +128,12 @@ let recogniseEpub (trace:bool) (epubPathname:string) : bool ress =
    | _ ->
       (Error ("cannot open/read file: " ^ epubPathname))
       |>
-      (bypass (tracePrintRess trace "" (ko "")))
+      (bypass (traceRess trace "" (ko "")))
 
 
 let getContentOpf (trace:bool) (epubPathname:string) : (string * string) ress =
 
-   tracePrintHead trace __MODULE__ "getContentOpf" "" ;
+   traceHead trace __MODULE__ "getContentOpf" "" ;
 
    Zip.withZipfile epubPathname
       (fun zipfile ->
@@ -160,7 +160,7 @@ let getContentOpf (trace:bool) (epubPathname:string) : (string * string) ress =
          | Error msg ->
             (Error msg)
             |>
-            (bypass (tracePrintRess trace "" (ko "")))
+            (bypass (traceRess trace "" (ko "")))
          | Ok contentopfFilepathname ->
 
             (* read metadata zipped-file *)
@@ -168,10 +168,10 @@ let getContentOpf (trace:bool) (epubPathname:string) : (string * string) ress =
             | Error msg ->
                (Error msg)
                |>
-               (bypass (tracePrintRess trace "" (ko "")))
+               (bypass (traceRess trace "" (ko "")))
             | Ok contentopf ->
                begin
-                  tracePrint
+                  traceString
                      trace
                      ((FileName.getPath contentopfFilepathname) ^ "\n")
                      contentopf ;
@@ -245,7 +245,7 @@ let getContentopfMetadata (contentopf:string)
 
 let getHtmlPathnames (trace:bool) (contentopf:string) : string list =
 
-   tracePrintHead trace __MODULE__ "getHtmlPathnames" "" ;
+   traceHead trace __MODULE__ "getHtmlPathnames" "" ;
 
    let manifest =
       (* remove line-ends for easier regexps *)
@@ -272,7 +272,7 @@ let getHtmlPathnames (trace:bool) (contentopf:string) : string list =
 
    let htmlPathnames = Str_.allMatches rx htmlItems (Str.matched_group 1) in
 
-   tracePrint
+   traceString
       trace
       ((string_of_int (List.length htmlPathnames)) ^ "\n\n")
       (String.concat "\n" htmlPathnames) ;
@@ -284,7 +284,7 @@ let getTextPages (trace:bool) (epubPathname:string) (contentopfpath:string)
    (htmlPathnames:string list)
    : string list =
 
-   tracePrintHead trace __MODULE__ "getTextPages" "" ;
+   traceHead trace __MODULE__ "getTextPages" "" ;
 
    (* get HTML texts *)
    let htmls : string list =
@@ -299,19 +299,19 @@ let getTextPages (trace:bool) (epubPathname:string) (contentopfpath:string)
                            zipfile (contentopfpath ^ htmlPathname))
                      htmlPathnames)))
          |>
-         (bypass (tracePrintRess trace "" (ko "")))
+         (bypass (traceRess trace "" (ko "")))
          |>
          (Result.value ~default:[])
       in
 
       List.iter
-         (tracePrintRess trace "" (ko ""))
+         (traceRess trace "" (ko ""))
          strResList ;
 
       List_.filtmap Result_.toOpt strResList
    in
 
-   tracePrint trace "count: " (string_of_int (List.length htmls)) ;
+   traceString trace "count: " (string_of_int (List.length htmls)) ;
 
    (* remove tags *)
    List.map
@@ -360,8 +360,8 @@ let extractTadist (trace:bool) (epubPathname:string)
             getContentopfMetadata contentopf
          in
 
-         tracePrintHead trace __MODULE__ "extractTadist" "ISBNs in metadata" ;
-         tracePrint trace "" (String.concat " | " isbns) ;
+         traceHead trace __MODULE__ "extractTadist" "ISBNs in metadata" ;
+         traceString trace "" (String.concat " | " isbns) ;
 
          (* get list of html sections *)
          let htmlPathnames = getHtmlPathnames trace contentopf in
@@ -384,9 +384,9 @@ let extractTadist (trace:bool) (epubPathname:string)
                typRaw    = _TYPE }
          in
 
-         tracePrintHead trace __MODULE__ "extractTadist" "raw metadata" ;
-         tracePrint trace "" (Tadist.rawToString nsr) ;
+         traceHead trace __MODULE__ "extractTadist" "raw metadata" ;
+         traceString trace "" (Tadist.rawToString nsr) ;
 
          (Ok (Some nsr))
          |>
-         (bypass (tracePrintRess trace "" (ko "")))
+         (bypass (traceRess trace "" (ko "")))

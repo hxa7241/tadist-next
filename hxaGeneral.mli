@@ -85,13 +85,13 @@ val ( @< ) : 'a list -> 'a -> 'a list
 val print_string_flush : string -> unit
 
 (** Print log/trace heading (module, function, title) conditionally. *)
-val tracePrintHead : bool -> string -> string -> string -> unit
+val traceHead : bool -> string -> string -> string -> unit
 
 (** Print log/trace label and content conditionally. *)
-val tracePrint : bool -> string -> string -> unit
+val traceString : bool -> string -> string -> unit
 
 (** Print log/trace label and converted content conditionally. *)
-val tracePrintRess : bool -> string -> ('a -> string) -> 'a ress -> unit
+val traceRess : bool -> string -> ('a -> string) -> 'a ress -> unit
 
 (** Convert (by catching) exception to defaulter function
     (except: Out_of_memory, Stack_overflow, Sys.Break). *)

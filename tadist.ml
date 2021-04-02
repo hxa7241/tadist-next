@@ -540,8 +540,8 @@ struct
          |> List_.deduplicate
       in
 
-      tracePrintHead trace __MODULE__ "extractIsbnsFromText" "found ISBNs" ;
-      tracePrint trace "" (String.concat "\n" isbns) ;
+      traceHead trace __MODULE__ "extractIsbnsFromText" "found ISBNs" ;
+      traceString trace "" (String.concat "\n" isbns) ;
 
       (* truncate *)
       fst (List_.bisect isbns maxCount)

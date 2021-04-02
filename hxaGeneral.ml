@@ -58,22 +58,22 @@ let print_string_flush (s:string) : unit =
    Printf.printf "%s%!" s
 
 
-let tracePrintHead (trace:bool) (module_:string) (function_:string)
+let traceHead (trace:bool) (module_:string) (function_:string)
    (title:string)
    : unit =
    if trace
    then Printf.printf "\n### %s.%s - %s\n\n%!" module_ function_ title
 
 
-let tracePrint (trace:bool) (label:string) (content:string) : unit =
+let traceString (trace:bool) (label:string) (content:string) : unit =
    if trace
    then Printf.printf "%s%s\n%!" label content
 
 
-let tracePrintRess (trace:bool) (label:string) (toString:'a -> string)
+let traceRess (trace:bool) (label:string) (toString:'a -> string)
    (content:'a ress)
    : unit =
-   tracePrint
+   traceString
       trace
       label
       (Result.fold ~ok:toString ~error:((^) "*** Error: ") content)

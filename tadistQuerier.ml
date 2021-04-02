@@ -161,7 +161,7 @@ let httpResponseBody (head:string) (bodyRaw:string) : string =
  *)
 let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
 
-   tracePrintHead trace __MODULE__ "requestOpenLib" "" ;
+   traceHead trace __MODULE__ "requestOpenLib" "" ;
 
    let requestHost = "openlibrary.org" in
    (* constant except for 'isbn' *)
@@ -215,9 +215,9 @@ let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
             Bytes.sub_string byteBuf 0 readLen
          in
 
-         tracePrint
+         traceString
             trace "response length: " (string_of_int (String.length response)) ;
-         tracePrint
+         traceString
             trace "\nresponse raw:\n\n" response ;
 
          (* basic parse of http response *)
@@ -259,7 +259,7 @@ let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
       in
       Error (message ^ ".")
       |>
-      (bypass (tracePrintRess trace "" (ko "")))
+      (bypass (traceRess trace "" (ko "")))
 
 
 (**
@@ -425,5 +425,5 @@ let getBasicTadForIsbn (trace:bool) (isbn:Isbn.t) : nameStructRaw ress =
    |>
    (bypass
       (fun nsrRess ->
-         tracePrintHead trace __MODULE__ "getBasicTadForIsbn" "" ;
-         tracePrintRess trace "" Tadist.rawToString nsrRess ; ))
+         traceHead trace __MODULE__ "getBasicTadForIsbn" "" ;
+         traceRess trace "" Tadist.rawToString nsrRess ; ))

@@ -29,7 +29,7 @@ let _TYPE = "pdf"
 
 let recognisePdf (trace:bool) (pdfPathname:string) : bool ress =
 
-   tracePrintHead trace __MODULE__ "recogniseEpub" "" ;
+   traceHead trace __MODULE__ "recogniseEpub" "" ;
 
    try
       (* (assuming this can fail) *)
@@ -49,7 +49,7 @@ let recognisePdf (trace:bool) (pdfPathname:string) : bool ress =
             (first8Bytes                  = bom ^ pdfId)
          in
 
-         tracePrint trace "pdf id: " (if isPdfId then "true" else "false") ;
+         traceString trace "pdf id: " (if isPdfId then "true" else "false") ;
          isPdfId
       in
 
@@ -59,7 +59,7 @@ let recognisePdf (trace:bool) (pdfPathname:string) : bool ress =
    | _ ->
       (Error ("cannot open/read file: " ^ pdfPathname))
       |>
-      (bypass (tracePrintRess trace "" (ko "")))
+      (bypass (traceRess trace "" (ko "")))
 
 
 let toolInvoke (command:string) : string ress =
@@ -95,7 +95,7 @@ let getMetadata (trace:bool) (pdfPathname:string) : (string * string) ress =
       * input file somedocument.pdf
    *)
 
-   tracePrintHead trace __MODULE__ "getMetadata" "" ;
+   traceHead trace __MODULE__ "getMetadata" "" ;
 
    let invoke (options:string) : string ress =
       (toolInvoke
@@ -155,8 +155,8 @@ let getMetadata (trace:bool) (pdfPathname:string) : (string * string) ress =
          String_.ofOpt ))
    in
 
-   tracePrintRess trace ""   id infoRaw ;
-   tracePrintRess trace "\n" id xmpRaw ;
+   traceRess trace ""   id infoRaw ;
+   traceRess trace "\n" id xmpRaw ;
 
    let xmpNoNewlines = Result.map Blanks.unifySpaces xmpRaw in
 
@@ -441,7 +441,7 @@ let getTextPages (trace:bool) (pdfPathname:string) : (string list) ress =
       * output to stdout
    *)
 
-   tracePrintHead trace __MODULE__ "getTextPages" "" ;
+   traceHead trace __MODULE__ "getTextPages" "" ;
 
    let text : string ress =
       let _NUMBER_OF_PAGES_TO_INSPECT = 10 (* 7 *) in
@@ -454,7 +454,7 @@ let getTextPages (trace:bool) (pdfPathname:string) : (string list) ress =
       (Result.map Utf8.Filter.replace)
    in
 
-   tracePrintRess trace "" (String.length %> string_of_int) text ;
+   traceRess trace "" (String.length %> string_of_int) text ;
 
    text
    |>=
@@ -489,8 +489,8 @@ let extractTadist (trace:bool) (pdfPathname:string)
          and isbns   = getIsbnsFromMetadata metadata
          and pages   = lookupMetadataValue metadata "Pages" in
 
-         tracePrintHead trace __MODULE__ "extractTadist" "ISBNs in metadata" ;
-         tracePrint trace "" (String.concat " | " isbns) ;
+         traceHead trace __MODULE__ "extractTadist" "ISBNs in metadata" ;
+         traceString trace "" (String.concat " | " isbns) ;
 
          (* add ISBNs found in text *)
          let isbns =
@@ -511,9 +511,9 @@ let extractTadist (trace:bool) (pdfPathname:string)
                typRaw    = _TYPE }
          in
 
-         tracePrintHead trace __MODULE__ "extractTadist" "raw metadata" ;
-         tracePrint trace "" (Tadist.rawToString nsr) ;
+         traceHead trace __MODULE__ "extractTadist" "raw metadata" ;
+         traceString trace "" (Tadist.rawToString nsr) ;
 
          (Ok (Some nsr))
          |>
-         (bypass (tracePrintRess trace "" (ko ""))) )
+         (bypass (traceRess trace "" (ko ""))) )

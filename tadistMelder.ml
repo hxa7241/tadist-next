@@ -164,5 +164,5 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
    |>
    (bypass
       (fun value ->
-         tracePrintHead trace __MODULE__ "makeNameStructFromFileName" "" ;
-         tracePrintRess trace "" (ko "") value ; ))
+         traceHead trace __MODULE__ "makeNameStructFromFileName" "" ;
+         traceRess trace "" (ko "") value ; ))
