@@ -356,3 +356,6 @@ val toStringName : nameStruct -> string
 
 (** Render name-struct to string, in text-form style (text-form grammar). *)
 val toStringText : nameStruct -> string
+
+(** Verbosely render to a string. *)
+val rawToString : nameStructRaw -> string

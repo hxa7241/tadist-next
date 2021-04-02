@@ -1291,3 +1291,16 @@ let toStringName (name:nameStruct) : string =
 
 let toStringText (name:nameStruct) : string =
    toStringNameStruct name "\""  " "  "; "  " / "  ", "  "."
+
+
+let rawToString (nsr:nameStructRaw) : string =
+   [  ("titles:  " , nsr.titleRaw     ) ;
+      ("authors: " , nsr.authorRaw    ) ;
+      ("dates:   " , nsr.dateRaw      ) ;
+      ("isbns:   " , nsr.idRaw        ) ;
+      ("pages:   " , [ nsr.subtypRaw ]) ;
+      ("type:    " , [ nsr.typRaw    ]) ]
+   |>
+   (List.map (fun (label , value) -> label ^ (String.concat " | " value)))
+   |>
+   (String.concat "\n")
