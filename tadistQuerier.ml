@@ -159,7 +159,9 @@ let httpResponseBody (head:string) (bodyRaw:string) : string =
  * * https://openlibrary.org/dev/docs/api/books
  * * https://openlibrary.org/dev/docs/restful_api
  *)
-let requestOpenLib (isbn:Isbn.t) : string ress =
+let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
+
+   tracePrintHead trace __MODULE__ "requestOpenLib" "" ;
 
    let requestHost = "openlibrary.org" in
    (* constant except for 'isbn' *)
@@ -212,10 +214,11 @@ let requestOpenLib (isbn:Isbn.t) : string ress =
             in
             Bytes.sub_string byteBuf 0 readLen
          in
-         (* DEBUG *)
-         (*print_endline ("\n* ISBN query response length: " ^
-            (string_of_int (String.length response))) ;
-         print_endline ("* ISBN query response:\n" ^ response ^ "<<<") ;*)
+
+         tracePrint
+            trace "response length: " (string_of_int (String.length response)) ;
+         tracePrint
+            trace "\nresponse raw:\n\n" response ;
 
          (* basic parse of http response *)
          let body =
@@ -255,6 +258,8 @@ let requestOpenLib (isbn:Isbn.t) : string ress =
          | _         -> "failed inscrutably"
       in
       Error (message ^ ".")
+      |>
+      (bypass (tracePrintRess trace "" (ko "")))
 
 
 (**
@@ -374,20 +379,9 @@ let parseOpenLib (json:string)
       (* get authors json array : string option *)
       (extractElement json "authors" "\\[\\([^]]*\\)\\]" )
       |>-
-      (* DEBUG *)
-      (*(fun s ->
-         print_endline ("* Q-authsjson: " ^ s) ;
-         Some s)
-      |>-*)
       (* get all 'name' sub elements (name-value pairs) : string list1 option *)
       (fun s -> (Rx.allMatches rx s) |> toList1)
       |>-
-      (* DEBUG *)
-      (*(fun l1s ->
-         print_endline ("* Q-authsnames: "
-            ^ (String.concat " | " (ofList1 l1s))) ;
-         Some l1s)
-      |>-*)
       (* from the name-value pairs, extract just the value strings *)
       (ofList1
          %> (List_.filtmap ((Fun.flip extractString) "name"))
@@ -412,8 +406,10 @@ let parseOpenLib (json:string)
 
 let getBasicTadForIsbn (trace:bool) (isbn:Isbn.t) : nameStructRaw ress =
 
+   isbn
+   |>
    (* : string ress *)
-   (requestOpenLib isbn)
+   (requestOpenLib trace)
    |>=-
    (* : TAD tuple *)
    parseOpenLib
@@ -426,3 +422,8 @@ let getBasicTadForIsbn (trace:bool) (isbn:Isbn.t) : nameStructRaw ress =
          idRaw     = [ Isbn.toStringBare isbn ] ;
          subtypRaw = (Option.value ~default:"" pageso);
          typRaw    = "openlibrary.org" ; } )
+   |>
+   (bypass
+      (fun nsrRess ->
+         tracePrintHead trace __MODULE__ "getBasicTadForIsbn" "" ;
+         tracePrintRess trace "" Tadist.rawToString nsrRess ; ))
