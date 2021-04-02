@@ -126,11 +126,9 @@ let recogniseEpub (trace:bool) (epubPathname:string) : bool ress =
       Ok recognised
    with
    | _ ->
-      begin
-         let msg = "cannot open/read file: " ^ epubPathname in
-         tracePrint trace "*** Error: " msg ;
-         Error msg
-      end
+      (Error ("cannot open/read file: " ^ epubPathname))
+      |>
+      (bypass (tracePrintRess trace "" (ko "")))
 
 
 let getContentOpf (trace:bool) (epubPathname:string) : (string * string) ress =
@@ -160,19 +158,17 @@ let getContentOpf (trace:bool) (epubPathname:string) : (string * string) ress =
                | Not_found -> Error "content.opf FilePathname not found"
          with
          | Error msg ->
-            begin
-               tracePrint trace "*** Error: " msg ;
-               Error msg
-            end
+            (Error msg)
+            |>
+            (bypass (tracePrintRess trace "" (ko "")))
          | Ok contentopfFilepathname ->
 
             (* read metadata zipped-file *)
             match Zip.readZippedItem zipfile contentopfFilepathname with
             | Error msg ->
-               begin
-                  tracePrint trace "*** Error: " msg ;
-                  Error msg
-               end
+               (Error msg)
+               |>
+               (bypass (tracePrintRess trace "" (ko "")))
             | Ok contentopf ->
                begin
                   tracePrint
@@ -303,14 +299,13 @@ let getTextPages (trace:bool) (epubPathname:string) (contentopfpath:string)
                            zipfile (contentopfpath ^ htmlPathname))
                      htmlPathnames)))
          |>
-         (Result_.errorMap
-            (fun msg -> tracePrint trace "*** Error: " msg ; msg))
+         (bypass (tracePrintRess trace "" (ko "")))
          |>
          (Result.value ~default:[])
       in
 
       List.iter
-         (Result.iter_error (fun msg -> tracePrint trace "*** Error: " msg ; ))
+         (tracePrintRess trace "" (ko ""))
          strResList ;
 
       List_.filtmap Result_.toOpt strResList
@@ -365,16 +360,12 @@ let extractTadist (trace:bool) (epubPathname:string)
             getContentopfMetadata contentopf
          in
 
+         tracePrintHead trace __MODULE__ "extractTadist" "ISBNs in metadata" ;
+         tracePrint trace "" (String.concat " | " isbns) ;
+
          (* get list of html sections *)
          let htmlPathnames = getHtmlPathnames trace contentopf in
          let sectionCount = string_of_int (List.length htmlPathnames) in
-
-         tracePrintHead trace __MODULE__ "extractTadist" "raw metadata" ;
-         tracePrint trace "titles:  " (String.concat " | " titles) ;
-         tracePrint trace "authors: " (String.concat " | " authors) ;
-         tracePrint trace "dates:   " (String.concat " | " dates) ;
-         tracePrint trace "isbns:   " (String.concat " | " isbns) ;
-         tracePrint trace "pages:   " sectionCount ;
 
          (* add ISBNs found in text *)
          let isbns =
@@ -383,10 +374,19 @@ let extractTadist (trace:bool) (epubPathname:string)
             |> List_.deduplicate
          in
 
-         Ok (Some Tadist.( {
-            titleRaw  = titles ;
-            authorRaw = authors ;
-            dateRaw   = dates ;
-            idRaw     = isbns ;
-            subtypRaw = sectionCount ;
-            typRaw    = _TYPE } ) )
+         let nsr =
+            Tadist.{
+               titleRaw  = titles ;
+               authorRaw = authors ;
+               dateRaw   = dates ;
+               idRaw     = isbns ;
+               subtypRaw = sectionCount ;
+               typRaw    = _TYPE }
+         in
+
+         tracePrintHead trace __MODULE__ "extractTadist" "raw metadata" ;
+         tracePrint trace "" (Tadist.rawToString nsr) ;
+
+         (Ok (Some nsr))
+         |>
+         (bypass (tracePrintRess trace "" (ko "")))
