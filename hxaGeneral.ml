@@ -1158,12 +1158,9 @@ struct
       snd (splitExt nameExt)
 
    let splitPath (pathName:string) : (string * string) =
-      try
-         let namePos = (String.rindex pathName '/') + 1 in
-         let nameLen = (String.length pathName) - namePos in
-         ( String.sub pathName 0 namePos , String.sub pathName namePos nameLen )
-      with
-      | Not_found -> (pathName , "")
+      match (String.rindex_opt pathName '/') with
+      | Some pos -> String_.leadTrail pathName (pos + 1)
+      | None     -> ("" , pathName)
 
    let getPath (pathName:string) : string =
       fst (splitPath pathName)
