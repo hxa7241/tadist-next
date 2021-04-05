@@ -110,16 +110,50 @@ let recogniseEpub (trace:bool) (epubPathname:string) : bool ress =
             try seek_in file pos ; really_input_string file len with _ -> ""
          in
 
-         (* check zip id then epub id *)
-         let isZipId = (readString file 0 4) = "\x50\x4B\x03\x04" in
-         let isEpubId =
-            (readString file 30 28) = "mimetypeapplication/epub+zip"
+         (* check zip id then epub mimetype *)
+         let isZipId =
+            (readString file 0 4) = "\x50\x4B\x03\x04"
+         in
+         let isEpubMimetype =
+            (* if the archive was zipped properly, the mimetype is visible *)
+            if (readString file 30 28) = "mimetypeapplication/epub+zip"
+            then
+               true
+            (* otherwise, check the mimetype file and its contents *)
+            else
+               (* open zip file *)
+               (Zip.withZipfile
+                  epubPathname
+                  (* is the file recognisable ? *)
+                  (fun zipfile : bool ress ->
+                     (* extract mimetype file *)
+                     (Zip.readZippedItem zipfile "mimetype")
+                     |>=
+                     (* check contents *)
+                     (fun mimetypeFileContent : bool ress ->
+                        let contentNormalised =
+                           mimetypeFileContent
+                           |> Blanks.unifySpaces |> String.trim
+                           |> String.lowercase_ascii
+                        in
+                        Ok (contentNormalised = "application/epub+zip"))
+                     |>
+                     (* any errors count as 'unrecognised' *)
+                     (Result_.default false)
+                     |>
+                     Result.ok ))
+               |>
+               (* raise general file errors *)
+               (Result_.toExc_x (fun s -> Failure s))
          in
 
          if trace
-         then Printf.printf "zip id:  %B\nepub id: %B\n%!" isZipId isEpubId ;
+         then
+            Printf.printf
+               "zip id:        %B\nepub mimetype: %B\n%!"
+               isZipId isEpubMimetype ;
 
-         isZipId && isEpubId
+         isZipId && isEpubMimetype
       in
 
       close_in_noerr file ;
