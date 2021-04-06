@@ -105,8 +105,8 @@ val excToDefault : 'a -> (unit -> 'a) -> 'a
     @exceptions: whatever can be raised by Printf.ksprintf *)
 val assertLog_x : (string->unit) -> bool -> string -> bool
 
-(** Print message and exit 1. *)
-val fail : string -> 'a
+(** Print a message (of: main, detail), and exit with a particular code. *)
+val exitcm : int -> string -> string -> 'a
 
 
 (* -- string, numerical, timer -- *)

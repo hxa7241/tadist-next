@@ -95,12 +95,13 @@ let assertLog_x (outputter:string->unit) (b:bool) (message:string) : bool =
    b
 
 
-let fail (message:string) : 'a =
-   begin
-      Printf.eprintf "*** Failed: %s\n%!" message ;
-      (*prerr_endline ("*** Failed: " ^ message) ;*)
-      exit 1
-   end
+let exitcm (code:int) (messageMain:string) (messageDetail:string) : 'a =
+   let message =
+      messageMain ^ (if messageDetail = "" then "" else ": " ^ messageDetail)
+   in
+   Printf.eprintf "*** Failed: %s\n%!" message
+   ;
+   exit code
 
 
 (* -- string, numerical, timer -- *)

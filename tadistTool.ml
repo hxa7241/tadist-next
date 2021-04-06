@@ -251,9 +251,9 @@ let readInput (s:string) : string =
       s
    else
       try read_line () with
-      | Sys_error s -> fail ("input failure: " ^ s)
+      | Sys_error s -> exitcm 1 "input failure" s
       | End_of_file
-      | _           -> fail "input failure"
+      | _           -> exitcm 1 "input failure" ""
 
 
 let getOldAndNewFilenames (input:string) : (string * string * string) =
@@ -268,7 +268,7 @@ let getOldAndNewFilenames (input:string) : (string * string * string) =
          TadistMelder.makeNameStructFromFileName false filePathnameOld
       with
       | Ok nameStruct -> Tadist.toStringName nameStruct
-      | Error msg     -> fail msg
+      | Error msg     -> exitcm 1 msg ""
    in
 
    ( path , nameOld , nameNew )
@@ -353,7 +353,7 @@ filetype = %s
             title authors dates isbn pages filetype
 
    | Error s ->
-      fail s
+      exitcm 1 s ""
 
 
 let suggest (input:string) : unit =
@@ -388,7 +388,7 @@ let rename (quiet:bool) (input:string) : unit =
             Printf.printf "%s  --renamed-to->  %s\n%!" nameOld nameNew
          with
          | Unix.Unix_error (code , funct , param) ->
-            fail ((Unix.error_message code) ^ " (" ^ funct ^ "): " ^ param)
+            exitcm 1 (Unix.error_message code) (funct ^ ": " ^ param)
       end
    else
       Printf.printf "(%s  -- already properly named)\n%!" nameOld
@@ -404,7 +404,7 @@ let convert (input:string) : unit =
          if Tadist.isTextform input
          then Tadist.toStringName ns
          else Tadist.toStringText ns
-      | Error s -> fail ("bad input: " ^ s)
+      | Error s -> exitcm 1 "bad input" s
    in
 
    print_endline output
@@ -443,14 +443,14 @@ try
          | "-R" | "--rename-quiet" -> rename true  input
          | "-c" | "--convert"      -> convert input
          | "-!"                    -> printMetadata ~trace:true false input
-         | _                       -> fail ("unrecognised command: " ^ flag)
+         | _                       -> exitcm 1 "unrecognised command" flag
          end
       | [| str |] ->
          if String_.isFirstChar ((=)'-') str
-         then fail "missing filename/string"
-         else fail "missing command"
-      | [||] -> fail "missing command"
-      | _    -> fail "too many params"
+         then exitcm 1 "missing filename/string" ""
+         else exitcm 1 "missing command" ""
+      | [||] -> exitcm 1 "missing command" ""
+      | _    -> exitcm 1 "too many params" ""
 
 with
 
