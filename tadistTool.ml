@@ -251,9 +251,9 @@ let readInput (s:string) : string =
       s
    else
       try read_line () with
-      | Sys_error s -> exitcm 1 "input failure" s
+      | Sys_error s -> raise (Intolerable (EXIT_IOERR , s))
       | End_of_file
-      | _           -> exitcm 1 "input failure" ""
+      | _           -> raise (Intolerable (EXIT_IOERR , ""))
 
 
 let getOldAndNewFilenames (input:string) : (string * string * string) =
@@ -388,7 +388,10 @@ let rename (quiet:bool) (input:string) : unit =
             Printf.printf "%s  --renamed-to->  %s\n%!" nameOld nameNew
          with
          | Unix.Unix_error (code , funct , param) ->
-            exitcm 1 (Unix.error_message code) (funct ^ ": " ^ param)
+            raise (Intolerable
+               (EXIT_CANTCREAT ,
+                  (Printf.sprintf "%s (%s: %s)"
+                     (Unix.error_message code) funct param)))
       end
    else
       Printf.printf "(%s  -- already properly named)\n%!" nameOld
@@ -404,7 +407,8 @@ let convert (input:string) : unit =
          if Tadist.isTextform input
          then Tadist.toStringName ns
          else Tadist.toStringText ns
-      | Error s -> exitcm 1 "bad input" s
+      | Error s ->
+         raise (Intolerable (EXIT_DATAERR , s))
    in
 
    print_endline output
@@ -434,25 +438,29 @@ try
       set_binary_mode_out stderr true ;
 
       match _argv with
-      | [| flag ; input |] ->
+      | [| flag ; arg |] ->
          begin match flag with
-         | "-m" | "--metadata"     -> printMetadata false input
-         | "-j" | "--json"         -> printMetadata true input
-         | "-s" | "--suggest"      -> suggest input
-         | "-r" | "--rename"       -> rename false input
-         | "-R" | "--rename-quiet" -> rename true  input
-         | "-c" | "--convert"      -> convert input
-         | "-!"                    -> printMetadata ~trace:true false input
-         | _                       -> exitcm 1 "unrecognised command" flag
+         | "-m" | "--metadata"     -> printMetadata false arg
+         | "-j" | "--json"         -> printMetadata true arg
+         | "-s" | "--suggest"      -> suggest arg
+         | "-r" | "--rename"       -> rename false arg
+         | "-R" | "--rename-quiet" -> rename true  arg
+         | "-c" | "--convert"      -> convert arg
+         | "-!"                    -> printMetadata ~trace:true false arg
+         | _                       ->
+            raise (Intolerable (EXIT_USAGE , ("unrecognised command: " ^ flag)))
          end
       | [| str |] ->
-         if String_.isFirstChar ((=)'-') str
-         then exitcm 1 "missing filename/string" ""
-         else exitcm 1 "missing command" ""
-      | [||] -> exitcm 1 "missing command" ""
-      | _    -> exitcm 1 "too many params" ""
+         let msg =
+            if String_.isFirstChar ((=)'-') str
+            then "missing filename/string"
+            else "missing command"
+         in
+         raise (Intolerable (EXIT_USAGE , msg))
+      | [||] -> raise (Intolerable (EXIT_USAGE , "missing command"))
+      | _    -> raise (Intolerable (EXIT_USAGE , "too many params"))
 
 with
 
-| e ->
-   prerr_string "*** General failure: " ; raise e
+| Intolerable (sysexit , message) -> exite sysexit message
+| _                               -> exite EXIT_UNSPECIFIED ""
