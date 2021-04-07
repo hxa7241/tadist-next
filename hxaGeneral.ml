@@ -25,6 +25,15 @@ type 'a resx  = ('a , exn)    result
 
 type 'a list1 = ('a * 'a list)
 
+type sysExit =
+   | EXIT_OK
+   | EXIT_USAGE       | EXIT_DATAERR  | EXIT_NOINPUT | EXIT_NOHOST
+   | EXIT_UNAVAILABLE | EXIT_SOFTWARE | EXIT_OSERR   | EXIT_CANTCREAT
+   | EXIT_IOERR       | EXIT_TEMPFAIL
+   | EXIT_UNSPECIFIED
+
+exception Intolerable of (sysExit * string)
+
 
 
 
@@ -52,7 +61,7 @@ let ( @< ) (l:'a list) (a:'a) : 'a list =
    l @ (a :: [])
 
 
-(* -- print, exception-default, assert, fail -- *)
+(* -- print, exception-default, assert, exit -- *)
 
 let print_string_flush (s:string) : unit =
    Printf.printf "%s%!" s
@@ -102,6 +111,22 @@ let exitcm (code:int) (messageMain:string) (messageDetail:string) : 'a =
    Printf.eprintf "*** Failed: %s\n%!" message
    ;
    exit code
+
+
+let exite (sysexit:sysExit) (message:string) : 'a =
+   match sysexit with
+   | EXIT_OK          -> exit 0
+   | EXIT_USAGE       -> exitcm  64 "command line usage error"  message
+   | EXIT_DATAERR     -> exitcm  65 "user data format error"    message
+   | EXIT_NOINPUT     -> exitcm  66 "cannot open input"         message
+   | EXIT_NOHOST      -> exitcm  68 "host name unknown"         message
+   | EXIT_UNAVAILABLE -> exitcm  69 "service unavailable"       message
+   | EXIT_SOFTWARE    -> exitcm  70 "internal software error"   message
+   | EXIT_OSERR       -> exitcm  71 "system error"              message
+   | EXIT_CANTCREAT   -> exitcm  73 "cannot create output file" message
+   | EXIT_IOERR       -> exitcm  74 "input/output error"        message
+   | EXIT_TEMPFAIL    -> exitcm  75 "temporary failure"         message
+   | EXIT_UNSPECIFIED -> exitcm 114 "unspecified/unknown error" message
 
 
 (* -- string, numerical, timer -- *)

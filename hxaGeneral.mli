@@ -24,9 +24,10 @@
  * * types
  *    * specialised results
  *    * list > 0
+ *    * sysexits
  * * functions
  *    * data
- *    * print, exception-default, assert, fail
+ *    * print, exception-default, assert, exit
  *    * string, numerical, timer
  *    * function combinators
  *    * heterogenous (product) map
@@ -61,6 +62,15 @@ type 'a resx  = ('a , exn)    result
 (** List of at least one item. *)
 type 'a list1 = ('a * 'a list)
 
+type sysExit =
+   | EXIT_OK
+   | EXIT_USAGE       | EXIT_DATAERR  | EXIT_NOINPUT | EXIT_NOHOST
+   | EXIT_UNAVAILABLE | EXIT_SOFTWARE | EXIT_OSERR   | EXIT_CANTCREAT
+   | EXIT_IOERR       | EXIT_TEMPFAIL
+   | EXIT_UNSPECIFIED
+
+exception Intolerable of (sysExit * string)
+
 
 
 
@@ -79,7 +89,7 @@ val toList1 : 'a list -> 'a list1 option
 val ( @< ) : 'a list -> 'a -> 'a list
 
 
-(* -- print, exception-default, assert, fail -- *)
+(* -- print, exception-default, assert, exit -- *)
 
 (** Like print_string, but with a flush. *)
 val print_string_flush : string -> unit
@@ -107,6 +117,9 @@ val assertLog_x : (string->unit) -> bool -> string -> bool
 
 (** Print a message (of: main, detail), and exit with a particular code. *)
 val exitcm : int -> string -> string -> 'a
+
+(** Print a message and exit, according to the sysexits.h convention. *)
+val exite : sysExit -> string -> 'a
 
 
 (* -- string, numerical, timer -- *)
