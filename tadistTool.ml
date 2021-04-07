@@ -401,13 +401,12 @@ let convert (input:string) : unit =
    let input = readInput input in
 
    let output =
-      match Tadist.makeNameStruct input with
-      | Ok ns   ->
-         if Tadist.isTextform input
-         then Tadist.toStringName ns
-         else Tadist.toStringText ns
-      | Error s ->
-         raise (Intolerable (EXIT_DATAERR , s))
+      let nameStruct =
+         Tadist.makeNameStruct_x input
+      and fConverter =
+         Tadist.(if isTextform input then toStringName else toStringText)
+      in
+      fConverter nameStruct
    in
 
    print_endline output

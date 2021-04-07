@@ -1208,7 +1208,7 @@ let extractMetaParts (meta:string) (isText:bool) (metaSep:char) :
    end
 
 
-let makeNameStruct (s:string) : nameStruct ress =
+let makeNameStruct_x (s:string) : nameStruct =
 
    (* set parameters for text or name forms *)
    let isText , plainSep , metaSep , oQuo , subSep =
@@ -1252,6 +1252,10 @@ let makeNameStruct (s:string) : nameStruct ress =
    (fun (tad , ist) ->
       let (title , author , date) , (id , subtyp , typ) = tad , ist in
       { title ; author ; date ; id ; subtyp ; typ })
+
+   |>
+
+   (Result_.toExc_x (fun msg -> Intolerable (EXIT_DATAERR , msg)))
 
 
 let toStringNameStruct (name:nameStruct) sq st s0 s1 s2 se : string =

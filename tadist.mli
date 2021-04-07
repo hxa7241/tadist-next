@@ -349,7 +349,7 @@ val unescapeJsonString : string -> string
 val isTextform : string -> bool
 
 (** Make name-struct from TADIST string. *)
-val makeNameStruct : string -> nameStruct HxaGeneral.ress
+val makeNameStruct_x : string -> nameStruct
 
 (** Render name-struct to string, in filename style (filename grammar). *)
 val toStringName : nameStruct -> string
