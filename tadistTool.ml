@@ -244,6 +244,8 @@ Comments:
 
 (* ---- functions ---- *)
 
+(* secondary *)
+
 let readInput (s:string) : string =
 
    if s <> "-"
@@ -264,64 +266,64 @@ let getOldAndNewFilenames (input:string) : (string * string * string) =
 
    (* get new name *)
    let nameNew =
-      match
-         TadistMelder.makeNameStructFromFileName false filePathnameOld
-      with
-      | Ok nameStruct -> Tadist.toStringName nameStruct
-      | Error msg     -> exitcm 1 msg ""
+      let nameStruct =
+         TadistMelder.makeNameStructFromFileName_x false filePathnameOld
+      in
+      Tadist.toStringName nameStruct
    in
 
    ( path , nameOld , nameNew )
 
 
+(* primary *)
+
 let printMetadata ?(trace:bool = false) (json:bool) (input:string) : unit =
 
-   let filePathname = readInput input in
+   let nameStruct =
+      let filePathname = readInput input in
+      TadistMelder.makeNameStructFromFileName_x trace filePathname
+   in
 
-   match
-      TadistMelder.makeNameStructFromFileName trace filePathname
-   with
-   | Ok nameStruct ->
-      let open Tadist in
+   let open Tadist in
 
-      let stringToString (str:string) : string =
-         if not json then str else "\"" ^ str ^ "\""
+   let stringToString (str:string) : string =
+      if not json then str else "\"" ^ str ^ "\""
+   in
+   let arrayToString (json:bool) (sep:string) (sa:string array) : string =
+      let opn , cls =
+         if not json then "" , "" else "[ " , " ]"
+      and concatenation =
+         sa
+         |> Array.to_list |> (List.map stringToString) |> (String.concat sep)
       in
-      let arrayToString (json:bool) (sep:string) (sa:string array) : string =
-         let opn , cls =
-            if not json then "" , "" else "[ " , " ]"
-         and concatenation =
-            sa
-            |> Array.to_list |> (List.map stringToString) |> (String.concat sep)
-         in
-         opn ^ concatenation ^ cls
-      in
+      opn ^ concatenation ^ cls
+   in
 
-      let title =
-         nameStruct.title |> ArrayNe.toArray |> (Array.map StringT.toString)
-         |> Array.to_list |> (String.concat " ") |> stringToString
-      and authors =
-         arrayToString json ", "
-            (nameStruct.author |> (Array.map StringT.toString))
-      and dates =
-         arrayToString json ", "
-            (nameStruct.date |> (Array.map (DateIso8601e.toString false))) ;
-      and isbn =
-         (Option_.mapUnify
-            (snd %> StringT.toString)
-            (Fun.const "") nameStruct.id)
-          |> stringToString
-      and pages =
-         (Option_.mapUnify
-            (StringT.toString %> (String_.filter Char_.isDigit))
-            (Fun.const "0") nameStruct.subtyp)
-      and filetype =
-         (StringT.toString nameStruct.typ) |> stringToString
-      in
+   let title =
+      nameStruct.title |> ArrayNe.toArray |> (Array.map StringT.toString)
+      |> Array.to_list |> (String.concat " ") |> stringToString
+   and authors =
+      arrayToString json ", "
+         (nameStruct.author |> (Array.map StringT.toString))
+   and dates =
+      arrayToString json ", "
+         (nameStruct.date |> (Array.map (DateIso8601e.toString false))) ;
+   and isbn =
+      (Option_.mapUnify
+         (snd %> StringT.toString)
+         (Fun.const "") nameStruct.id)
+       |> stringToString
+   and pages =
+      (Option_.mapUnify
+         (StringT.toString %> (String_.filter Char_.isDigit))
+         (Fun.const "0") nameStruct.subtyp)
+   and filetype =
+      (StringT.toString nameStruct.typ) |> stringToString
+   in
 
-      if not json
-      then
-         Printf.printf
+   if not json
+   then
+      Printf.printf
 {|
 [metadata]
 ; string, csv, csv, string, number, string
@@ -333,9 +335,9 @@ pages    = %s
 filetype = %s
 
 |}
-            title authors dates isbn pages filetype
-      else
-         Printf.printf
+         title authors dates isbn pages filetype
+   else
+      Printf.printf
 {|
 {
    "metadata" :
@@ -350,10 +352,7 @@ filetype = %s
 }
 
 |}
-            title authors dates isbn pages filetype
-
-   | Error s ->
-      exitcm 1 s ""
+         title authors dates isbn pages filetype
 
 
 let suggest (input:string) : unit =

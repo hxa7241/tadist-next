@@ -29,6 +29,6 @@
  *
  * @param bool whether to print extra tracing
  * @param string filepathname
+ * @exception HxaGeneral.Intolerable
  *)
-val makeNameStructFromFileName : bool -> string ->
-   Tadist.nameStruct HxaGeneral.ress
+val makeNameStructFromFileName_x : bool -> string -> Tadist.nameStruct

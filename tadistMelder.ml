@@ -134,8 +134,8 @@ let queryForIsbn (trace:bool) (nsLax:nameStructLax) : nameStructRaw ress =
 
 (* ---- public functions ---- *)
 
-let makeNameStructFromFileName (trace:bool) (filePathname:string)
-   : nameStruct ress =
+let makeNameStructFromFileName_x (trace:bool) (filePathname:string)
+   : nameStruct =
 
    (* : nameStructRaw ress *)
    (extractMetadata trace filePathname)
@@ -164,5 +164,7 @@ let makeNameStructFromFileName (trace:bool) (filePathname:string)
    |>
    (bypass
       (fun value ->
-         traceHead trace __MODULE__ "makeNameStructFromFileName" "" ;
+         traceHead trace __MODULE__ "makeNameStructFromFileName_x" "" ;
          traceRess trace "" (ko "") value ; ))
+   |>
+   (Result_.toExc_x (fun s -> Intolerable (EXIT_UNSPECIFIED , s)))
