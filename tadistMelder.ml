@@ -22,26 +22,33 @@ open Tadist
 
 
 
-let extractMetadata (trace:bool) (filePathname:string) : nameStructRaw ress =
+let extractMetadata_x (trace:bool) (filePathname:string) : nameStructRaw =
 
-   let rec fileTryer (filePathname:string)
-      (extractors:(bool -> string -> (Tadist.nameStructRaw option) ress) list)
-      : nameStructRaw ress =
-      match extractors with
-      | extractor :: rest ->
-         begin match (extractor trace filePathname) with
-         (* recurse to try next extractor *)
-         | Ok None      -> fileTryer filePathname rest
-         (* return the extracted data *)
-         | Ok Some nsr  -> Ok nsr
-         | Error _ as e -> e
+   let rec fileTryer
+      (filePathname:string)
+      (fExtractors:(bool -> string -> Tadist.nameStructRaw option) list)
+      : nameStructRaw =
+
+      match fExtractors with
+      | fExtractor :: rest ->
+         begin match (fExtractor trace filePathname) with
+         (* recognised: return the extracted data *)
+         | Some nsr -> nsr
+         (* unrecognised: recurse to try next extractor *)
+         | None     -> fileTryer filePathname rest
          end
-      | [] -> Error "unrecognised file type"
+      | [] ->
+         (* all tries at recognition failed *)
+         let message = "unrecognised file type" in
+         traceHead trace __MODULE__ "extractMetadata_x" "" ;
+         traceString trace "*** Error: " message ;
+         raise (Intolerable (EXIT_DATAERR , message))
    in
 
-   fileTryer filePathname [
-      TadistEpub.extractTadist ;
-      TadistPdf.extractTadist ; ]
+   fileTryer
+      filePathname
+      [  TadistEpub.extractTadist_x ;
+         TadistPdf.extractTadist_x ;  ]
 
 
 let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
@@ -137,34 +144,47 @@ let queryForIsbn (trace:bool) (nsLax:nameStructLax) : nameStructRaw ress =
 let makeNameStructFromFileName_x (trace:bool) (filePathname:string)
    : nameStruct =
 
-   (* : nameStructRaw ress *)
-   (extractMetadata trace filePathname)
-   |>=
-   (* : nameStruct ress *)
-   (fun (metadataRaw:nameStructRaw) ->
-      metadataRaw
+   (* : nameStructRaw *)
+   (extractMetadata_x trace filePathname)
+   |>
+   (* : nameStructLax *)
+   Tadist.normaliseMetadataLax
+   |>
+   (* : nameStructLax *)
+   (fun (metadataLax:nameStructLax) ->
+      (Ok metadataLax)
+      |>=
+      (* : nameStructRaw ress *)
+      (queryForIsbn trace)
+      |>=-
+      (* : nameStructLax *)
+      Tadist.normaliseMetadataLax
+      |>=-
+      (* : nameStructLax *)
+      (meldExtractedAndQueried metadataLax)
+      |>
+      (* any query failure defaults meld to just internal metadata *)
+      (Result.value ~default:metadataLax) )
+   |>
+   (* : nameStruct *)
+   Tadist.normaliseMetadata_x
+
+   (*
+   let metadataLax : nameStructLax =
+      (extractMetadata_x trace filePathname)
       |>
       Tadist.normaliseMetadataLax
-      |>
-      (* : nameStructLax *)
-      (fun (metadataLax:nameStructLax) ->
-         (Ok metadataLax)
-         |>=
-         (queryForIsbn trace)
-         |>=-
-         Tadist.normaliseMetadataLax
-         |>=-
-         (meldExtractedAndQueried metadataLax)
-         |>
+   in
+
+   let meldedLax : nameStructLax =
+      match queryForIsbn trace metadataLax with
+      | Ok nsr ->
+         let querydataLax = Tadist.normaliseMetadataLax nsr in
+         meldExtractedAndQueried metadataLax querydataLax
+      | Error msg ->
          (* any query failure defaults meld to just internal metadata *)
-         (Result.value ~default:metadataLax) )
-      |>
-      (* : nameStruct ress *)
-      (Tadist.normaliseMetadata_x %> Result.ok) )
-   |>
-   (bypass
-      (fun value ->
-         traceHead trace __MODULE__ "makeNameStructFromFileName_x" "" ;
-         traceRess trace "" (ko "") value ; ))
-   |>
-   (Result_.toExc_x (fun s -> Intolerable (EXIT_UNSPECIFIED , s)))
+         metadataLax
+   in
+
+   Tadist.normaliseMetadata_x meldedLax
+   *)

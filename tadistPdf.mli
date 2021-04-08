@@ -36,6 +36,6 @@ val _TYPE : string
  *
  * @param bool verbose trace
  * @param string PDF filepathname
+ * @exception HxaGeneral.Intolerable
  *)
-val extractTadist : bool -> string ->
-   (Tadist.nameStructRaw option) HxaGeneral.ress
+val extractTadist_x : bool -> string -> Tadist.nameStructRaw option

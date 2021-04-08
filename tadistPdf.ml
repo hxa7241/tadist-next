@@ -466,21 +466,24 @@ let getTextPages (trace:bool) (pdfPathname:string) : (string list) ress =
 
 (* ---- public functions ---- *)
 
-let extractTadist (trace:bool) (pdfPathname:string)
-   : (Tadist.nameStructRaw option) ress =
+let extractTadist_x (trace:bool) (pdfPathname:string)
+   : Tadist.nameStructRaw option =
 
    match recognisePdf trace pdfPathname with
-   | Error _ as e -> e
-   | Ok false     -> Ok None
-   | Ok true      ->
+   | Error msg -> raise (Intolerable (EXIT_UNSPECIFIED , msg))
+   | Ok false  -> None
+   | Ok true   ->
 
       (* try to get basic data *)
-      (getMetadata trace pdfPathname , getTextPages trace pdfPathname)
+      (getMetadata trace pdfPathname
+         , getTextPages trace pdfPathname)
       |>
       (* if either data source failed, make the best of it with one,
          unless both failed, then concede defeat *)
-      (Result_.ressOr2 "\n" (("",""),[]))
-      |>=
+      (Result_.ressOr2 "\n" (("","") , []))
+      |>
+      (Result_.toExc_x (fun s -> Intolerable (EXIT_UNSPECIFIED , s)))
+      |>
       (fun (metadata , text) ->
          (* get chosen metadata *)
          let titles  = [ lookupMetadataValue metadata "Title" ]
@@ -514,6 +517,4 @@ let extractTadist (trace:bool) (pdfPathname:string)
          traceHead trace __MODULE__ "extractTadist" "raw metadata" ;
          traceString trace "" (Tadist.rawToString nsr) ;
 
-         (Ok (Some nsr))
-         |>
-         (bypass (traceRess trace "" (ko ""))) )
+         (Some nsr) )

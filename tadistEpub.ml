@@ -378,16 +378,16 @@ let getTextIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
 
 (* ---- public functions ---- *)
 
-let extractTadist (trace:bool) (epubPathname:string)
-   : (Tadist.nameStructRaw option) ress =
+let extractTadist_x (trace:bool) (epubPathname:string)
+   : Tadist.nameStructRaw option =
 
    match recogniseEpub trace epubPathname with
-   | Error _ as e -> e
-   | Ok false     -> Ok None
-   | Ok true      ->
+   | Error msg -> raise (Intolerable (EXIT_UNSPECIFIED , msg))
+   | Ok false  -> None
+   | Ok true   ->
 
       match getContentOpf trace epubPathname with
-      | Error _ as e                     -> e
+      | Error msg -> raise (Intolerable (EXIT_UNSPECIFIED , msg))
       | Ok (contentopfpath , contentopf) ->
 
          (* get metadata *)
@@ -422,6 +422,4 @@ let extractTadist (trace:bool) (epubPathname:string)
          traceHead trace __MODULE__ "extractTadist" "raw metadata" ;
          traceString trace "" (Tadist.rawToString nsr) ;
 
-         (Ok (Some nsr))
-         |>
-         (bypass (traceRess trace "" (ko "")))
+         (Some nsr)
