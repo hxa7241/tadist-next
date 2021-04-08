@@ -898,50 +898,27 @@ let normaliseMetadataLax (nsr:nameStructRaw) : nameStructLax =
       typLax    = normaliseString nsr.typRaw ;  }
 
 
-let normaliseMetadata (nsl:nameStructLax) : nameStruct ress =
+let normaliseMetadata_x (nsl:nameStructLax) : nameStruct =
 
-   (Ok nsl)
-   |^^=
-   (* : ( StringT.t ArrayNe.t , StringT.t ) ress *)
-   (  (fun nsl ->
-         (* title is mandatory *)
-         (ArrayNe.make nsl.titleLax)
-         |>
-         (Result_.errorMap (Fun.const "no valid title found")) )
-      ,
-      (fun nsl ->
-         (* type is mandatory *)
-         nsl.typLax
-         |>
-         (Option_.toRes "no valid type") )  )
-   |>=-
-   (fun (title , typ) ->
-      {  title  = title ;
-         author = nsl.authorLax ;
-         date   = nsl.dateLax ;
-         id     = Array_.toOpt nsl.idLax ;
-         subtyp = nsl.subtypLax ;
-         typ    = typ  } )
+   (* title and type are mandatory *)
+   let title =
+      (ArrayNe.make nsl.titleLax)
+      |>
+      (Result_.toExc_x
+         (fun _ -> Intolerable (EXIT_DATAERR , "no valid title found")))
+   and typ =
+      nsl.typLax
+      |>
+      (Option_.toExc_x
+         (fun () -> Intolerable (EXIT_DATAERR , "no valid type")))
+   in
 
-(*
-   (* title is mandatory *)
-   match ArrayNe.make nsl.titleLax with
-   | Error _  -> Error "no valid title"
-   | Ok title ->
-      (* type is mandatory *)
-      begin match nsl.typLax with
-      | None     -> Error "invalid type"
-      | Some typ ->
-         (* the rest are optional *)
-         Ok {
-            title  = title ;
-            author = nsl.authorLax ;
-            date   = nsl.dateLax ;
-            id     = nsl.idLax ;
-            subtyp = nsl.subtypLax ;
-            typ    = typ }
-      end
-*)
+   {  title  = title ;
+      author = nsl.authorLax ;
+      date   = nsl.dateLax ;
+      id     = Array_.toOpt nsl.idLax ;
+      subtyp = nsl.subtypLax ;
+      typ    = typ ;  }
 
 
 

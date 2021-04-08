@@ -160,7 +160,7 @@ let makeNameStructFromFileName_x (trace:bool) (filePathname:string)
          (Result.value ~default:metadataLax) )
       |>
       (* : nameStruct ress *)
-      Tadist.normaliseMetadata )
+      (Tadist.normaliseMetadata_x %> Result.ok) )
    |>
    (bypass
       (fun value ->
