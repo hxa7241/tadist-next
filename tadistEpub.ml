@@ -105,55 +105,52 @@ let recogniseEpub (trace:bool) (epubPathname:string) : bool ress =
       let file = open_in_bin epubPathname in
 
       let recognised =
-         let readString file pos len =
-            (* (assuming these cannot fail, in a deeper IO sense) *)
-            try seek_in file pos ; really_input_string file len with _ -> ""
+         let readString (file:in_channel) (pos:int) (len:int) : string =
+            try
+               (* (assuming these cannot fail, in a deeper IO sense) *)
+               seek_in file pos ;
+               really_input_string file len
+            with
+            | _ -> ""
+         and checkMimetypeFile (epubPathname:string) : bool =
+            (* open zip file : bool ress *)
+            (Zip.withZipfile
+               epubPathname
+               (* is the file recognisable ? *)
+               (fun zipfile : bool ress ->
+                  (* extract mimetype file *)
+                  (Zip.readZippedItem zipfile "mimetype")
+                  |>=
+                  (* check contents *)
+                  (fun mimetypeFileContent : bool ress ->
+                     let contentNormalised =
+                        mimetypeFileContent
+                        |> Blanks.unifySpaces |> String.trim
+                        |> String.lowercase_ascii
+                     in
+                     Ok (contentNormalised = "application/epub+zip"))))
+            |>
+            (bypass (traceRess trace "mimetype file: " string_of_bool))
+            |>
+            (* any errors count as 'unrecognised' *)
+            (Result_.default false)
          in
 
-         (* check zip id then epub mimetype *)
-         let isZipId =
-            (readString file 0 4) = "\x50\x4B\x03\x04"
-         in
-         let isEpubMimetype =
-            (* if the archive was zipped properly, the mimetype is visible *)
-            if (readString file 30 28) = "mimetypeapplication/epub+zip"
-            then
-               true
-            (* otherwise, check the mimetype file and its contents *)
-            else
-               (* open zip file *)
-               (Zip.withZipfile
-                  epubPathname
-                  (* is the file recognisable ? *)
-                  (fun zipfile : bool ress ->
-                     (* extract mimetype file *)
-                     (Zip.readZippedItem zipfile "mimetype")
-                     |>=
-                     (* check contents *)
-                     (fun mimetypeFileContent : bool ress ->
-                        let contentNormalised =
-                           mimetypeFileContent
-                           |> Blanks.unifySpaces |> String.trim
-                           |> String.lowercase_ascii
-                        in
-                        Ok (contentNormalised = "application/epub+zip"))
-                     |>
-                     (* any errors count as 'unrecognised' *)
-                     (Result_.default false)
-                     |>
-                     Result.ok ))
-               |>
-               (* raise general file errors *)
-               (Result_.toExc_x (fun s -> Failure s))
+         let checkZipId (file:in_channel) : bool =
+            let b = (readString file 0 4) = "\x50\x4B\x03\x04" in
+            traceString trace "zip id: " (string_of_bool b) ;
+            b
+         and checkMimetypeId (file:in_channel) : bool =
+            let b = (readString file 30 28) = "mimetypeapplication/epub+zip" in
+            traceString trace "epub mimetype: " (string_of_bool b) ;
+            b
          in
 
-         if trace
-         then
-            Printf.printf
-               "zip id:        %B\nepub mimetype: %B\n%!"
-               isZipId isEpubMimetype ;
-
-         isZipId && isEpubMimetype
+         (* must have zip id, then check epub mimetype ... *)
+         (checkZipId file) &&
+            (* if the archive was packaged properly, the mimetype is visible,
+               otherwise, check the mimetype file and its contents *)
+            ((checkMimetypeId file) || (checkMimetypeFile epubPathname))
       in
 
       close_in_noerr file ;
