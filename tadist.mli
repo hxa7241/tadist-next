@@ -328,7 +328,7 @@ val normaliseString : string -> StringT.t option
 
 val normaliseMetadataLax : nameStructRaw -> nameStructLax
 
-val normaliseMetadata_x : nameStructLax -> nameStruct
+val normaliseMetadata_x : bool -> nameStructLax -> nameStruct
 
 
 

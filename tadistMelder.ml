@@ -182,4 +182,4 @@ let makeNameStructFromFileName_x (trace:bool) (filePathname:string)
       (Option_.default metadata)
    in
 
-   Tadist.normaliseMetadata_x melded
+   Tadist.normaliseMetadata_x trace melded
