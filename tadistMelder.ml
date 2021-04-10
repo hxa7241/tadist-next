@@ -113,7 +113,7 @@ let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
       typLax    = metadata.typLax    ;  }
 
 
-let queryForIsbn (trace:bool) (nsLax:nameStructLax) : nameStructRaw ress =
+let queryForIsbn (trace:bool) (nsLax:nameStructLax) : nameStructRaw option =
 
    (* only try first few : 'a array *)
    (Array_.lead 2 nsLax.idLax)
@@ -122,6 +122,7 @@ let queryForIsbn (trace:bool) (nsLax:nameStructLax) : nameStructRaw ress =
    (Array.fold_left
       (fun lastResult (thisItem:(StringT.t * StringT.t)) ->
          match lastResult with
+         (* try again *)
          | Error _ ->
             thisItem
             |>  (snd %> StringT.toString %> Isbn.make)
@@ -130,11 +131,24 @@ let queryForIsbn (trace:bool) (nsLax:nameStructLax) : nameStructRaw ress =
                (* fail if query result is (nigh) empty *)
                if
                   List_.isEmpty nsr.titleRaw
-                  || String_.isEmpty (List.hd nsr.titleRaw)
-               then Error "inadequate info from ISBN query"
-               else Ok nsr)
-         | Ok nsr -> Ok nsr)
+                     || String_.isEmpty (List.hd nsr.titleRaw)
+               then
+                  (Error "inadequate info from ISBN query")
+                  |>
+                  (bypass (traceRess trace "" (ko "")))
+               else
+                  Ok nsr)
+         (* pass through success *)
+         | Ok nsr ->
+            Ok nsr)
       (Error "no ISBN to use"))
+   |>
+   (bypass
+      (fun nsrRess ->
+         traceHead trace __MODULE__ "queryForIsbn" "" ;
+         traceRess trace "" (ko "successful ISBN query") nsrRess ; ))
+   |>
+   Result_.toOpt
 
 
 
@@ -144,47 +158,28 @@ let queryForIsbn (trace:bool) (nsLax:nameStructLax) : nameStructRaw ress =
 let makeNameStructFromFileName_x (trace:bool) (filePathname:string)
    : nameStruct =
 
-   (* : nameStructRaw *)
-   (extractMetadata_x trace filePathname)
-   |>
-   (* : nameStructLax *)
-   Tadist.normaliseMetadataLax
-   |>
-   (* : nameStructLax *)
-   (fun (metadataLax:nameStructLax) ->
-      (Ok metadataLax)
-      |>=
-      (* : nameStructRaw ress *)
-      (queryForIsbn trace)
-      |>=-
-      (* : nameStructLax *)
-      Tadist.normaliseMetadataLax
-      |>=-
-      (* : nameStructLax *)
-      (meldExtractedAndQueried metadataLax)
-      |>
-      (* any query failure defaults meld to just internal metadata *)
-      (Result.value ~default:metadataLax) )
-   |>
-   (* : nameStruct *)
-   Tadist.normaliseMetadata_x
-
-   (*
-   let metadataLax : nameStructLax =
+   (* get internal metadata *)
+   let metadata : nameStructLax =
+      (* : nameStructRaw *)
       (extractMetadata_x trace filePathname)
       |>
       Tadist.normaliseMetadataLax
    in
 
-   let meldedLax : nameStructLax =
-      match queryForIsbn trace metadataLax with
-      | Ok nsr ->
-         let querydataLax = Tadist.normaliseMetadataLax nsr in
-         meldExtractedAndQueried metadataLax querydataLax
-      | Error msg ->
-         (* any query failure defaults meld to just internal metadata *)
-         metadataLax
+   (* mix in remotely queried metadata, if available *)
+   let melded : nameStructLax =
+      (* : nameStructRaw option *)
+      (queryForIsbn trace metadata)
+      |>-
+      (fun querydata : nameStructLax option ->
+         (Tadist.normaliseMetadataLax querydata)
+         |>
+         (meldExtractedAndQueried metadata)
+         |>
+         Option.some)
+      |>
+      (* any query failure defaults meld to just internal metadata *)
+      (Option_.default metadata)
    in
 
-   Tadist.normaliseMetadata_x meldedLax
-   *)
+   Tadist.normaliseMetadata_x melded
