@@ -898,19 +898,26 @@ let normaliseMetadataLax (nsr:nameStructRaw) : nameStructLax =
       typLax    = normaliseString nsr.typRaw ;  }
 
 
-let normaliseMetadata_x (nsl:nameStructLax) : nameStruct =
+let normaliseMetadata_x (trace:bool) (nsl:nameStructLax) : nameStruct =
 
    (* title and type are mandatory *)
    let title =
       (ArrayNe.make nsl.titleLax)
       |>
       (Result_.toExc_x
-         (fun _ -> Intolerable (EXIT_DATAERR , "no valid title found")))
+         (fun msg ->
+            traceHead trace __MODULE__ "normaliseMetadata_x" "" ;
+            traceString trace "" msg ;
+            Intolerable (EXIT_DATAERR , "no valid title found")))
    and typ =
       nsl.typLax
       |>
       (Option_.toExc_x
-         (fun () -> Intolerable (EXIT_DATAERR , "no valid type")))
+         (fun () ->
+            let message = "no valid type" in
+            traceHead trace __MODULE__ "normaliseMetadata_x" "" ;
+            traceString trace "" message ;
+            Intolerable (EXIT_DATAERR , message)))
    in
 
    {  title  = title ;
