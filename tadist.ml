@@ -993,8 +993,8 @@ let splitHalfIntoParts (half:string) (sep:char) (isText:bool)
 
 
 let extractPlainParts (plain:string) (isText:bool) (partSep:char)
-   (oQuo:char option) (subSep:char array) :
-   (StringT.t ArrayNe.t * StringT.t array * DateIso8601e.t array) ress =
+   (oQuo:char option) (subSep:char array)
+   : (StringT.t ArrayNe.t * StringT.t array * DateIso8601e.t array) ress =
 
    (* split plain into parts *)
    (splitHalfIntoParts plain partSep isText "plain")
@@ -1106,13 +1106,11 @@ let extractPlainParts (plain:string) (isText:bool) (partSep:char)
          (fun (parts:string list) ->
             f parts 2 None subSep.(2) false isText (not isText)
                DateIso8601e.make)
-      end
-   )
+      end )
 
 
-let extractMetaParts (meta:string) (isText:bool) (metaSep:char) :
-   ((StringT.t * StringT.t) option * StringT.t option * StringT.t)
-   ress =
+let extractMetaParts (meta:string) (isText:bool) (metaSep:char)
+   : ((StringT.t * StringT.t) option * StringT.t option * StringT.t) ress =
 
    begin
       (* maybe remove end-char *)
@@ -1195,13 +1193,9 @@ let makeNameStruct_x (s:string) : nameStruct =
    in
 
    (s, _MAX_NAME_LEN)
-
    |>
-
    String_.trimTrunc
-
    |>=
-
    (* split into halves *)
    (fun (s:string) ->
       (extractNameHalfs s isText metaSep)
@@ -1211,27 +1205,20 @@ let makeNameStruct_x (s:string) : nameStruct =
          if (String_.isEmpty plain) || (String_.isEmpty meta)
          then Error "empty plain or meta part"
          else Ok (plain , meta)))
-
    |^^=
-
    (* extract parts *)
-   begin
-      (fun ((plain:string) , _) ->
+   (  (fun ((plain:string) , _) ->
          extractPlainParts plain isText plainSep oQuo subSep)
       ,
       (fun (_ , (meta:string)) ->
-         extractMetaParts meta isText metaSep)
-   end
-
+         extractMetaParts meta isText metaSep) )
    |>=-
-
    (* build *)
    (fun (tad , ist) ->
       let (title , author , date) , (id , subtyp , typ) = tad , ist in
       { title ; author ; date ; id ; subtyp ; typ })
 
    |>
-
    (Result_.toExc_x (fun msg -> Intolerable (EXIT_DATAERR , msg)))
 
 
