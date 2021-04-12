@@ -96,22 +96,26 @@ end
 
 (* ---- functions ---- *)
 
-let recogniseEpub (trace:bool) (epubPathname:string) : bool ress =
+let recogniseEpub_x (trace:bool) (epubPathname:string) : bool =
 
-   traceHead trace __MODULE__ "recogniseEpub" "" ;
+   traceHead trace __MODULE__ "recogniseEpub_x" "" ;
 
    try
-      (* (assuming this can fail) *)
+      (* exception raiser: and if so, everything is indeed in vain --
+         cannot open file => the program can do nothing *)
       let file = open_in_bin epubPathname in
 
       let recognised =
          let readString (file:in_channel) (pos:int) (len:int) : string =
             try
-               (* (assuming these cannot fail, in a deeper IO sense) *)
+               (* exception raisers: and if so, everything is indeed in vain --
+                  cannot read file => the program can do nothing *)
                seek_in file pos ;
                really_input_string file len
             with
-            | _ -> ""
+            | x ->
+               close_in_noerr file ;
+               raise x
          and checkMimetypeFile (epubPathname:string) : bool =
             (* open zip file : bool ress *)
             (Zip.withZipfile
@@ -154,12 +158,15 @@ let recogniseEpub (trace:bool) (epubPathname:string) : bool ress =
       in
 
       close_in_noerr file ;
-      Ok recognised
+      recognised
+
    with
-   | _ ->
-      (Error ("cannot open/read file: " ^ epubPathname))
-      |>
-      (bypass (traceRess trace "" (ko "")))
+   | Sys_error msg ->
+      let message =
+         Printf.sprintf "cannot open/read file: %s (%s)" epubPathname msg
+      in
+      traceString trace "*** Error: " message ;
+      raise (Intolerable (EXIT_NOINPUT , message))
 
 
 let getContentOpf (trace:bool) (epubPathname:string) : (string * string) ress =
@@ -378,11 +385,10 @@ let getTextIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
 let extractTadist_x (trace:bool) (epubPathname:string)
    : Tadist.nameStructRaw option =
 
-   match recogniseEpub trace epubPathname with
-   | Error msg -> raise (Intolerable (EXIT_UNSPECIFIED , msg))
-   | Ok false  -> None
-   | Ok true   ->
+   if recogniseEpub_x trace epubPathname
 
+   (* recognised as epub *)
+   then
       match getContentOpf trace epubPathname with
       | Error msg -> raise (Intolerable (EXIT_UNSPECIFIED , msg))
       | Ok (contentopfpath , contentopf) ->
@@ -419,4 +425,8 @@ let extractTadist_x (trace:bool) (epubPathname:string)
          traceHead trace __MODULE__ "extractTadist" "raw metadata" ;
          traceString trace "" (Tadist.rawToString nsr) ;
 
-         (Some nsr)
+         Some nsr
+
+   (* not recognised as epub *)
+   else
+      None
