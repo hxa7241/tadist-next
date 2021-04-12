@@ -27,9 +27,10 @@ type 'a list1 = ('a * 'a list)
 
 type sysExit =
    | EXIT_OK
-   | EXIT_USAGE       | EXIT_DATAERR  | EXIT_NOINPUT | EXIT_NOHOST
-   | EXIT_UNAVAILABLE | EXIT_SOFTWARE | EXIT_OSERR   | EXIT_CANTCREAT
-   | EXIT_IOERR       | EXIT_TEMPFAIL
+   | EXIT_USAGE       | EXIT_DATAERR     | EXIT_NOINPUT    | EXIT_NOUSER
+   | EXIT_NOHOST      | EXIT_UNAVAILABLE | EXIT_SOFTWARE   | EXIT_OSERR
+   | EXIT_OSFILE      | EXIT_CANTCREAT   | EXIT_IOERR      | EXIT_TEMPFAIL
+   | EXIT_PROTOCOL    | EXIT_NOPERM      | EXIT_CONFIG
    | EXIT_UNSPECIFIED
 
 exception Intolerable of (sysExit * string)
@@ -108,8 +109,7 @@ let exitcm (code:int) (messageMain:string) (messageDetail:string) : 'a =
    let message =
       messageMain ^ (if messageDetail = "" then "" else ": " ^ messageDetail)
    in
-   Printf.eprintf "*** Failed: %s\n%!" message
-   ;
+   Printf.eprintf "*** Failed: %s\n%!" message ;
    exit code
 
 
@@ -119,13 +119,18 @@ let exite (sysexit:sysExit) (message:string) : 'a =
    | EXIT_USAGE       -> exitcm  64 "command line usage error"  message
    | EXIT_DATAERR     -> exitcm  65 "user data format error"    message
    | EXIT_NOINPUT     -> exitcm  66 "cannot open input"         message
+   | EXIT_NOUSER      -> exitcm  67 "addressee unknown"         message
    | EXIT_NOHOST      -> exitcm  68 "host name unknown"         message
    | EXIT_UNAVAILABLE -> exitcm  69 "service unavailable"       message
    | EXIT_SOFTWARE    -> exitcm  70 "internal software error"   message
    | EXIT_OSERR       -> exitcm  71 "system error"              message
+   | EXIT_OSFILE      -> exitcm  72 "critical OS file missing"  message
    | EXIT_CANTCREAT   -> exitcm  73 "cannot create output file" message
    | EXIT_IOERR       -> exitcm  74 "input/output error"        message
    | EXIT_TEMPFAIL    -> exitcm  75 "temporary failure"         message
+   | EXIT_PROTOCOL    -> exitcm  76 "remote error in protocol"  message
+   | EXIT_NOPERM      -> exitcm  77 "permission denied"         message
+   | EXIT_CONFIG      -> exitcm  78 "configuration error"       message
    | EXIT_UNSPECIFIED -> exitcm 114 "unspecified/unknown error" message
 
 
