@@ -258,7 +258,7 @@ let readInput (s:string) : string =
       | _           -> raise (Intolerable (EXIT_IOERR , ""))
 
 
-let getOldAndNewFilenames (input:string) : (string * string * string) =
+let getOldAndNewFilenames_x (input:string) : (string * string * string) =
 
    (* get old name *)
    let filePathnameOld = readInput input in
@@ -277,7 +277,7 @@ let getOldAndNewFilenames (input:string) : (string * string * string) =
 
 (* primary *)
 
-let printMetadata ?(trace:bool = false) (json:bool) (input:string) : unit =
+let printMetadata_x ?(trace:bool = false) (json:bool) (input:string) : unit =
 
    let nameStruct =
       let filePathname = readInput input in
@@ -355,9 +355,9 @@ filetype = %s
          title authors dates isbn pages filetype
 
 
-let suggest (input:string) : unit =
+let suggest_x (input:string) : unit =
 
-   let _ , nameOld , nameNew = getOldAndNewFilenames input in
+   let _ , nameOld , nameNew = getOldAndNewFilenames_x input in
 
    if nameOld <> nameNew
    then
@@ -366,9 +366,9 @@ let suggest (input:string) : unit =
       Printf.printf "(%s  -- already properly named)\n%!" nameOld
 
 
-let rename (quiet:bool) (input:string) : unit =
+let rename_x (quiet:bool) (input:string) : unit =
 
-   let path , nameOld , nameNew = getOldAndNewFilenames input in
+   let path , nameOld , nameNew = getOldAndNewFilenames_x input in
 
    if nameOld <> nameNew
    then
@@ -396,7 +396,7 @@ let rename (quiet:bool) (input:string) : unit =
       Printf.printf "(%s  -- already properly named)\n%!" nameOld
 
 
-let convert (input:string) : unit =
+let convert_x (input:string) : unit =
 
    let input = readInput input in
 
@@ -438,13 +438,13 @@ try
       match _argv with
       | [| flag ; arg |] ->
          begin match flag with
-         | "-m" | "--metadata"     -> printMetadata false arg
-         | "-j" | "--json"         -> printMetadata true arg
-         | "-s" | "--suggest"      -> suggest arg
-         | "-r" | "--rename"       -> rename false arg
-         | "-R" | "--rename-quiet" -> rename true  arg
-         | "-c" | "--convert"      -> convert arg
-         | "-!"                    -> printMetadata ~trace:true false arg
+         | "-m" | "--metadata"     -> printMetadata_x false arg
+         | "-j" | "--json"         -> printMetadata_x true arg
+         | "-s" | "--suggest"      -> suggest_x arg
+         | "-r" | "--rename"       -> rename_x false arg
+         | "-R" | "--rename-quiet" -> rename_x true  arg
+         | "-c" | "--convert"      -> convert_x arg
+         | "-!"                    -> printMetadata_x ~trace:true false arg
          | _                       ->
             raise (Intolerable (EXIT_USAGE , ("unrecognised command: " ^ flag)))
          end
