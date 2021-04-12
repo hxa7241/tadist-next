@@ -27,20 +27,28 @@ let _TYPE = "pdf"
 
 (* ---- functions ---- *)
 
-let recognisePdf (trace:bool) (pdfPathname:string) : bool ress =
+let recognisePdf_x (trace:bool) (pdfPathname:string) : bool =
 
-   traceHead trace __MODULE__ "recogniseEpub" "" ;
+   traceHead trace __MODULE__ "recognisePdf_x" "" ;
 
    try
-      (* (assuming this can fail) *)
+      (* exception raiser: and if so, everything is indeed in vain --
+         cannot open file => the program can do nothing *)
       let file = open_in_bin pdfPathname in
 
       let recognised =
          let pdfId = "\x25\x50\x44\x46\x2D"
          and bom   = "\xEF\xBB\xBF" in
-         let readString file pos len =
-            (* (assuming these cannot fail, in a deeper IO sense) *)
-            try seek_in file pos ; really_input_string file len with _ -> ""
+         let readString (file:in_channel) (pos:int) (len:int) : string =
+            (* exception raisers: and if so, everything is indeed in vain --
+               cannot read file => the program can do nothing *)
+            try
+               seek_in file pos ;
+               really_input_string file len
+            with
+            | x ->
+               close_in_noerr file ;
+               raise x
          in
          let first8Bytes = (readString file 0 8) in
          (* check pdf id as first, or BOM first then pdf id *)
@@ -50,16 +58,20 @@ let recognisePdf (trace:bool) (pdfPathname:string) : bool ress =
          in
 
          traceString trace "pdf id: " (if isPdfId then "true" else "false") ;
+
          isPdfId
       in
 
       close_in_noerr file ;
-      Ok recognised
+      recognised
+
    with
-   | _ ->
-      (Error ("cannot open/read file: " ^ pdfPathname))
-      |>
-      (bypass (traceRess trace "" (ko "")))
+   | Sys_error msg ->
+      let message =
+         Printf.sprintf "cannot open/read file: %s (%s)" pdfPathname msg
+      in
+      traceString trace "*** Error: " message ;
+      raise (Intolerable (EXIT_NOINPUT , message))
 
 
 let toolInvoke (command:string) : string ress =
@@ -160,7 +172,7 @@ let getMetadata (trace:bool) (pdfPathname:string) : (string * string) ress =
 
    let xmpNoNewlines = Result.map Blanks.unifySpaces xmpRaw in
 
-   Result_.ressOr2 "\n" ("","") (infoRaw , xmpNoNewlines)
+   Result_.ressOr2 "; " ("","") (infoRaw , xmpNoNewlines)
 
 
 let lookupInfoValue (info:string) (key:string) : string =
@@ -469,10 +481,10 @@ let getTextPages (trace:bool) (pdfPathname:string) : (string list) ress =
 let extractTadist_x (trace:bool) (pdfPathname:string)
    : Tadist.nameStructRaw option =
 
-   match recognisePdf trace pdfPathname with
-   | Error msg -> raise (Intolerable (EXIT_UNSPECIFIED , msg))
-   | Ok false  -> None
-   | Ok true   ->
+   if recognisePdf_x trace pdfPathname
+
+   (* recognised as pdf *)
+   then
 
       (* try to get basic data *)
       (getMetadata trace pdfPathname
@@ -482,7 +494,7 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
          unless both failed, then concede defeat *)
       (Result_.ressOr2 "\n" (("","") , []))
       |>
-      (Result_.toExc_x (fun s -> Intolerable (EXIT_UNSPECIFIED , s)))
+      (Result_.toExc_x (fun s -> Intolerable (EXIT_DATAERR , s)))
       |>
       (fun (metadata , text) ->
          (* get chosen metadata *)
@@ -517,4 +529,8 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
          traceHead trace __MODULE__ "extractTadist" "raw metadata" ;
          traceString trace "" (Tadist.rawToString nsr) ;
 
-         (Some nsr) )
+         Some nsr )
+
+   (* not recognised as pdf *)
+   else
+      None
