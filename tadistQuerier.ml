@@ -255,7 +255,7 @@ let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
             ^ ")"
          | Not_found -> "cannot find IP address of query host"
          | Failure s -> s
-         | _         -> "failed inscrutably"
+         | x         -> raise x
       in
       Error (message ^ ".")
       |>
