@@ -169,54 +169,51 @@ let recogniseEpub_x (trace:bool) (epubPathname:string) : bool =
       raise (Intolerable (EXIT_NOINPUT , message))
 
 
-let getContentOpf (trace:bool) (epubPathname:string) : (string * string) ress =
+let getContentOpf_x (trace:bool) (epubPathname:string) : (string * string) =
 
-   traceHead trace __MODULE__ "getContentOpf" "" ;
+   traceHead trace __MODULE__ "getContentOpf_x" "" ;
 
-   Zip.withZipfile epubPathname
+   (Zip.withZipfile epubPathname
       (fun zipfile ->
 
-         (* get raw metadata etc *)
-         match
-            (* get pathname of metadata zipped-file, from epub-root
-               zipped file *)
-            match Zip.readZippedItem zipfile "META-INF/container.xml" with
-            | Error _ as e    -> e
-            | Ok containerxml ->
-               (* find the filepathname string *)
-               try
-                  (* remove line-ends for easier regexps *)
-                  let containerxml = Blanks.blankNewlines containerxml
-                  and rx = Str.regexp "<rootfile[ \t]+\\(.+\\)?\
-                     full-path=[\"']\\([^\"']*\\)[\"']"
-                  in
-                  let _ = Str.search_forward rx containerxml 0 in
-                  Ok (Str.matched_group 2 containerxml)
-               with
-               | Not_found -> Error "content.opf FilePathname not found"
-         with
+         (* get pathname of metadata zipped-file, from epub-root
+            zipped file : string ress *)
+         (match Zip.readZippedItem zipfile "META-INF/container.xml" with
          | Error msg ->
-            (Error msg)
-            |>
-            (bypass (traceRess trace "" (ko "")))
-         | Ok contentopfFilepathname ->
-
+            Error msg
+         | Ok containerXml ->
+            (* find the filepathname string *)
+            try
+               (* remove line-ends for easier regexps *)
+               let containerXml = Blanks.blankNewlines containerXml
+               and rx = Str.regexp "<rootfile[ \t]+\\(.+\\)?\
+                  full-path=[\"']\\([^\"']*\\)[\"']"
+               in
+               let _ = Str.search_forward rx containerXml 0 in
+               Ok (Str.matched_group 2 containerXml)
+            with
+            | Not_found ->
+               Error "content.opf FilePathname not found")
+         |>=
+         (* get raw metadata etc : (string * string) ress *)
+         (fun contentOpfFilePathname ->
             (* read metadata zipped-file *)
-            match Zip.readZippedItem zipfile contentopfFilepathname with
+            match Zip.readZippedItem zipfile contentOpfFilePathname with
             | Error msg ->
-               (Error msg)
-               |>
-               (bypass (traceRess trace "" (ko "")))
-            | Ok contentopf ->
-               begin
-                  traceString
-                     trace
-                     ((FileName.getPath contentopfFilepathname) ^ "\n")
-                     contentopf ;
-                  Ok (
-                     FileName.getPath contentopfFilepathname ,
-                     Utf8.Filter.replace contentopf )
-               end )
+               Error msg
+            | Ok contentOpf ->
+               traceString
+                  trace
+                  ((FileName.getPath contentOpfFilePathname) ^ "\n")
+                  contentOpf ;
+               Ok
+                  (  FileName.getPath contentOpfFilePathname
+                  ,  Utf8.Filter.replace contentOpf )) ) )
+   |>
+   (Result_.toExc_x
+      (fun msg ->
+         traceString trace "*** Error: " msg ;
+         raise (Intolerable (EXIT_DATAERR , msg)) ; ))
 
 
 let getContentopfMetadata (contentopf:string)
@@ -389,43 +386,41 @@ let extractTadist_x (trace:bool) (epubPathname:string)
 
    (* recognised as epub *)
    then
-      match getContentOpf trace epubPathname with
-      | Error msg -> raise (Intolerable (EXIT_UNSPECIFIED , msg))
-      | Ok (contentopfpath , contentopf) ->
+      let contentOpfPath , contentopf = getContentOpf_x trace epubPathname in
 
-         (* get metadata *)
-         let titles , authors , dates , isbns =
-            getContentopfMetadata contentopf
-         in
+      (* get metadata *)
+      let titles , authors , dates , isbns =
+         getContentopfMetadata contentopf
+      in
 
-         traceHead trace __MODULE__ "extractTadist" "ISBNs in metadata" ;
-         traceString trace "" (String.concat " | " isbns) ;
+      traceHead trace __MODULE__ "extractTadist" "ISBNs in metadata" ;
+      traceString trace "" (String.concat " | " isbns) ;
 
-         (* get list of html sections *)
-         let htmlPathnames = getHtmlPathnames trace contentopf in
-         let sectionCount = string_of_int (List.length htmlPathnames) in
+      (* get list of html sections *)
+      let htmlPathnames = getHtmlPathnames trace contentopf in
+      let sectionCount = string_of_int (List.length htmlPathnames) in
 
-         (* add ISBNs found in text *)
-         let isbns =
-            (getTextIsbns trace epubPathname contentopfpath htmlPathnames)
-            |> (List.append isbns)
-            |> List_.deduplicate
-         in
+      (* add ISBNs found in text *)
+      let isbns =
+         (getTextIsbns trace epubPathname contentOpfPath htmlPathnames)
+         |> (List.append isbns)
+         |> List_.deduplicate
+      in
 
-         let nsr =
-            Tadist.{
-               titleRaw  = titles ;
-               authorRaw = authors ;
-               dateRaw   = dates ;
-               idRaw     = isbns ;
-               subtypRaw = sectionCount ;
-               typRaw    = _TYPE }
-         in
+      let nsr =
+         Tadist.{
+            titleRaw  = titles ;
+            authorRaw = authors ;
+            dateRaw   = dates ;
+            idRaw     = isbns ;
+            subtypRaw = sectionCount ;
+            typRaw    = _TYPE }
+      in
 
-         traceHead trace __MODULE__ "extractTadist" "raw metadata" ;
-         traceString trace "" (Tadist.rawToString nsr) ;
+      traceHead trace __MODULE__ "extractTadist" "raw metadata" ;
+      traceString trace "" (Tadist.rawToString nsr) ;
 
-         Some nsr
+      Some nsr
 
    (* not recognised as epub *)
    else
