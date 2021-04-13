@@ -246,7 +246,7 @@ Comments:
 
 (* secondary *)
 
-let readInput (s:string) : string =
+let readInput_x (s:string) : string =
 
    if s <> "-"
    then
@@ -261,7 +261,7 @@ let readInput (s:string) : string =
 let getOldAndNewFilenames_x (input:string) : (string * string * string) =
 
    (* get old name *)
-   let filePathnameOld = readInput input in
+   let filePathnameOld = readInput_x input in
    let path , nameOld = FileName.splitPath filePathnameOld in
 
    (* get new name *)
@@ -280,7 +280,7 @@ let getOldAndNewFilenames_x (input:string) : (string * string * string) =
 let printMetadata_x ?(trace:bool = false) (json:bool) (input:string) : unit =
 
    let nameStruct =
-      let filePathname = readInput input in
+      let filePathname = readInput_x input in
       TadistMelder.makeNameStructFromFileName_x trace filePathname
    in
 
@@ -398,7 +398,7 @@ let rename_x (quiet:bool) (input:string) : unit =
 
 let convert_x (input:string) : unit =
 
-   let input = readInput input in
+   let input = readInput_x input in
 
    let output =
       let nameStruct =
