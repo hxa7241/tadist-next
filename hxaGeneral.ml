@@ -116,13 +116,13 @@ let exitSysPrint (sysexit:sysExit) (message:string) : 'a =
    | EXIT_OK          -> exit 0
    | EXIT_USAGE       -> exitPrint  64 "command line usage error"  message
    | EXIT_DATAERR     -> exitPrint  65 "user data format error"    message
-   | EXIT_NOINPUT     -> exitPrint  66 "cannot open input"         message
-   | EXIT_NOUSER      -> exitPrint  67 "addressee unknown"         message
+   | EXIT_NOINPUT     -> exitPrint  66 "cannot open input file"    message
+   | EXIT_NOUSER      -> exitPrint  67 "user/addressee unknown"    message
    | EXIT_NOHOST      -> exitPrint  68 "host name unknown"         message
    | EXIT_UNAVAILABLE -> exitPrint  69 "service unavailable"       message
    | EXIT_SOFTWARE    -> exitPrint  70 "internal software error"   message
-   | EXIT_OSERR       -> exitPrint  71 "system error"              message
-   | EXIT_OSFILE      -> exitPrint  72 "critical OS file missing"  message
+   | EXIT_OSERR       -> exitPrint  71 "operating system error"    message
+   | EXIT_OSFILE      -> exitPrint  72 "OS file error"             message
    | EXIT_CANTCREAT   -> exitPrint  73 "cannot create output file" message
    | EXIT_IOERR       -> exitPrint  74 "input/output error"        message
    | EXIT_TEMPFAIL    -> exitPrint  75 "temporary failure"         message
