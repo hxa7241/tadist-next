@@ -103,7 +103,7 @@ let assertLog_x (outputter:string->unit) (b:bool) (message:string) : bool =
    b
 
 
-let exitcm (code:int) (messageMain:string) (messageDetail:string) : 'a =
+let exitPrint (code:int) (messageMain:string) (messageDetail:string) : 'a =
    let message =
       messageMain ^ (if messageDetail = "" then "" else ": " ^ messageDetail)
    in
@@ -111,25 +111,25 @@ let exitcm (code:int) (messageMain:string) (messageDetail:string) : 'a =
    exit code
 
 
-let exite (sysexit:sysExit) (message:string) : 'a =
+let exitSysPrint (sysexit:sysExit) (message:string) : 'a =
    match sysexit with
    | EXIT_OK          -> exit 0
-   | EXIT_USAGE       -> exitcm  64 "command line usage error"  message
-   | EXIT_DATAERR     -> exitcm  65 "user data format error"    message
-   | EXIT_NOINPUT     -> exitcm  66 "cannot open input"         message
-   | EXIT_NOUSER      -> exitcm  67 "addressee unknown"         message
-   | EXIT_NOHOST      -> exitcm  68 "host name unknown"         message
-   | EXIT_UNAVAILABLE -> exitcm  69 "service unavailable"       message
-   | EXIT_SOFTWARE    -> exitcm  70 "internal software error"   message
-   | EXIT_OSERR       -> exitcm  71 "system error"              message
-   | EXIT_OSFILE      -> exitcm  72 "critical OS file missing"  message
-   | EXIT_CANTCREAT   -> exitcm  73 "cannot create output file" message
-   | EXIT_IOERR       -> exitcm  74 "input/output error"        message
-   | EXIT_TEMPFAIL    -> exitcm  75 "temporary failure"         message
-   | EXIT_PROTOCOL    -> exitcm  76 "remote error in protocol"  message
-   | EXIT_NOPERM      -> exitcm  77 "permission denied"         message
-   | EXIT_CONFIG      -> exitcm  78 "configuration error"       message
-   | EXIT_UNSPECIFIED -> exitcm 114 "unspecified/unknown error" message
+   | EXIT_USAGE       -> exitPrint  64 "command line usage error"  message
+   | EXIT_DATAERR     -> exitPrint  65 "user data format error"    message
+   | EXIT_NOINPUT     -> exitPrint  66 "cannot open input"         message
+   | EXIT_NOUSER      -> exitPrint  67 "addressee unknown"         message
+   | EXIT_NOHOST      -> exitPrint  68 "host name unknown"         message
+   | EXIT_UNAVAILABLE -> exitPrint  69 "service unavailable"       message
+   | EXIT_SOFTWARE    -> exitPrint  70 "internal software error"   message
+   | EXIT_OSERR       -> exitPrint  71 "system error"              message
+   | EXIT_OSFILE      -> exitPrint  72 "critical OS file missing"  message
+   | EXIT_CANTCREAT   -> exitPrint  73 "cannot create output file" message
+   | EXIT_IOERR       -> exitPrint  74 "input/output error"        message
+   | EXIT_TEMPFAIL    -> exitPrint  75 "temporary failure"         message
+   | EXIT_PROTOCOL    -> exitPrint  76 "remote error in protocol"  message
+   | EXIT_NOPERM      -> exitPrint  77 "permission denied"         message
+   | EXIT_CONFIG      -> exitPrint  78 "configuration error"       message
+   | EXIT_UNSPECIFIED -> exitPrint 114 "unspecified/unknown error" message
 
 
 let errorPrint (trace:bool) (location:string) (message:string) (extra:string)

@@ -117,10 +117,10 @@ val excToDefault : 'a -> (unit -> 'a) -> 'a
 val assertLog_x : (string->unit) -> bool -> string -> bool
 
 (** Print a message (of: main, detail), and exit with a particular code. *)
-val exitcm : int -> string -> string -> 'a
+val exitPrint : int -> string -> string -> 'a
 
 (** Print a message and exit, according to the sysexits.h convention. *)
-val exite : sysExit -> string -> 'a
+val exitSysPrint : sysExit -> string -> 'a
 
 (**
  * Print a message and construct a ress Error.

@@ -460,5 +460,5 @@ try
 
 with
 
-| Intolerable (sysexit , message) -> exite sysexit message
-| _                               -> exite EXIT_UNSPECIFIED ""
+| Intolerable (sysexit , message) -> exitSysPrint sysexit message
+| _                               -> exitSysPrint EXIT_UNSPECIFIED ""
