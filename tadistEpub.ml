@@ -77,7 +77,10 @@ struct
             ao
 
          (* close file *)
-         with x -> Zip.close_in zipfile ; raise x
+         with
+         | x ->
+            Zip.close_in zipfile ;
+            raise x
 
    let readZippedItem (zipfile:Zip.in_file) (pathname:string)
       : string ress =
@@ -101,14 +104,14 @@ let recogniseEpub_x (trace:bool) (epubPathname:string) : bool =
    traceHead trace __MODULE__ "recogniseEpub_x" "" ;
 
    try
-      (* exception raiser: and if so, everything is indeed in vain --
+      (* exceptions: and if so, everything is indeed in vain --
          cannot open file => the program can do nothing *)
       let file = open_in_bin epubPathname in
 
       let recognised =
          let readString (file:in_channel) (pos:int) (len:int) : string =
             try
-               (* exception raisers: and if so, everything is indeed in vain --
+               (* exceptions: and if so, everything is indeed in vain --
                   cannot read file => the program can do nothing *)
                seek_in file pos ;
                really_input_string file len
@@ -161,16 +164,15 @@ let recogniseEpub_x (trace:bool) (epubPathname:string) : bool =
       recognised
 
    with
-   | Sys_error msg ->
-      let message =
-         Printf.sprintf "cannot open/read file: %s (%s)" epubPathname msg
-      in
-      traceString trace "*** Error: " message ;
-      raise (Intolerable (EXIT_NOINPUT , message))
+   | Sys_error extraMsg ->
+      let __MODULE_FUNCTION__ = __MODULE__ ^ ".recogniseEpub_x"
+      and message = "cannot open/read file: " ^ epubPathname in
+      raisePrint trace EXIT_NOINPUT __MODULE_FUNCTION__ message extraMsg
 
 
 let getContentOpf_x (trace:bool) (epubPathname:string) : (string * string) =
 
+   let __MODULE_FUNCTION__ = __MODULE__ ^ ".getContentOpf_x" in
    traceHead trace __MODULE__ "getContentOpf_x" "" ;
 
    (Zip.withZipfile epubPathname
@@ -210,10 +212,9 @@ let getContentOpf_x (trace:bool) (epubPathname:string) : (string * string) =
                   (  FileName.getPath contentOpfFilePathname
                   ,  Utf8.Filter.replace contentOpf )) ) )
    |>
-   (Result_.toExc_x
-      (fun msg ->
-         traceString trace "*** Error: " msg ;
-         raise (Intolerable (EXIT_DATAERR , msg)) ; ))
+   (Result_.defaultf
+      (fun message ->
+         (raisePrint trace EXIT_DATAERR __MODULE_FUNCTION__ message "")))
 
 
 let getContentopfMetadata (contentopf:string)
