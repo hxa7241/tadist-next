@@ -32,7 +32,7 @@ let recognisePdf_x (trace:bool) (pdfPathname:string) : bool =
    traceHead trace __MODULE__ "recognisePdf_x" "" ;
 
    try
-      (* exception raiser: and if so, everything is indeed in vain --
+      (* exceptions: if so, everything is indeed in vain --
          cannot open file => the program can do nothing *)
       let file = open_in_bin pdfPathname in
 
@@ -40,7 +40,7 @@ let recognisePdf_x (trace:bool) (pdfPathname:string) : bool =
          let pdfId = "\x25\x50\x44\x46\x2D"
          and bom   = "\xEF\xBB\xBF" in
          let readString (file:in_channel) (pos:int) (len:int) : string =
-            (* exception raisers: and if so, everything is indeed in vain --
+            (* exceptions: if so, everything is indeed in vain --
                cannot read file => the program can do nothing *)
             try
                seek_in file pos ;
@@ -66,12 +66,10 @@ let recognisePdf_x (trace:bool) (pdfPathname:string) : bool =
       recognised
 
    with
-   | Sys_error msg ->
-      let message =
-         Printf.sprintf "cannot open/read file: %s (%s)" pdfPathname msg
-      in
-      traceString trace "*** Error: " message ;
-      raise (Intolerable (EXIT_NOINPUT , message))
+   | Sys_error extraMsg ->
+      let __MODULE_FUNCTION__ = __MODULE__ ^ ".recognisePdf_x"
+      and message = "cannot open/read file: " ^ pdfPathname in
+      raisePrint trace EXIT_NOINPUT __MODULE_FUNCTION__ message extraMsg
 
 
 let toolInvoke (command:string) : string ress =
@@ -481,6 +479,8 @@ let getTextPages (trace:bool) (pdfPathname:string) : (string list) ress =
 let extractTadist_x (trace:bool) (pdfPathname:string)
    : Tadist.nameStructRaw option =
 
+   let __MODULE_FUNCTION__ = __MODULE__ ^ ".extractTadist_x" in
+
    if recognisePdf_x trace pdfPathname
 
    (* recognised as pdf *)
@@ -494,7 +494,10 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
          unless both failed, then concede defeat *)
       (Result_.ressOr2 "\n" (("","") , []))
       |>
-      (Result_.toExc_x (fun s -> Intolerable (EXIT_DATAERR , s)))
+      (Result_.defaultf
+         (fun message ->
+            traceHead trace __MODULE__ "extractTadist_x" "" ;
+            (raisePrint trace EXIT_DATAERR __MODULE_FUNCTION__ message "")))
       |>
       (fun (metadata , text) ->
          (* get chosen metadata *)
@@ -504,7 +507,7 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
          and isbns   = getIsbnsFromMetadata metadata
          and pages   = lookupMetadataValue metadata "Pages" in
 
-         traceHead trace __MODULE__ "extractTadist" "ISBNs in metadata" ;
+         traceHead trace __MODULE__ "extractTadist_x" "ISBNs in metadata" ;
          traceString trace "" (String.concat " | " isbns) ;
 
          (* add ISBNs found in text *)
@@ -526,7 +529,7 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
                typRaw    = _TYPE }
          in
 
-         traceHead trace __MODULE__ "extractTadist" "raw metadata" ;
+         traceHead trace __MODULE__ "extractTadist_x" "raw metadata" ;
          traceString trace "" (Tadist.rawToString nsr) ;
 
          Some nsr )
