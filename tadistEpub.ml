@@ -101,7 +101,8 @@ end
 
 let recogniseEpub_x (trace:bool) (epubPathname:string) : bool =
 
-   traceHead trace __MODULE__ "recogniseEpub_x" "" ;
+   let __MODULE_FUNCTION__ = __MODULE__ ^ ".recogniseEpub_x" in
+   traceHead trace __MODULE_FUNCTION__ "" ;
 
    try
       (* exceptions: and if so, everything is indeed in vain --
@@ -165,15 +166,14 @@ let recogniseEpub_x (trace:bool) (epubPathname:string) : bool =
 
    with
    | Sys_error extraMsg ->
-      let __MODULE_FUNCTION__ = __MODULE__ ^ ".recogniseEpub_x"
-      and message = "cannot open/read file: " ^ epubPathname in
+      let message = "cannot open/read file: " ^ epubPathname in
       raisePrint trace EXIT_NOINPUT __MODULE_FUNCTION__ message extraMsg
 
 
 let getContentOpf_x (trace:bool) (epubPathname:string) : (string * string) =
 
    let __MODULE_FUNCTION__ = __MODULE__ ^ ".getContentOpf_x" in
-   traceHead trace __MODULE__ "getContentOpf_x" "" ;
+   traceHead trace __MODULE_FUNCTION__ "" ;
 
    (Zip.withZipfile epubPathname
       (fun zipfile ->
@@ -281,7 +281,8 @@ let getContentopfMetadata (contentopf:string)
 
 let getHtmlPathnames (trace:bool) (contentopf:string) : string list =
 
-   traceHead trace __MODULE__ "getHtmlPathnames" "" ;
+   let __MODULE_FUNCTION__ = __MODULE__ ^ ".getHtmlPathnames" in
+   traceHead trace __MODULE_FUNCTION__ "" ;
 
    let manifest =
       (* remove line-ends for easier regexps *)
@@ -320,7 +321,8 @@ let getTextPages (trace:bool) (epubPathname:string) (contentopfpath:string)
    (htmlPathnames:string list)
    : string list =
 
-   traceHead trace __MODULE__ "getTextPages" "" ;
+   let __MODULE_FUNCTION__ = __MODULE__ ^ ".getTextPages" in
+   traceHead trace __MODULE_FUNCTION__ "" ;
 
    (* get HTML texts *)
    let htmls : string list =
@@ -383,6 +385,8 @@ let getTextIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
 let extractTadist_x (trace:bool) (epubPathname:string)
    : Tadist.nameStructRaw option =
 
+   let __MODULE_FUNCTION__ = __MODULE__ ^ ".extractTadist_x" in
+
    if recogniseEpub_x trace epubPathname
 
    (* recognised as epub *)
@@ -394,7 +398,7 @@ let extractTadist_x (trace:bool) (epubPathname:string)
          getContentopfMetadata contentopf
       in
 
-      traceHead trace __MODULE__ "extractTadist" "ISBNs in metadata" ;
+      traceHead trace __MODULE_FUNCTION__ "ISBNs in metadata" ;
       traceString trace "" (String.concat " | " isbns) ;
 
       (* get list of html sections *)
@@ -418,7 +422,7 @@ let extractTadist_x (trace:bool) (epubPathname:string)
             typRaw    = _TYPE }
       in
 
-      traceHead trace __MODULE__ "extractTadist" "raw metadata" ;
+      traceHead trace __MODULE_FUNCTION__ "raw metadata" ;
       traceString trace "" (Tadist.rawToString nsr) ;
 
       Some nsr

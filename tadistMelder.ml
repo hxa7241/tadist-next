@@ -41,7 +41,7 @@ let extractMetadata_x (trace:bool) (filePathname:string) : nameStructRaw =
          (* all tries at recognition failed *)
          let __MODULE_FUNCTION__ = __MODULE__ ^ ".extractMetadata_x"
          and message = "unrecognised file type" in
-         traceHead trace __MODULE__ "extractMetadata_x" "" ;
+         traceHead trace __MODULE_FUNCTION__ "" ;
          raisePrint trace EXIT_DATAERR __MODULE_FUNCTION__ message ""
    in
 
@@ -145,7 +145,8 @@ let queryForIsbn (trace:bool) (nsLax:nameStructLax) : nameStructRaw option =
    |>
    (bypass
       (fun nsrRess ->
-         traceHead trace __MODULE__ "queryForIsbn" "" ;
+         let __MODULE_FUNCTION__ = __MODULE__ ^ ".queryForIsbn" in
+         traceHead trace __MODULE_FUNCTION__ "" ;
          traceRess trace "" (ko "successful ISBN query") nsrRess ; ))
    |>
    Result_.toOpt

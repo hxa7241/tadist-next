@@ -161,7 +161,8 @@ let httpResponseBody (head:string) (bodyRaw:string) : string =
  *)
 let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
 
-   traceHead trace __MODULE__ "requestOpenLib" "" ;
+   let __MODULE_FUNCTION__ = __MODULE__ ^ ".requestOpenLib" in
+   traceHead trace __MODULE_FUNCTION__ "" ;
 
    let requestHost = "openlibrary.org" in
    (* constant except for 'isbn' *)
@@ -425,5 +426,6 @@ let getBasicTadForIsbn (trace:bool) (isbn:Isbn.t) : nameStructRaw ress =
    |>
    (bypass
       (fun nsrRess ->
-         traceHead trace __MODULE__ "getBasicTadForIsbn" "" ;
+         let __MODULE_FUNCTION__ = __MODULE__ ^ ".getBasicTadForIsbn" in
+         traceHead trace __MODULE_FUNCTION__ "" ;
          traceRess trace "" Tadist.rawToString nsrRess ; ))

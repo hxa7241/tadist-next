@@ -68,11 +68,9 @@ let print_string_flush (s:string) : unit =
    Printf.printf "%s%!" s
 
 
-let traceHead (trace:bool) (module_:string) (function_:string)
-   (title:string)
-   : unit =
+let traceHead (trace:bool) (location:string) (title:string) : unit =
    if trace
-   then Printf.printf "\n### %s.%s - %s\n\n%!" module_ function_ title
+   then Printf.printf "\n### %s - %s\n\n%!" location title
 
 
 let traceString (trace:bool) (label:string) (content:string) : unit =

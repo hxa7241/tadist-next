@@ -540,7 +540,8 @@ struct
          |> List_.deduplicate
       in
 
-      traceHead trace __MODULE__ "extractIsbnsFromText" "found ISBNs" ;
+      let __MODULE_FUNCTION__ = __MODULE__ ^ ".extractIsbnsFromText" in
+      traceHead trace __MODULE_FUNCTION__ "found ISBNs" ;
       traceString trace "" (String.concat "\n" isbns) ;
 
       (* truncate *)
@@ -908,7 +909,7 @@ let normaliseMetadata_x (trace:bool) (nsl:nameStructLax) : nameStruct =
       |>
       (Result_.defaultf
          (fun _ ->
-            traceHead trace __MODULE__ "normaliseMetadata_x" "" ;
+            traceHead trace __MODULE_FUNCTION__ "" ;
             (raisePrint
                trace
                EXIT_DATAERR __MODULE_FUNCTION__ "no valid title found" "")))
@@ -917,7 +918,7 @@ let normaliseMetadata_x (trace:bool) (nsl:nameStructLax) : nameStruct =
       |>
       (Option_.defaultf
          (fun _ ->
-            traceHead trace __MODULE__ "normaliseMetadata_x" "" ;
+            traceHead trace __MODULE_FUNCTION__ "" ;
             (raisePrint
                trace EXIT_DATAERR __MODULE_FUNCTION__ "no valid type" "")))
    in

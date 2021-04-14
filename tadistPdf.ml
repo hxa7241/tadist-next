@@ -29,7 +29,8 @@ let _TYPE = "pdf"
 
 let recognisePdf_x (trace:bool) (pdfPathname:string) : bool =
 
-   traceHead trace __MODULE__ "recognisePdf_x" "" ;
+   let __MODULE_FUNCTION__ = __MODULE__ ^ ".recognisePdf_x" in
+   traceHead trace __MODULE_FUNCTION__ "" ;
 
    try
       (* exceptions: if so, everything is indeed in vain --
@@ -67,8 +68,7 @@ let recognisePdf_x (trace:bool) (pdfPathname:string) : bool =
 
    with
    | Sys_error extraMsg ->
-      let __MODULE_FUNCTION__ = __MODULE__ ^ ".recognisePdf_x"
-      and message = "cannot open/read file: " ^ pdfPathname in
+      let message = "cannot open/read file: " ^ pdfPathname in
       raisePrint trace EXIT_NOINPUT __MODULE_FUNCTION__ message extraMsg
 
 
@@ -105,7 +105,8 @@ let getMetadata (trace:bool) (pdfPathname:string) : (string * string) ress =
       * input file somedocument.pdf
    *)
 
-   traceHead trace __MODULE__ "getMetadata" "" ;
+   let __MODULE_FUNCTION__ = __MODULE__ ^ ".getMetadata" in
+   traceHead trace __MODULE_FUNCTION__ "" ;
 
    let invoke (options:string) : string ress =
       (toolInvoke
@@ -451,7 +452,8 @@ let getTextPages (trace:bool) (pdfPathname:string) : (string list) ress =
       * output to stdout
    *)
 
-   traceHead trace __MODULE__ "getTextPages" "" ;
+   let __MODULE_FUNCTION__ = __MODULE__ ^ ".getTextPages" in
+   traceHead trace __MODULE_FUNCTION__ "" ;
 
    let text : string ress =
       let _NUMBER_OF_PAGES_TO_INSPECT = 10 (* 7 *) in
@@ -496,7 +498,7 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
       |>
       (Result_.defaultf
          (fun message ->
-            traceHead trace __MODULE__ "extractTadist_x" "" ;
+            traceHead trace __MODULE_FUNCTION__ "" ;
             (raisePrint trace EXIT_DATAERR __MODULE_FUNCTION__ message "")))
       |>
       (fun (metadata , text) ->
@@ -507,7 +509,7 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
          and isbns   = getIsbnsFromMetadata metadata
          and pages   = lookupMetadataValue metadata "Pages" in
 
-         traceHead trace __MODULE__ "extractTadist_x" "ISBNs in metadata" ;
+         traceHead trace __MODULE_FUNCTION__ "ISBNs in metadata" ;
          traceString trace "" (String.concat " | " isbns) ;
 
          (* add ISBNs found in text *)
@@ -529,7 +531,7 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
                typRaw    = _TYPE }
          in
 
-         traceHead trace __MODULE__ "extractTadist_x" "raw metadata" ;
+         traceHead trace __MODULE_FUNCTION__ "raw metadata" ;
          traceString trace "" (Tadist.rawToString nsr) ;
 
          Some nsr )

@@ -95,8 +95,8 @@ val ( @< ) : 'a list -> 'a -> 'a list
 (** Like print_string, but with a flush. *)
 val print_string_flush : string -> unit
 
-(** Print log/trace heading (module, function, title) conditionally. *)
-val traceHead : bool -> string -> string -> string -> unit
+(** Print log/trace heading (module.function, title) conditionally. *)
+val traceHead : bool -> string -> string -> unit
 
 (** Print log/trace label and content conditionally. *)
 val traceString : bool -> string -> string -> unit
