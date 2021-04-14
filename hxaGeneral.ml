@@ -86,7 +86,7 @@ let traceRess (trace:bool) (label:string) (toString:'a -> string)
    traceString
       trace
       label
-      (Result.fold ~ok:toString ~error:((^) "*** Error: ") content)
+      (Result.fold ~ok:toString ~error:((^) "+++ Error: ") content)
 
 
 let excToDefaultf ~(default:unit -> 'a) ~(f:unit -> 'a) : 'a =
@@ -132,6 +132,25 @@ let exite (sysexit:sysExit) (message:string) : 'a =
    | EXIT_NOPERM      -> exitcm  77 "permission denied"         message
    | EXIT_CONFIG      -> exitcm  78 "configuration error"       message
    | EXIT_UNSPECIFIED -> exitcm 114 "unspecified/unknown error" message
+
+
+let errorPrint (trace:bool) (location:string) (message:string) (extra:string)
+   : 'a ress =
+   traceString
+      trace
+      ("+++ Error: [" ^ location ^ "] ")
+      (message ^ " (" ^ extra ^ ")") ;
+   Error message
+
+
+let raisePrint (trace:bool) (sysexit:sysExit)
+   (location:string) (message:string) (extra:string)
+   : 'a =
+   traceString
+      trace
+      ("^^^ Raise: [" ^ location ^ "] ")
+      (message ^ " (" ^ extra ^ ")") ;
+   raise (Intolerable (sysexit , message))
 
 
 (* -- string, numerical, timer -- *)

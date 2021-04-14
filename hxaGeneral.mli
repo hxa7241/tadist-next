@@ -122,6 +122,27 @@ val exitcm : int -> string -> string -> 'a
 (** Print a message and exit, according to the sysexits.h convention. *)
 val exite : sysExit -> string -> 'a
 
+(**
+ * Print a message and construct a ress Error.
+ *
+ * @param to print or not
+ * @param code location
+ * @param message
+ * @param supplemental message
+ *)
+val errorPrint : bool -> string -> string -> string -> 'a ress
+
+(**
+ * Print a message and raise an Intolerable exception.
+ *
+ * @param to print or not
+ * @param sysExit
+ * @param code location
+ * @param message
+ * @param supplemental message
+ *)
+val raisePrint : bool -> sysExit -> string -> string -> string -> 'a
+
 
 (* -- string, numerical, timer -- *)
 
