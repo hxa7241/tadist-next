@@ -900,24 +900,26 @@ let normaliseMetadataLax (nsr:nameStructRaw) : nameStructLax =
 
 let normaliseMetadata_x (trace:bool) (nsl:nameStructLax) : nameStruct =
 
+   let __MODULE_FUNCTION__ = __MODULE__ ^ ".normaliseMetadata_x" in
+
    (* title and type are mandatory *)
    let title =
       (ArrayNe.make nsl.titleLax)
       |>
-      (Result_.toExc_x
-         (fun msg ->
+      (Result_.defaultf
+         (fun _ ->
             traceHead trace __MODULE__ "normaliseMetadata_x" "" ;
-            traceString trace "" msg ;
-            Intolerable (EXIT_DATAERR , "no valid title found")))
+            (raisePrint
+               trace
+               EXIT_DATAERR __MODULE_FUNCTION__ "no valid title found" "")))
    and typ =
       nsl.typLax
       |>
-      (Option_.toExc_x
-         (fun () ->
-            let message = "no valid type" in
+      (Option_.defaultf
+         (fun _ ->
             traceHead trace __MODULE__ "normaliseMetadata_x" "" ;
-            traceString trace "" message ;
-            Intolerable (EXIT_DATAERR , message)))
+            (raisePrint
+               trace EXIT_DATAERR __MODULE_FUNCTION__ "no valid type" "")))
    in
 
    {  title  = title ;
@@ -1226,7 +1228,7 @@ let makeNameStruct_x (s:string) : nameStruct =
       { title ; author ; date ; id ; subtyp ; typ })
 
    |>
-   (Result_.toExc_x (fun msg -> Intolerable (EXIT_DATAERR , msg)))
+   (Result_.defaultf (fun msg -> raise (Intolerable (EXIT_DATAERR , msg))))
 
 
 let toStringNameStruct (name:nameStruct) sq st s0 s1 s2 se : string =
