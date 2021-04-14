@@ -39,10 +39,10 @@ let extractMetadata_x (trace:bool) (filePathname:string) : nameStructRaw =
          end
       | [] ->
          (* all tries at recognition failed *)
-         let message = "unrecognised file type" in
+         let __MODULE_FUNCTION__ = __MODULE__ ^ ".extractMetadata_x"
+         and message = "unrecognised file type" in
          traceHead trace __MODULE__ "extractMetadata_x" "" ;
-         traceString trace "*** Error: " message ;
-         raise (Intolerable (EXIT_DATAERR , message))
+         raisePrint trace EXIT_DATAERR __MODULE_FUNCTION__ message ""
    in
 
    fileTryer
