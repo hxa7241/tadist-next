@@ -123,16 +123,6 @@ val exitPrint : int -> string -> string -> 'a
 val exitSysPrint : sysExit -> string -> 'a
 
 (**
- * Print a message and construct a ress Error.
- *
- * @param to print or not
- * @param code location
- * @param message
- * @param supplemental message
- *)
-val errorPrint : bool -> string -> string -> string -> 'a ress
-
-(**
  * Print a message and raise an Intolerable exception.
  *
  * @param to print or not

@@ -132,15 +132,6 @@ let exitSysPrint (sysexit:sysExit) (message:string) : 'a =
    | EXIT_UNSPECIFIED -> exitPrint 114 "unspecified/unknown error" message
 
 
-let errorPrint (trace:bool) (location:string) (message:string) (extra:string)
-   : 'a ress =
-   traceString
-      trace
-      ("+++ Error: [" ^ location ^ "] ")
-      (message ^ " (" ^ extra ^ ")") ;
-   Error message
-
-
 let raisePrint (trace:bool) (sysexit:sysExit)
    (location:string) (message:string) (extra:string)
    : 'a =
