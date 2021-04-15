@@ -698,7 +698,7 @@ struct
       let st = String.trim s in
       if (String.length st) <= max
       then Ok st
-      else Error ("too long (> " ^ (string_of_int max) ^ ")")
+      else Error ("string too long (> " ^ (string_of_int max) ^ ")")
 
    let truncate (max:int) (s:string) : string =
       if String.length s <= max then s else String.sub s 0 max
