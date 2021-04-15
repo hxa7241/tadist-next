@@ -88,6 +88,14 @@ Options:
   -c | --convert       convert: between name and text form
   -                    take filename/string from stdin
   <string>             (use single quotes to quote)
+
+Error exit codes:
+  64   EX_USAGE        command line usage error
+  65   EX_DATAERR      user data format error
+  66   EX_NOINPUT      cannot open input file
+  73   EX_CANTCREAT    cannot create output file
+  74   EX_IOERR        input/output error
+  114  EX_UNSPECIFIED  unspecified/unknown error
 |} ;;
 
 

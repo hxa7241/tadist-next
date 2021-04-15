@@ -6,7 +6,7 @@ TADIST tool 1.2 (OCaml 4.10) ***UNFINISHED***
 Harrison Ainsworth / HXA7241 : 2015, 2021  
 http://www.hxa.name/tools
 
-2021-03-24
+2021-04-14
 
 
 
@@ -64,6 +64,14 @@ Options:
   -c | --convert       convert: between name and text form
   -                    take filename/string from stdin
   <string>             (use single quotes to quote)
+
+Error exit codes:
+  64   EX_USAGE        command line usage error
+  65   EX_DATAERR      user data format error
+  66   EX_NOINPUT      cannot open input file
+  73   EX_CANTCREAT    cannot create output file
+  74   EX_IOERR        input/output error
+  114  EX_UNSPECIFIED  unspecified/unknown error
 
 
 
