@@ -70,7 +70,7 @@ type sysExit =
    | EXIT_PROTOCOL    | EXIT_NOPERM      | EXIT_CONFIG
    | EXIT_UNSPECIFIED
 
-exception Intolerable of (sysExit * string)
+exception Intolerable of (sysExit * string * string)
 
 
 
@@ -116,11 +116,11 @@ val excToDefault : 'a -> (unit -> 'a) -> 'a
     @exceptions: whatever can be raised by Printf.ksprintf *)
 val assertLog_x : (string->unit) -> bool -> string -> bool
 
-(** Print a message (of: main, detail), and exit with a particular code. *)
-val exitPrint : int -> string -> string -> 'a
+(** Print a message (main, detail, hint), and exit with a particular code. *)
+val exitPrint : int -> string -> string -> string -> 'a
 
 (** Print a message and exit, according to the sysexits.h convention. *)
-val exitSysPrint : sysExit -> string -> 'a
+val exitSysPrint : sysExit -> string -> string -> 'a
 
 (**
  * Print a message and raise an Intolerable exception.
@@ -129,9 +129,10 @@ val exitSysPrint : sysExit -> string -> 'a
  * @param sysExit
  * @param code location
  * @param message
+ * @param hint
  * @param supplemental message
  *)
-val raisePrint : bool -> sysExit -> string -> string -> string -> 'a
+val raiseTrace : bool -> sysExit -> string -> string -> string -> string -> 'a
 
 
 (* -- string, numerical, timer -- *)

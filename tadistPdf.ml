@@ -69,7 +69,12 @@ let recognisePdf_x (trace:bool) (pdfPathname:string) : bool =
    with
    | Sys_error extraMsg ->
       let message = "cannot open/read file: " ^ pdfPathname in
-      raisePrint trace EXIT_NOINPUT __MODULE_FUNCTION__ message extraMsg
+      raiseTrace
+         trace EXIT_NOINPUT __MODULE_FUNCTION__
+         message
+         "Either there is no file of that name, or it is not openable. Maybe \
+         you need to correct the file name or path."
+         extraMsg
 
 
 let toolInvoke (command:string) : string ress =
@@ -499,7 +504,13 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
       (Result_.defaultf
          (fun message ->
             traceHead trace __MODULE_FUNCTION__ "" ;
-            (raisePrint trace EXIT_DATAERR __MODULE_FUNCTION__ message "")))
+            (raiseTrace
+               trace EXIT_DATAERR __MODULE_FUNCTION__
+               message
+               "Invocation of an external tool seems not to have worked. First, \
+               you should check that pdfinfo and pdftotext are installed or in \
+               the same directory as tadist."
+               "")))
       |>
       (fun (metadata , text) ->
          (* get chosen metadata *)

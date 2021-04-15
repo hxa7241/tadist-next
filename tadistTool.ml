@@ -261,9 +261,9 @@ let readInput_x (s:string) : string =
       s
    else
       try read_line () with
-      | Sys_error s -> raise (Intolerable (EXIT_IOERR , s))
+      | Sys_error s -> raise (Intolerable (EXIT_IOERR , s , ""))
       | End_of_file
-      | _           -> raise (Intolerable (EXIT_IOERR , ""))
+      | _           -> raise (Intolerable (EXIT_IOERR , "" , ""))
 
 
 let getOldAndNewFilenames_x (input:string) : (string * string * string) =
@@ -395,10 +395,13 @@ let rename_x (quiet:bool) (input:string) : unit =
             Printf.printf "%s  --renamed-to->  %s\n%!" nameOld nameNew
          with
          | Unix.Unix_error (code , funct , param) ->
-            raise (Intolerable
-               (EXIT_CANTCREAT ,
-                  (Printf.sprintf "%s (%s: %s)"
-                     (Unix.error_message code) funct param)))
+            raise
+               (Intolerable
+                  (EXIT_CANTCREAT
+                  ,  (Printf.sprintf "%s (%s: %s)"
+                        (Unix.error_message code) funct param)
+                  ,  "There seems to be something preventing the file being \
+                     renamed ..."))
       end
    else
       Printf.printf "(%s  -- already properly named)\n%!" nameOld
@@ -454,7 +457,13 @@ try
          | "-c" | "--convert"      -> convert_x arg
          | "-!"                    -> printMetadata_x ~trace:true false arg
          | _                       ->
-            raise (Intolerable (EXIT_USAGE , ("unrecognised command: " ^ flag)))
+            raise
+               (Intolerable
+                  (EXIT_USAGE
+                  ,  ("unrecognised command: " ^ flag)
+                  ,  "There is no command named by that letter. You should try \
+                     'tadist -h' and follow the info in the usage and options \
+                     sections."))
          end
       | [| str |] ->
          let msg =
@@ -462,11 +471,29 @@ try
             then "missing filename/string"
             else "missing command"
          in
-         raise (Intolerable (EXIT_USAGE , msg))
-      | [||] -> raise (Intolerable (EXIT_USAGE , "missing command"))
-      | _    -> raise (Intolerable (EXIT_USAGE , "too many params"))
+         raise
+            (Intolerable
+               (EXIT_USAGE
+               ,  msg
+               ,  "The invocation was incomplete. You should try 'tadist -h' \
+                  and follow the info in the usage and options sections."))
+      | [||] ->
+         raise
+            (Intolerable
+               (EXIT_USAGE
+               ,  "missing command"
+               ,  "The invocation was incomplete. You should try 'tadist -h' \
+                  and follow the info in the usage and options sections."))
+      | _    ->
+         raise
+            (Intolerable
+               (EXIT_USAGE
+               ,  "too many params"
+               ,  "Some extra flag or arg was given that is not accepted. You \
+               should try 'tadist -h' and follow the info in the usage and \
+               options sections."))
 
 with
 
-| Intolerable (sysexit , message) -> exitSysPrint sysexit message
-| _                               -> exitSysPrint EXIT_UNSPECIFIED ""
+| Intolerable (sysexit , message, hint) -> exitSysPrint sysexit message hint
+| _                                     -> exitSysPrint EXIT_UNSPECIFIED "" ""

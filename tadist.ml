@@ -910,17 +910,28 @@ let normaliseMetadata_x (trace:bool) (nsl:nameStructLax) : nameStruct =
       (Result_.defaultf
          (fun _ ->
             traceHead trace __MODULE_FUNCTION__ "" ;
-            (raisePrint
+            (raiseTrace
                trace
-               EXIT_DATAERR __MODULE_FUNCTION__ "no valid title found" "")))
+               EXIT_DATAERR
+               __MODULE_FUNCTION__
+               "no valid title found"
+               "The document title is a sine qua non -- work cannot proceed \
+               without it. You need somehow to insert a title into the \
+               metadata of the document."
+               "")))
    and typ =
       nsl.typLax
       |>
       (Option_.defaultf
          (fun _ ->
             traceHead trace __MODULE_FUNCTION__ "" ;
-            (raisePrint
-               trace EXIT_DATAERR __MODULE_FUNCTION__ "no valid type" "")))
+            (raiseTrace
+               trace
+               EXIT_DATAERR
+               __MODULE_FUNCTION__
+               "no valid type"
+               ""
+               "")))
    in
 
    {  title  = title ;
@@ -1229,7 +1240,15 @@ let makeNameStruct_x (s:string) : nameStruct =
       { title ; author ; date ; id ; subtyp ; typ })
 
    |>
-   (Result_.defaultf (fun msg -> raise (Intolerable (EXIT_DATAERR , msg))))
+   (Result_.defaultf
+      (fun msg ->
+         raise
+            (Intolerable
+               (EXIT_DATAERR , msg,
+                  "You need correct the input to comply with the syntax \
+                  described in: \
+                  http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html")))
+      )
 
 
 let toStringNameStruct (name:nameStruct) sq st s0 s1 s2 se : string =

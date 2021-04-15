@@ -33,7 +33,7 @@ type sysExit =
    | EXIT_PROTOCOL    | EXIT_NOPERM      | EXIT_CONFIG
    | EXIT_UNSPECIFIED
 
-exception Intolerable of (sysExit * string)
+exception Intolerable of (sysExit * string * string)
 
 
 
@@ -103,43 +103,70 @@ let assertLog_x (outputter:string->unit) (b:bool) (message:string) : bool =
    b
 
 
-let exitPrint (code:int) (messageMain:string) (messageDetail:string) : 'a =
-   let message =
-      messageMain ^ (if messageDetail = "" then "" else ": " ^ messageDetail)
+let wrapLinesAscii (width:int) (para:string) : string =
+   let rec recurse (width:int) (wrapped:string) (rest:string) : string =
+      let restLen = String.length rest in
+      if width < restLen
+      then
+         let nextWrapped = wrapped ^ (String.sub rest 0 width) ^ "\n"
+         and nextRest    = String.sub rest width (restLen - width) in
+         recurse width nextWrapped nextRest
+      else
+         wrapped ^ rest
    in
-   Printf.eprintf "*** Failed: %s\n%!" message ;
+   recurse (max width 1) "" para
+
+
+let exitPrint (code:int) (main:string) (supplement:string) (hint:string)
+   : 'a =
+   let message =
+      let sum = main ^ (if supplement = "" then "" else ": " ^ supplement) in
+      let len = String.length sum in
+      if (len > 0) && (sum.[len - 1] <> '.')
+      then sum ^ "."
+      else sum
+   and hint =
+      (* wrap *)
+      (wrapLinesAscii 72 hint)
+      (* indent *)
+      |> (String.split_on_char '\n')
+      |> (List.map String.trim)
+      |> (String.concat "\n    ")
+      |> ((^) "    ")
+   in
+   Printf.eprintf "*** Failed: %s\n%s\n%!" message hint ;
    exit code
 
 
-let exitSysPrint (sysexit:sysExit) (message:string) : 'a =
+let exitSysPrint (sysexit:sysExit) (message:string) (hint:string) : 'a =
    match sysexit with
    | EXIT_OK          -> exit 0
-   | EXIT_USAGE       -> exitPrint  64 "command line usage error"  message
-   | EXIT_DATAERR     -> exitPrint  65 "user data format error"    message
-   | EXIT_NOINPUT     -> exitPrint  66 "cannot open input file"    message
-   | EXIT_NOUSER      -> exitPrint  67 "user/addressee unknown"    message
-   | EXIT_NOHOST      -> exitPrint  68 "host name unknown"         message
-   | EXIT_UNAVAILABLE -> exitPrint  69 "service unavailable"       message
-   | EXIT_SOFTWARE    -> exitPrint  70 "internal software error"   message
-   | EXIT_OSERR       -> exitPrint  71 "operating system error"    message
-   | EXIT_OSFILE      -> exitPrint  72 "OS file error"             message
-   | EXIT_CANTCREAT   -> exitPrint  73 "cannot create output file" message
-   | EXIT_IOERR       -> exitPrint  74 "input/output error"        message
-   | EXIT_TEMPFAIL    -> exitPrint  75 "temporary failure"         message
-   | EXIT_PROTOCOL    -> exitPrint  76 "remote error in protocol"  message
-   | EXIT_NOPERM      -> exitPrint  77 "permission denied"         message
-   | EXIT_CONFIG      -> exitPrint  78 "configuration error"       message
-   | EXIT_UNSPECIFIED -> exitPrint 114 "unspecified/unknown error" message
+   | EXIT_USAGE       -> exitPrint  64 "command line usage error"  message hint
+   | EXIT_DATAERR     -> exitPrint  65 "user data format error"    message hint
+   | EXIT_NOINPUT     -> exitPrint  66 "cannot open input file"    message hint
+   | EXIT_NOUSER      -> exitPrint  67 "user/addressee unknown"    message hint
+   | EXIT_NOHOST      -> exitPrint  68 "host name unknown"         message hint
+   | EXIT_UNAVAILABLE -> exitPrint  69 "service unavailable"       message hint
+   | EXIT_SOFTWARE    -> exitPrint  70 "internal software error"   message hint
+   | EXIT_OSERR       -> exitPrint  71 "operating system error"    message hint
+   | EXIT_OSFILE      -> exitPrint  72 "OS file error"             message hint
+   | EXIT_CANTCREAT   -> exitPrint  73 "cannot create output file" message hint
+   | EXIT_IOERR       -> exitPrint  74 "input/output error"        message hint
+   | EXIT_TEMPFAIL    -> exitPrint  75 "temporary failure"         message hint
+   | EXIT_PROTOCOL    -> exitPrint  76 "remote error in protocol"  message hint
+   | EXIT_NOPERM      -> exitPrint  77 "permission denied"         message hint
+   | EXIT_CONFIG      -> exitPrint  78 "configuration error"       message hint
+   | EXIT_UNSPECIFIED -> exitPrint 114 "unspecified/unknown error" message hint
 
 
-let raisePrint (trace:bool) (sysexit:sysExit)
-   (location:string) (message:string) (extra:string)
+let raiseTrace (trace:bool) (sysexit:sysExit)
+   (location:string) (message:string) (hint:string) (extra:string)
    : 'a =
    traceString
       trace
       ("^^^ Raise: [" ^ location ^ "] ")
       (message ^ " (" ^ extra ^ ")") ;
-   raise (Intolerable (sysexit , message))
+   raise (Intolerable (sysexit , message , hint))
 
 
 (* -- string, numerical, timer -- *)
