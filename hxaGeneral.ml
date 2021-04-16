@@ -821,6 +821,8 @@ sig
    val nth           : int -> 'a list -> 'a option
    val hdft          : 'a list -> 'a list
    val bisect        : int -> 'a list -> ('a list * 'a list)
+   val lead          : int -> 'a list -> 'a list
+   val trail         : int -> 'a list -> 'a list
    val find          : ('a -> bool) -> 'a list -> 'a option
    val filtmap       : ('a -> 'b option) -> 'a list -> 'b list
    val partmap       : ('a -> ('o, 'e) result) -> 'a list -> ('o list * 'e list)
@@ -882,6 +884,12 @@ struct
          else ( (List.rev body) , l )
       in
       recur (min m (List.length l)) l []
+
+   let lead  (m:int) (l:'a list) : 'a list =
+      fst (bisect m l)
+
+   let trail (m:int) (l:'a list) : 'a list =
+      snd (bisect m l)
 
    let find = List.find_opt
    (*let findo (f:'a -> bool) (l:'a list) : 'a option =

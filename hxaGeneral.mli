@@ -505,6 +505,12 @@ sig
        (out-of-range bisect point is clamped) *)
    val bisect : int -> 'a list -> ('a list * 'a list)
 
+   (** First n elements, with clamped n. *)
+   val lead   : int -> 'a list -> 'a list
+
+   (** Rest of elements from pos, with clamped pos. *)
+   val trail  : int -> 'a list -> 'a list
+
    (** Like find, but with option instead of exception. *)
    val find : ('a -> bool) -> 'a list -> 'a option
 
