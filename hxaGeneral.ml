@@ -1249,7 +1249,7 @@ sig
    val allMatchesPos : rx -> string -> (string * int) list
    val wholeFound : rxmatch -> string
    val wholePos   : rxmatch -> (int * int)
-   val groupFound : rxmatch -> int -> (string option)
+   val groupFound : int -> rxmatch -> (string option)
 end
 =
 struct
@@ -1348,7 +1348,7 @@ struct
    let wholePos (rxmatch:rxmatch) : (int * int) =
       rxmatch.pos
 
-   let groupFound (rxmatch:rxmatch) (index:int) : string option =
+   let groupFound (index:int) (rxmatch:rxmatch) : string option =
       excToDefault None (fun () -> rxmatch.groups.(index))
 end
 

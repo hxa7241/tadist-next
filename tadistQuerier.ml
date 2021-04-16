@@ -338,7 +338,7 @@ let parseOpenLib (json:string)
       let rx = Rx.compile ("\"" ^ name ^ "\" *: *" ^ form) in
       (Rx.seek rx json)
       |>-
-      (fun rxmatch -> Rx.groupFound rxmatch 1)
+      (fun rxmatch -> Rx.groupFound 1 rxmatch)
    in
 
    let extractString (json:string) (name:string) : string option =

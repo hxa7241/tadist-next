@@ -773,7 +773,7 @@ sig
    val wholePos   : rxmatch -> (int * int)
 
    (** Get a group (index starts at 1) from a match. *)
-   val groupFound : rxmatch -> int -> string option
+   val groupFound : int -> rxmatch -> string option
 end
 
 

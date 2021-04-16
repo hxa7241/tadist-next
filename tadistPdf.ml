@@ -188,7 +188,7 @@ let lookupInfoValue (info:string) (key:string) : string =
    (Rx.regexSeek rxs info)
    |>-
    (* : string option *)
-   ((Fun.flip Rx.groupFound) 1)
+   (Rx.groupFound 1)
    |>
    (* : string *)
    String_.ofOpt
@@ -393,7 +393,7 @@ let getIsbnsFromMetadata (metadata:string*string) : string list =
             let seekGroup1 (rx:string) (s:string) : string =
                (Rx.regexSeek rx s)
                |>-
-               ((Fun.flip (Rx.groupFound)) 1)
+               (Rx.groupFound 1)
                |>
                String_.ofOpt
             in

@@ -730,7 +730,7 @@ let normaliseTitle (titles:string list) : StringT.t array =
       |> (fun title ->
          title
          |> (Rx.regexApply {|^\(.....+\)(.*) *$|} ~pos:0 ~caseInsens:false)
-         |>- ((Fun.flip Rx.groupFound) 1)
+         |>- (Rx.groupFound 1)
          |> (Option.value ~default:title) )
       (* truncate after ':', if more than 7 chars before *)
       |> (fun title ->
@@ -798,7 +798,7 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
                   {|[^0-9]\([0-9][0-9][0-9][0-9]\)[^0-9]|}
                   searchableDateString)
                |>-
-               ((Fun.flip Rx.groupFound) 1)  )
+               (Rx.groupFound 1)  )
             ||>
             (* or, first 4-digits of first 8-digit chunk (iso8601 compact) *)
             (fun () ->
@@ -806,7 +806,7 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
                   {|[^0-9]\([0-9][0-9][0-9][0-9]\)[0-9][0-9][0-9][0-9][^0-9]|}
                   searchableDateString)
                |>-
-               ((Fun.flip Rx.groupFound) 1) ) )
+               (Rx.groupFound 1) ) )
          (* check : DateIso8601e.t option *)
          |>- (DateIso8601e.make %> Result_.toOpt) )
    (* keep sorted, unique years *)
