@@ -195,14 +195,13 @@ sig
    (** Unify an option with a default for None. *)
    val default  : 'a           -> 'a option -> 'a
    val valuef   : (unit -> 'a) -> 'a option -> 'a
-   val unify    : (unit -> 'a) -> 'a option -> 'a
    val defaultf : (unit -> 'a) -> 'a option -> 'a
 
    (** Diverge an option to a tuple of options (non-case -> None). *)
    val diverge : 'a option -> ('a option * unit option)
 
    (** Map and unify option -- map Some, and default None. *)
-   val mapUnify : ('a -> 'b) -> (unit -> 'b) -> 'a option -> 'b
+   val foldf : ('a -> 'b) -> (unit -> 'b) -> 'a option -> 'b
 
    (** Convert option to bool. *)
    val toBool : 'a option -> bool

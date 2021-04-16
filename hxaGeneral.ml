@@ -234,10 +234,9 @@ module Option_ :
 sig
    val default  : 'a           -> 'a option -> 'a
    val valuef   : (unit -> 'a) -> 'a option -> 'a
-   val unify    : (unit -> 'a) -> 'a option -> 'a
    val defaultf : (unit -> 'a) -> 'a option -> 'a
    val diverge  : 'a option -> ('a option * unit option)
-   val mapUnify : ('a -> 'b) -> (unit -> 'b) -> 'a option -> 'b
+   val foldf    : ('a -> 'b) -> (unit -> 'b) -> 'a option -> 'b
    val toBool   : 'a option -> bool
    val fromBool : bool -> unit option
    val classify : ('a -> bool) -> 'a -> 'a option
@@ -260,8 +259,6 @@ struct
       | Some v -> v
       | None   -> f ()
 
-   let unify = valuef
-
    let defaultf = valuef
 
    let diverge (o:'a option) : ('a option * unit option) =
@@ -269,7 +266,7 @@ struct
       | Some a -> (Some a , None   )
       | None   -> (None   , Some ())
 
-   let mapUnify (fs:'a -> 'b) (fn:unit -> 'b) (o:'a option) : 'b =
+   let foldf (fs:'a -> 'b) (fn:unit -> 'b) (o:'a option) : 'b =
       (Option.map fs o) |> (defaultf fn)
 
    let toBool = Option.is_some

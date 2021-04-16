@@ -317,12 +317,12 @@ let printMetadata_x ?(trace:bool = false) (json:bool) (input:string) : unit =
       arrayToString json ", "
          (nameStruct.date |> (Array.map (DateIso8601e.toString false))) ;
    and isbn =
-      (Option_.mapUnify
+      (Option_.foldf
          (snd %> StringT.toString)
          (Fun.const "") nameStruct.id)
        |> stringToString
    and pages =
-      (Option_.mapUnify
+      (Option_.foldf
          (StringT.toString %> (String_.filter Char_.isDigit))
          (Fun.const "0") nameStruct.subtyp)
    and filetype =

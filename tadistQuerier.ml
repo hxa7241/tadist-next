@@ -134,7 +134,7 @@ let httpResponseBody (head:string) (bodyRaw:string) : string =
             |^^-
             (parseLength , parseStart)
             |>
-            (Option_.mapUnify handleChunk dumpRest)
+            (Option_.foldf handleChunk dumpRest)
             |>
             List.rev
 
