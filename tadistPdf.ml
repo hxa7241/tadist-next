@@ -54,7 +54,7 @@ let recognisePdf_x (trace:bool) (pdfPathname:string) : bool =
          let first8Bytes = (readString file 0 8) in
          (* check pdf id as first, or BOM first then pdf id *)
          let isPdfId =
-            ((String_.lead first8Bytes 5) = pdfId) ||
+            ((String_.lead 5 first8Bytes) = pdfId) ||
             (first8Bytes                  = bom ^ pdfId)
          in
 
@@ -90,7 +90,7 @@ let toolInvoke (command:string) : string ress =
    (* shorten and preface the error output *)
    (Result.map_error
       (fun msg ->
-         let msg = String_.lead msg (min 40 (String_.indexl '\n' msg)) in
+         let msg = String_.lead (min 40 (String_.indexl '\n' msg)) msg in
          "tool failure" ^ (if msg <> "" then (": " ^ msg) else "")))
 
 
@@ -165,7 +165,7 @@ let getMetadata (trace:bool) (pdfPathname:string) : (string * string) ress =
          |>-
          (* extract that substring : string option *)
          (fun (openTagPos , closeTagEnd) ->
-            Some (String_.subpc str openTagPos closeTagEnd))
+            Some (String_.subpc openTagPos closeTagEnd str))
          |>
          (* default to empty string *)
          String_.ofOpt ))
@@ -219,7 +219,7 @@ let extractXmlTagsFlat (tagName:string) (xml:string) : string list =
    (* get contents only, not enclosing tags : string list *)
    (List.map
       (fun ((_ , openPos) , (_, closePos)) ->
-         let openAndContent = String_.subpc xml openPos closePos in
+         let openAndContent = String_.subpc openPos closePos xml in
          match (String_.halve '>' openAndContent) with
          | Some (_ , second) -> second
          | None              -> openAndContent ))
@@ -292,7 +292,7 @@ let lookupMetadataValues (metadata:string*string) (key:string) : string list =
          (List.map
             (fun date ->
                (* convert from "YYYY-MM-DDThh:mm:ss.sTZD" to "D:YYYYMMDD" *)
-               (String_.lead date 10)
+               (String_.lead 10 date)
                |>
                (String_.filter ((<>)'-'))
                |>

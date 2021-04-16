@@ -159,7 +159,7 @@ struct
          optAnd2p
             (fst %> escCodeToNumber)
             (snd %> escCodeToNumber)
-            (String_.leadTrail codeStr 6)
+            (String_.leadTrail 6 codeStr)
          (* combine into single code : int option *)
          |>- (fun (lead , trail) ->
             (* check range conformance:

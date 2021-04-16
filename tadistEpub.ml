@@ -354,7 +354,7 @@ let getTextPages (trace:bool) (epubPathname:string) (contentopfpath:string)
 
       List.iter
          (traceRess
-            trace "" (Blanks.blankNewlines %> ((Fun.flip String_.lead) 80)))
+            trace "" (Blanks.blankNewlines %> (String_.lead 80)))
          strResList ;
 
       List_.filtmap Result_.toOpt strResList

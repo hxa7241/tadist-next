@@ -236,7 +236,7 @@ struct
          (* 10: last digit may be 'X' *)
          (  ((String.length s) = 10) &&
             ((String_.last s) = 'X') &&
-            (String_.check Char_.isDigit (String_.lead s 9))  )
+            (String_.check Char_.isDigit (String_.lead 9 s))  )
       then Ok s
       else Error "ISBN chars invalid"
 
@@ -249,8 +249,8 @@ struct
    let make (s:string) : t ress =
       (* trim possible "ISBN" prefix *)
       let s =
-         if (String_.lead s 4) = "ISBN"
-         then (String_.trail s 4)
+         if (String_.lead 4 s) = "ISBN"
+         then (String_.trail 4 s)
          else s
       in
       (* remove any spaces or hyphens *)
@@ -276,7 +276,7 @@ struct
          toChar ((modFactor - (sum mod modFactor)) mod modFactor)
       in
 
-      let firstDigits = String_.lead isbn (String_.lastPos isbn) in
+      let firstDigits = String_.lead (String_.lastPos isbn) isbn in
       match String.length firstDigits with
       | 12 ->
          calcChecksum firstDigits (fun i -> if (i land 1) = 0 then 1 else 3) 10
@@ -502,7 +502,7 @@ struct
               {|\(97[89][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]\||} ^
                   {|[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][xX0-9]\)|} )))
                (* remove 'ISBN' labels *)
-               |> (List.map ((Fun.flip String_.trail) 4))
+               |> (List.map (String_.trail 4))
                (* disambiguate 10/13 by checksum *)
                |> (List.map
                   (fun number ->
@@ -512,7 +512,7 @@ struct
                      else
                         if check number
                         then number
-                        else String_.lead number 10) )
+                        else String_.lead 10 number) )
                )
             texts
       in
@@ -663,7 +663,7 @@ let getLastName (name:string) : string =
       (* First Others Last *)
       name
       |> (String_.rindexp Char_.isBlank) |> (Option.value ~default:0)
-      |> (String_.trail name)
+      |> ((Fun.flip String_.trail) name)
    end
 
    |> String.trim

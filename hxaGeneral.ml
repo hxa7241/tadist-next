@@ -561,15 +561,15 @@ sig
    val isEmpty     : string -> bool
    val notEmpty    : string -> bool
    val lastPos     : string -> int
-   val repeat      : string -> int -> string
-   val lead        : string -> int -> string
-   val trail       : string -> int -> string
-   val leadTrail   : string -> int -> (string * string)
+   val repeat      : int -> string -> string
+   val lead        : int -> string -> string
+   val trail       : int -> string -> string
+   val leadTrail   : int -> string -> (string * string)
    val last        : string -> char
    val subo        : int -> int -> string -> string option
-   val subc        : string -> int -> int -> string
-   val subp        : string -> int -> int -> string
-   val subpc       : string -> int -> int -> string
+   val subc        : int -> int -> string -> string
+   val subp        : int -> int -> string -> string
+   val subpc       : int -> int -> string -> string
    val isFirstChar : (char -> bool) -> string -> bool
    val index       : char -> ?start:int -> string -> int option
    val indexp      : (char -> bool) -> ?start:int -> string -> int option
@@ -604,21 +604,21 @@ struct
    let lastPos (s:string) : int =
       (String.length s) - 1
 
-   let repeat (s:string) (i:int) : string =
+   let repeat (i:int) (s:string) : string =
       let b = Buffer.create 16 in
       if i > 0 then for _ = 1 to i do Buffer.add_string b s done ;
       Buffer.contents b
 
-   let lead (s:string) (pos:int) : string =
+   let lead (pos:int) (s:string) : string =
       let posc = clamp ~lo:0 ~up:(String.length s) pos in
       String.sub s 0 posc
 
-   let trail (s:string) (pos:int) : string =
+   let trail (pos:int) (s:string) : string =
       let posc = clamp ~lo:0 ~up:(String.length s) pos in
       String.sub s posc ((String.length s) - posc)
 
-   let leadTrail (s:string) (pos:int) : (string * string) =
-      ( lead s pos , trail s pos )
+   let leadTrail (pos:int) (s:string) : (string * string) =
+      ( lead pos s , trail pos s )
 
    let last (s:string) : char =
       s.[(String.length s) - 1]
@@ -627,20 +627,20 @@ struct
       try Some (String.sub s pos len) with
       | Invalid_argument _ -> None
 
-   let subc (s:string) (pos:int) (len:int) : string =
+   let subc (pos:int) (len:int) (s:string) : string =
       let wholeLen = String.length s in
       let posc     = clamp ~lo:0 ~up:wholeLen          pos in
       let lenc     = clamp ~lo:0 ~up:(wholeLen - posc) len in
       String.sub s posc lenc
 
-   let subp (s:string) (startpos:int) (endpos:int) : string =
+   let subp (startpos:int) (endpos:int) (s:string) : string =
       String.sub s startpos (endpos - startpos)
 
-   let subpc (s:string) (startpos:int) (endpos:int) : string =
+   let subpc (startpos:int) (endpos:int) (s:string) : string =
       let wholeLen = String.length s in
       let startc   = clamp ~lo:0      ~up:wholeLen startpos in
       let endc     = clamp ~lo:startc ~up:wholeLen endpos in
-      subc s startpos (endc - startc)
+      subc startpos (endc - startc) s
 
    let isFirstChar (pred:char -> bool) (s:string) : bool =
       ((String.length s) > 0) && pred s.[0]
@@ -797,7 +797,7 @@ struct
             Scan %d also allows embedded '_'s -- not OK, but these have been
             prohibited in the above checks. *)
          Option_.fromExc
-            (fun () -> Scanf.sscanf (lead input suffixPos) "%d" Fun.id)
+            (fun () -> Scanf.sscanf (lead suffixPos input) "%d" Fun.id)
       else
          None
 
@@ -1222,7 +1222,7 @@ struct
 
    let splitPath (pathName:string) : (string * string) =
       match (String.rindex_opt pathName '/') with
-      | Some pos -> String_.leadTrail pathName (pos + 1)
+      | Some pos -> String_.leadTrail (pos + 1) pathName
       | None     -> ("" , pathName)
 
    let getPath (pathName:string) : string =

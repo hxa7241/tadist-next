@@ -27,7 +27,7 @@ let httpResponseParts (response:string) : string list =
    match Rx.regexSeek "\r\n\r\n\\|\n\n" response with
    | Some rxmatch ->
       let posEnd      = snd (Rx.wholePos rxmatch) in
-      let head , body = String_.leadTrail response posEnd in
+      let head , body = String_.leadTrail posEnd response in
       [ head ; body ]
    | None ->
       [ response ]
@@ -36,7 +36,7 @@ let httpResponseParts (response:string) : string list =
 let httpStatusLine (head:string) : string =
 
    let newlinePos = String_.indexpl Char_.isCrOrLf head in
-   String_.lead head newlinePos
+   String_.lead newlinePos head
    |> String_.truncate 50
 
 
@@ -127,7 +127,7 @@ let httpResponseBody (head:string) (bodyRaw:string) : string =
             and dumpRest () : string list =
                (* DEBUG *)
                (*print_endline "dump" ;*)
-               (String_.trail bodyRaw pos) :: chunks
+               (String_.trail pos bodyRaw) :: chunks
             in
 
             (Some (bodyRaw , pos))
@@ -360,7 +360,7 @@ let parseOpenLib (json:string)
             let depth =
                let charCounter (c:char) (s:string) : int =
                   String.length (String_.filter ((=) c) s)
-               and before = String_.lead json pos
+               and before = String_.lead pos json
                in
                let inSteps  = charCounter '{' before
                and outSteps = charCounter '}' before in

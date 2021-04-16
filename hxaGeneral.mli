@@ -376,16 +376,16 @@ sig
    val lastPos : string -> int
 
    (** Concatenation of n copies of a string. *)
-   val repeat : string -> int -> string
+   val repeat : int -> string -> string
 
    (** First n chars, with clamped n. *)
-   val lead : string -> int -> string
+   val lead : int -> string -> string
 
    (** Rest of chars from pos, with clamped pos. *)
-   val trail : string -> int -> string
+   val trail : int -> string -> string
 
    (** First n chars, and rest of chars from pos, with clamped pos. *)
-   val leadTrail : string -> int -> (string * string)
+   val leadTrail : int -> string -> (string * string)
 
    (** Last char.
        @exceptions: on empty string: Invalid_argument "index out of bounds" *)
@@ -395,14 +395,14 @@ sig
    val subo : int -> int -> string -> string option
 
    (** Like sub, but clamped params. *)
-   val subc : string -> int -> int -> string
+   val subc : int -> int -> string -> string
 
    (** Like sub, but 2nd int is pos not len.
        @exceptions: Invalid_argument for invalid positions *)
-   val subp : string -> int -> int -> string
+   val subp : int -> int -> string -> string
 
    (** Like sub, but 2nd int is pos not len, and clamped params. *)
-   val subpc : string -> int -> int -> string
+   val subpc : int -> int -> string -> string
 
    (** Test first char. *)
    val isFirstChar : (char -> bool) -> string -> bool
