@@ -545,7 +545,7 @@ struct
       traceString trace "" (String.concat "\n" isbns) ;
 
       (* truncate *)
-      fst (List_.bisect isbns maxCount)
+      fst (List_.bisect maxCount isbns)
 end
 
 

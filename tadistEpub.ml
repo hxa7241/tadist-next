@@ -377,9 +377,9 @@ let getTextIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
    let pages : string list =
       (* only inspect first 10 and last 5 pages *)
       let leadAndtrail =
-         let lead , rest  = List_.bisect htmlPathnames 10 in
+         let lead , rest  = List_.bisect 10 htmlPathnames in
          let restLen = List.length rest in
-         let _ , trail = List_.bisect rest (restLen - 5) in
+         let _ , trail = List_.bisect (restLen - 5) rest in
          List.append lead trail
       in
       getTextPages trace epubPathname contentopfpath leadAndtrail

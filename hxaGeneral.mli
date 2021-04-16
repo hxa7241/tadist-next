@@ -503,7 +503,7 @@ sig
 
    (** Break into two: first n and last (len - n) elements.
        (out-of-range bisect point is clamped) *)
-   val bisect : 'a list -> int -> ('a list * 'a list)
+   val bisect : int -> 'a list -> ('a list * 'a list)
 
    (** Like find, but with option instead of exception. *)
    val find : ('a -> bool) -> 'a list -> 'a option
@@ -583,10 +583,10 @@ sig
 
    (** Break into two: first n and last (len - n) elements.
        (out-of-range bisect point is clamped) *)
-   val bisect  : 'a array -> int -> ('a array * 'a array)
+   val bisect  : int -> 'a array -> ('a array * 'a array)
 
    (** Break into two: first n and last (len - n) elements. *)
-   val bisecto : 'a array -> int -> ('a array * 'a array) option
+   val bisecto : int -> 'a array -> ('a array * 'a array) option
 
    (** Filter into two parts (like List.partition), order preservingly. *)
    val partition : ('a -> bool) -> 'a array -> ('a array * 'a array)

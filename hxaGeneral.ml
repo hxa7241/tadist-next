@@ -820,7 +820,7 @@ sig
    val tlSafe        : 'a list -> 'a list
    val nth           : int -> 'a list -> 'a option
    val hdft          : 'a list -> 'a list
-   val bisect        : 'a list -> int -> ('a list * 'a list)
+   val bisect        : int -> 'a list -> ('a list * 'a list)
    val find          : ('a -> bool) -> 'a list -> 'a option
    val filtmap       : ('a -> 'b option) -> 'a list -> 'b list
    val partmap       : ('a -> ('o, 'e) result) -> 'a list -> ('o list * 'e list)
@@ -875,7 +875,7 @@ struct
       | [single]   -> [single]
       | hd :: tail -> [ hd ; (List.rev tail) |> List.hd ]
 
-   let bisect (l:'a list) (m:int) : ('a list * 'a list) =
+   let bisect (m:int) (l:'a list) : ('a list * 'a list) =
       let rec recur (i:int) (l:'a list) (body:'a list) : ('a list * 'a list) =
          if i > 0
          then recur (i - 1) (List.tl l) ((List.hd l) :: body)
@@ -993,8 +993,8 @@ struct
    let equalenTruncate (la:'a list) (lb:'b list) : ('a list * 'b list) =
       let aLen , bLen = List.length la , List.length lb in
       match compare aLen bLen with
-      | +1 -> (fst (bisect la bLen) , lb)
-      | -1 -> (la , fst (bisect lb aLen))
+      | +1 -> (fst (bisect bLen la) , lb)
+      | -1 -> (la , fst (bisect aLen lb))
       |  _ -> (la , lb)
 
    let equalenExtend (da:'a) (db:'b) (la:'a list) (lb:'b list)
@@ -1032,8 +1032,8 @@ sig
    val lead      : int -> 'a array -> 'a array
    val trail     : int -> 'a array -> 'a array
    val leadTrail : int -> 'a array -> ('a array * 'a array)
-   val bisect    : 'a array -> int -> ('a array * 'a array)
-   val bisecto   : 'a array -> int -> ('a array * 'a array) option
+   val bisect    : int -> 'a array -> ('a array * 'a array)
+   val bisecto   : int -> 'a array -> ('a array * 'a array) option
    val partition : ('a -> bool) -> 'a array -> ('a array * 'a array)
    val printc_x  : ('a -> out_channel -> unit) -> 'a array -> out_channel ->
                    unit
@@ -1064,12 +1064,12 @@ struct
       let len = Array.length a in
       (Array.sub a 0 i) , (Array.sub a i (len - i))*)
 
-   let bisect (a:'a array) (i:int) : ('a array * 'a array) =
+   let bisect (i:int) (a:'a array) : ('a array * 'a array) =
       let len = Array.length a in
       let i   = min (max 0 i) len in
       (Array.sub a 0 i) , (Array.sub a i (len - i))
 
-   let bisecto (a:'a array) (i:int) : ('a array * 'a array) option =
+   let bisecto (i:int) (a:'a array) : ('a array * 'a array) option =
       let len = Array.length a in
       try
          Some ( (Array.sub a 0 i) , (Array.sub a i (len - i)) )
