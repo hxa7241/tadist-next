@@ -16,6 +16,7 @@ Contents
 --------
 
 * Description
+* Installation
 * Build
 * Changes
 * Acknowledgements
@@ -72,6 +73,17 @@ Error exit codes:
   73   EX_CANTCREAT    cannot create output file
   74   EX_IOERR        input/output error
   114  EX_UNSPECIFIED  unspecified/unknown error
+
+
+
+Installation
+------------
+
+* Put the tadist executable program anywhere.
+* Install pdfinfo and pdftotext:
+   * First check if they are already installed, otherwise proceed.
+   * Get Xpdf command line tools from: https://www.xpdfreader.com/download.html
+   * Put pdfinfo and pdftotext in the path or in the same directory as tadist.
 
 
 
