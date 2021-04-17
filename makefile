@@ -1,5 +1,5 @@
-#  TADIST tool (OCaml 4.10)
-#  Harrison Ainsworth / HXA7241 : 2015, 2020
+#  TADIST tool (OCaml 4.12)
+#  Harrison Ainsworth / HXA7241 : 2015, 2021
 
 
 EXE=tadist
@@ -18,13 +18,13 @@ $(EXE): $(SRC)
 	ocamlopt.opt -o $(EXE) -nodynlink $(OPTS) $(OPTS2) $(LIBSN) $(SRC)
 	rm -f *.cm[ixo] *.o
 
-bytecode: $(EXE)b
-$(EXE)b: $(SRC)
-	ocamlc -o $(EXE)b -compat-32 $(OPTS) $(OPTS2) $(LIBSB) $(SRC)
+bytecode: $(EXE)-b
+$(EXE)-b: $(SRC)
+	ocamlc -o $(EXE)-b -compat-32 $(OPTS) $(OPTS2) $(LIBSB) $(SRC)
 	rm -f *.cm[ixo] *.o
 
 
 .PHONY: clean
 clean:
 	rm -f *.cm[ixo] *.[ao]
-	rm -f $(EXE) $(EXE)b
+	rm -f $(EXE) $(EXE)-b

@@ -1,12 +1,12 @@
 
-TADIST tool 1.2 (OCaml 4.10) ***UNFINISHED***
+TADIST tool 1.2 (OCaml 4.12)
 ======================================================================
 
 
 Harrison Ainsworth / HXA7241 : 2015, 2021  
 http://www.hxa.name/tools
 
-2021-04-14
+2021-04-17
 
 
 
@@ -91,7 +91,7 @@ Build
 -----
 
 Requirements:
-* OCaml 4.10 (or thereabouts)
+* OCaml 4.12 (or thereabouts)
 
 Library dependencies (other versions might suffice):
 * camlzip 1.10
@@ -109,14 +109,14 @@ Run make, to produce:
 Changes
 -------
 
-### Version 1.2 : 2021 ###
+### Version 1.2 : 2021-04-17 ###
 
 Supports PDF files.
 
-(OCaml 4.10)
+(OCaml 4.12)
 
 
-### Version 1.1 : 2020 ###
+### Version 1.1 : 2020-04-10 ###
 
 OpenLibrary.org ISBN query data
 
@@ -141,7 +141,7 @@ Uses:
 * CamlZip 1.10
    * https://opam.ocaml.org/packages/camlzip/
    * https://github.com/xavierleroy/camlzip
-* Xpdf tools
+* Xpdf tools 4.03
    * https://www.xpdfreader.com/download.html
 
 
@@ -150,12 +150,11 @@ Metadata
 --------
 
 DC:`
-   title:`TADIST tool 1.2 (OCaml 4.10) ***UNFINISHED***`
+   title:`TADIST tool 1.2 (OCaml 4.12)`
    creator:`Harrison Ainsworth / HXA7241`
 
-   date:`2021-03-24`
+   date:`2021-04-17`
    date:`2020-04-10`
-   date:`2015-05-30`
    date:`2015-05-23`
 
    description:`A small command-line tool that: prints ebook metadata, suggests a file name for an ebook, or renames an ebook file.`
@@ -163,7 +162,7 @@ DC:`
 
    type:`software`
    language:`en-GB`
-   language:`OCaml 4.10`
+   language:`OCaml 4.12`
    format:`text/ocaml`
 
    relation:`http://www.hxa.name`
