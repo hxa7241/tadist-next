@@ -1,7 +1,7 @@
 (*------------------------------------------------------------------------------
 
-   HXA General Library (OCaml 4.10)
-   Harrison Ainsworth / HXA7241 : 2015, 2020
+   HXA General Library (OCaml 4.12)
+   Harrison Ainsworth / HXA7241 : 2015, 2021
 
    http://www.hxa.name/tools/
 

@@ -1,7 +1,7 @@
 (*------------------------------------------------------------------------------
 
-   TADIST tool (OCaml 4.10)
-   Harrison Ainsworth / HXA7241 : 2015, 2020
+   TADIST tool (OCaml 4.12)
+   Harrison Ainsworth / HXA7241 : 2015, 2021
 
    http://www.hxa.name/tools/
    http://www.hxa.name/notes/note-hxa7241-20141231T1101Z.html
@@ -153,7 +153,7 @@ let httpResponseBody (head:string) (bodyRaw:string) : string =
  *
  * Reference docs:
  *
- * * https://ocaml.org/releases/4.10/htmlman/libref/Unix.html
+ * * https://ocaml.org/releases/4.12/htmlman/libref/Unix.html
  * * https://tools.ietf.org/html/rfc2616  #section-5  #section-6
  * * http://openlibrary.org/developers
  * * https://openlibrary.org/dev/docs/api/books

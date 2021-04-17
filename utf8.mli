@@ -1,6 +1,6 @@
 (*------------------------------------------------------------------------------
 
-   UTF-8 lib (OCaml 4.10)
+   UTF-8 lib (OCaml 4.12)
    Harrison Ainsworth / HXA7241 : 2015, 2021
 
    http://www.hxa.name/tools/
