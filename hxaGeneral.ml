@@ -103,20 +103,6 @@ let assertLog_x (outputter:string->unit) (b:bool) (message:string) : bool =
    b
 
 
-let wrapLinesAscii (width:int) (para:string) : string =
-   let rec recurse (width:int) (wrapped:string) (rest:string) : string =
-      let restLen = String.length rest in
-      if width < restLen
-      then
-         let nextWrapped = wrapped ^ (String.sub rest 0 width) ^ "\n"
-         and nextRest    = String.sub rest width (restLen - width) in
-         recurse width nextWrapped nextRest
-      else
-         wrapped ^ rest
-   in
-   recurse (max width 1) "" para
-
-
 let exitPrint (code:int) (main:string) (supplement:string) (hint:string)
    : 'a =
    let message =
@@ -125,16 +111,8 @@ let exitPrint (code:int) (main:string) (supplement:string) (hint:string)
       if (len > 0) && (sum.[len - 1] <> '.')
       then sum ^ "."
       else sum
-   and hint =
-      (* wrap *)
-      (wrapLinesAscii 72 hint)
-      (* indent *)
-      |> (String.split_on_char '\n')
-      |> (List.map String.trim)
-      |> (String.concat "\n    ")
-      |> ((^) "    ")
    in
-   Printf.eprintf "*** Failed: %s\n%s\n%!" message hint ;
+   Printf.eprintf "*** Failed: %s\n    %s\n\n%!" message hint ;
    exit code
 
 
