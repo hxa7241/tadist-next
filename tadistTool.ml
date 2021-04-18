@@ -73,7 +73,7 @@ Examples:
 Usage:
   $ tadist [-h|-?|--help]
   $ tadist -v | (-??|--doc)
-  $ tadist [-(m|j|s|r|R)] (-|<filename>)
+  $ tadist -(m|j|s|r|R) (-|<filename>)
   $ tadist -c (-|<string>)
 
 Options:
