@@ -164,6 +164,9 @@ let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
    let __MODULE_FUNCTION__ = __MODULE__ ^ ".requestOpenLib" in
    traceHead trace __MODULE_FUNCTION__ "" ;
 
+   (* at least 1 second between requests *)
+   Unix.sleep 1 ;
+
    let requestHost = "openlibrary.org" in
    (* constant except for 'isbn' *)
    let request     =
