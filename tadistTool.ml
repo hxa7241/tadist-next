@@ -289,7 +289,7 @@ let printMetadata_x ?(trace:bool = false) (json:bool) (input:string) : unit =
 
    let nameStruct =
       let filePathname = readInput_x input in
-      TadistMelder.makeNameStructFromFileName_x trace filePathname
+      TadistMelder.makeMetadataFromFilename_x trace filePathname
    in
 
    let open Tadist in
@@ -297,44 +297,31 @@ let printMetadata_x ?(trace:bool = false) (json:bool) (input:string) : unit =
    let stringToString (str:string) : string =
       if not json then str else "\"" ^ str ^ "\""
    in
-   let arrayToString (json:bool) (sep:string) (sa:string array) : string =
+   let listToString (json:bool) (sep:string) (sl:string list) : string =
       let opn , cls =
          if not json then "" , "" else "[ " , " ]"
       and concatenation =
-         sa
-         |> Array.to_list |> (List.map stringToString) |> (String.concat sep)
+         sl |> (List.map stringToString) |> (String.concat sep)
       in
       opn ^ concatenation ^ cls
    in
 
-   let title =
-      nameStruct.title |> ArrayNe.toArray |> (Array.map StringT.toString)
-      |> Array.to_list |> (String.concat " ") |> stringToString
-   and authors =
-      arrayToString json ", "
-         (nameStruct.author |> (Array.map StringT.toString))
-   and dates =
-      arrayToString json ", "
-         (nameStruct.date |> (Array.map (DateIso8601e.toString false))) ;
-   and isbn =
-      (Option_.foldf
-         (snd %> StringT.toString)
-         (Fun.const "") nameStruct.id)
-       |> stringToString
-   and pages =
-      (Option_.foldf
-         (StringT.toString %> (String_.filter Char_.isDigit))
-         (Fun.const "0") nameStruct.subtyp)
-   and filetype =
-      (StringT.toString nameStruct.typ) |> stringToString
-   in
+   let title    = nameStruct.titleRaw |> (String.concat " ") |> stringToString
+   and authors  = listToString json ", " nameStruct.authorRaw
+   and dates    = listToString json ", " nameStruct.dateRaw
+   and isbn     = listToString json ", " nameStruct.idRaw
+   and pages    =
+      if nameStruct.subtypRaw <> ""
+      then String_.filter Char_.isDigit nameStruct.subtypRaw
+      else "0"
+   and filetype = nameStruct.typRaw |> stringToString in
 
    if not json
    then
       Printf.printf
 {|
 [metadata]
-; string, csv, csv, string, number, string
+; string, csv string, csv ISO8601, csv string, number, string
 title    = %s
 authors  = %s
 dates    = %s
