@@ -57,7 +57,22 @@ let extractMetadata_x (trace:bool) (filePathname:string) : nameStructRaw =
          TadistPdf.extractTadist_x ;  ]
 
 
-let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
+let meldExtractedAndQueriedRaw (metadata:nameStructRaw) (querydata:nameStructRaw)
+   : nameStructRaw =
+
+   let prioritiseQuery (empty:_) (meta:_) (query:_) : _ =
+      if query <> empty then query else meta
+   in
+
+   {  titleRaw  = prioritiseQuery [] metadata.titleRaw  querydata.titleRaw ;
+      authorRaw = prioritiseQuery [] metadata.authorRaw querydata.authorRaw ;
+      dateRaw   = prioritiseQuery [] metadata.dateRaw   querydata.dateRaw ;
+      idRaw     = metadata.idRaw ;
+      subtypRaw = prioritiseQuery "" metadata.subtypRaw querydata.subtypRaw ;
+      typRaw    = metadata.typRaw ; }
+
+
+let meldExtractedAndQueriedLax (metadata:nameStructLax) (querydata:nameStructLax)
    : nameStructLax =
 
    let titlePriority =
@@ -119,10 +134,11 @@ let meldExtractedAndQueried (metadata:nameStructLax) (querydata:nameStructLax)
       typLax    = metadata.typLax    ;  }
 
 
-let queryForIsbn (trace:bool) (nsLax:nameStructLax) : nameStructRaw option =
+let queryForIsbn (trace:bool) (isbns:(StringT.t * StringT.t) array)
+   : nameStructRaw option =
 
    (* only try first few : 'a array *)
-   (Array_.lead 2 nsLax.idLax)
+   (Array_.lead 2 isbns)
    |>
    (* try successive ISBNs until good result : nameStructRaw ress *)
    (Array.fold_left
@@ -158,35 +174,65 @@ let queryForIsbn (trace:bool) (nsLax:nameStructLax) : nameStructRaw option =
    Result_.toOpt
 
 
+let getNameStructFromFilename_x
+   (trace        : bool)
+   (normaliser   : nameStructRaw -> 'ns)
+   (getIsbns     : 'ns -> (StringT.t * StringT.t) array)
+   (melder       : 'ns -> 'ns -> 'ns)
+   (filePathname : string)
+   : 'ns =
+
+   (* get internal metadata *)
+   let metadata : 'ns =
+      (extractMetadata_x trace filePathname)
+      |> normaliser
+   in
+
+   (* get ISBNs : (StringT.t * StringT.t) array *)
+   (getIsbns metadata)
+   |>
+   (* get external query data : _ option *)
+   (queryForIsbn trace)
+   |>-
+   (* mix in remotely queried metadata, if available : _ option *)
+   (fun querydata : 'ns option ->
+      (normaliser querydata)
+      |>
+      (melder metadata)
+      |>
+      Option.some)
+   |>
+   (* any query failure defaults meld to just internal metadata *)
+   (Option_.default metadata)
+
+
 
 
 (* ---- public functions ---- *)
 
+let makeMetadataFromFilename_x (trace:bool) (filePathname:string)
+   : nameStructRaw =
+
+   let getIsbnsRaw metadata : (StringT.t * StringT.t) array =
+      metadata.idRaw |> Tadist.normaliseIsbnLax
+   in
+
+   getNameStructFromFilename_x
+      trace
+      Tadist.normaliseMetadataRaw getIsbnsRaw meldExtractedAndQueriedRaw
+      filePathname
+
+
 let makeNameStructFromFileName_x (trace:bool) (filePathname:string)
    : nameStruct =
 
-   (* get internal metadata *)
-   let metadata : nameStructLax =
-      (* : nameStructRaw *)
-      (extractMetadata_x trace filePathname)
-      |>
-      Tadist.normaliseMetadataLax
+   let getIsbnsLax metadata : (StringT.t * StringT.t) array =
+      metadata.idLax
    in
 
-   (* mix in remotely queried metadata, if available *)
-   let melded : nameStructLax =
-      (* : nameStructRaw option *)
-      (queryForIsbn trace metadata)
-      |>-
-      (fun querydata : nameStructLax option ->
-         (Tadist.normaliseMetadataLax querydata)
-         |>
-         (meldExtractedAndQueried metadata)
-         |>
-         Option.some)
-      |>
-      (* any query failure defaults meld to just internal metadata *)
-      (Option_.default metadata)
-   in
-
-   Tadist.normaliseMetadata_x trace melded
+   (getNameStructFromFilename_x
+      trace
+      Tadist.normaliseMetadataLax getIsbnsLax meldExtractedAndQueriedLax
+      filePathname)
+   |>
+   (Tadist.normaliseMetadata_x trace)
