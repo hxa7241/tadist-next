@@ -287,9 +287,6 @@ val _MAX_NAME_LEN : int
 
 (* ---- normalisers ---- *)
 
-(** Remove empty strings. *)
-val nonEmpties : string list -> string list
-
 (**
  * Split a string of ;|and&, -separated names.
  *
@@ -311,20 +308,29 @@ val getLastName : string -> string
  *  NB: truncates according to byte-length, not necessarily char-length *)
 val truncateWords : int -> string list -> string list
 
-val normaliseTitle : string list -> StringT.t array
+val normaliseTitle    : bool -> int -> string list -> string list
+val normaliseTitleLax : string list -> StringT.t array
 
-val normaliseAuthor : string list -> StringT.t array
+val normaliseAuthor    : int -> string list -> string list
+val normaliseAuthorLax : string list -> StringT.t array
 
-val normaliseDate : string list -> DateIso8601e.t array
+(* (does not recognise negative/BC or 5+ digit years) *)
+val normaliseDate    : string list -> string list
+val normaliseDateLax : string list -> DateIso8601e.t array
 
-val normaliseIsbn : string list -> (StringT.t * StringT.t) array
+val normaliseIsbn    : string list -> string list
+val normaliseIsbnLax : string list -> (StringT.t * StringT.t) array
 
 (**
  * Subtyp taken to be page-count.
  *)
-val normaliseSubtyp : string -> StringT.t option
+val normaliseSubtyp    : string -> string
+val normaliseSubtypLax : string -> StringT.t option
 
-val normaliseString : string -> StringT.t option
+val normaliseString    : string -> string
+val normaliseStringLax : string -> StringT.t option
+
+val normaliseMetadataRaw : nameStructRaw -> nameStructRaw
 
 val normaliseMetadataLax : nameStructRaw -> nameStructLax
 

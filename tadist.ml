@@ -592,13 +592,6 @@ let _MAX_NAME_LEN = 255
 
 (* ---- normalisers ---- *)
 
-let nonEmpties (ls:string list) : string list =
-
-   ls
-   |> (List.map StringT.filter)
-   |> (List.filter (Fun.negate String_.isEmpty))
-
-
 let parseNamelist (names:string) : string list =
 
    let replaceAmp (s:string) : string =
@@ -669,26 +662,46 @@ let getLastName (name:string) : string =
    |> String.trim
 
 
+let basicCharTidy (str:string) : string =
+
+   str
+
+   |> Utf8.Filter.replace
+   |> Blanks.unifySpaces
+   |> (String_.filter Char_.isNonCtrl)
+   |> String.trim
+
+
 (* NB: truncates according to byte-length, not necessarily char-length *)
 let truncateWords (max:int) (words:string list) : string list =
 
    words
+
    (* word lengths, with spaces added *)
    |> (List.map String.length)
    |> (function
       | head :: tail -> head :: List.map succ tail
       | _            -> [])
+
    (* successive sums *)
    |> (List.fold_left (fun ls l -> (l + List.hd ls) :: ls) [0])
    |> List.rev
    |> (function | _ :: t -> t | _ -> [])
+
    (* truncate after max length *)
    |> (List.combine words)
    |> (List.filter (fun (_,i) -> i <= max))
    |> List.split |> fst
 
+   (* suffix with ellipsis *)
+   |> (fun ls ->
+      if List.length ls < List.length words
+      then List.append ls ["\xE2\x80\xA6"]
+      else ls)
 
-let normaliseTitle (titles:string list) : StringT.t array =
+
+let normaliseTitle (isStrict:bool) (maxLength:int) (titles:string list)
+   : string list =
 
    let abbrevEdition (title:string) : string =
       let editions =
@@ -719,48 +732,60 @@ let normaliseTitle (titles:string list) : StringT.t array =
 
    (* use only first *)
    match titles with
-   | []         -> [||]
+   | []         -> []
    | first :: _ ->
       first
-      |> Utf8.Filter.replace
-      |> Blanks.blankSpacyCtrlChars
-      |> Blanks.unifySpaces
-      |> String.trim
+      (* basic char constraints *)
+      |> basicCharTidy
       (* truncate any parenthised suffix *)
       |> (fun title ->
          title
          |> (Rx.regexApply {|^\(.....+\)(.*) *$|} ~pos:0 ~caseInsens:false)
          |>- (Rx.groupFound 1)
          |> (Option.value ~default:title) )
-      (* truncate after ':', if more than 7 chars before *)
+      (* maybe truncate after ':', if more than 7 chars before *)
       |> (fun title ->
-         try
-            let i = String.index title ':' in
-            if i > 8 then String.sub title 0 i else title
-         with Not_found -> title)
-      (* abbreviate edition *)
-      |> abbrevEdition
-      (* replace hyphens with spaces *)
-      |> (String.map (function | '-' -> ' ' | c -> c))
+         match String.index_opt title ':' with
+         | Some pos when (isStrict && (pos > 8)) -> String.sub title 0 pos
+         | _                                     -> title)
+      (* maybe abbreviate edition *)
+      |> (if isStrict then abbrevEdition else id)
+      (* maybe replace hyphens with spaces *)
+      |> (String.map (function | '-' when isStrict -> ' ' | c -> c))
       (* lowercase, if all uppercase, and more than one word *)
       |> (fun title ->
          if String.contains title ' '
          then String.lowercase_ascii title
          else title)
-      (* tokenise *)
+      (* tokenise : string list *)
       |> (String_.split ((=) ' ')) |> (List.map String.trim)
-      (* constrain (non-empties, max length) *)
-      |> nonEmpties |> (truncateWords 48)
+      (* maybe disallow special chars *)
+      |> (if isStrict then List.map StringT.filter else id)
+      (* remove any now empty *)
+      |> (List.filter String_.notEmpty)
+      (* max length *)
+      |> (truncateWords maxLength)
       (* title-case *)
       |> (List.map String.capitalize_ascii)
-      (* convert to StringT.t array *)
-      |> (List_.filtmap (StringT.make % Result_.toOpt))
-      |> Array.of_list
 
 
-let normaliseAuthor (authors:string list) : StringT.t array =
+let normaliseTitleLax (titles:string list) : StringT.t array =
+
+   titles
+
+   |> (normaliseTitle true 48)
+
+   (* convert to StringT.t array *)
+   |> (List_.filtmap (StringT.makef % Result_.toOpt))
+   |> Array.of_list
+
+
+let normaliseAuthor (maxLength:int) (authors:string list) : string list =
 
    authors
+
+   (* basic char constraints *)
+   |> (List.map basicCharTidy)
 
    (* split any in-string name lists, and flatten all *)
    |> (List.map parseNamelist) |> List.flatten
@@ -769,27 +794,41 @@ let normaliseAuthor (authors:string list) : StringT.t array =
    (* remove parenthised *)
    |> (List.map (Str.global_replace (Str.regexp "([^)]*)") ""))
 
+   (* remove any empty *)
+   |> (List.map (Blanks.squashSpaces %> String.trim))
+   |> (List.filter String_.notEmpty)
+   (* max length *)
+   |> (truncateWords maxLength)
+
+
+let normaliseAuthorLax (authors:string list) : StringT.t array =
+
+   authors
+
+   |> (normaliseAuthor max_int)
+
    (* extract and regularise last names *)
    |> (List.map getLastName)
    |> (List.map (String.lowercase_ascii %> String_.capitaliseAll))
 
    (* constrain *)
-   |> nonEmpties |> (truncateWords 32)
-   |> (List_.filtmap (StringT.make % Result_.toOpt))
+   |> (truncateWords 32)
+   |> (List_.filtmap (StringT.makef % Result_.toOpt))
    |> Array.of_list
 
 
-let normaliseDate (dates:string list) : DateIso8601e.t array =
+let normaliseDateLax (dates:string list) : DateIso8601e.t array =
 
-   (* (does not recognise negative/BC or 5+ digit years) *)
+   (* (0-9999 only -- does not recognise negative/BC or 5+ digit years) *)
 
    dates
+
    (* extract years : (DateIso8601e.t option) list *)
    |> List.map
       (fun rawDateString ->
          rawDateString
-         (* : string *)
-         |> (Utf8.Filter.replace % Blanks.unifySpaces)
+         (* basic char constraints : string *)
+         |> basicCharTidy
          |> (fun s -> " " ^ s ^ " ")
          (* : string option *)
          |> (fun searchableDateString ->
@@ -809,52 +848,100 @@ let normaliseDate (dates:string list) : DateIso8601e.t array =
                (Rx.groupFound 1) ) )
          (* check : DateIso8601e.t option *)
          |>- (DateIso8601e.make %> Result_.toOpt) )
-   (* keep sorted, unique years *)
+
+   (* keep valid, sorted, unique years *)
    |> (List_.filtmap id)
    |> (List.map DateIso8601e.yearOnly)
    |> (List.sort_uniq DateIso8601e.compare)
+
    (* take first and last only *)
    |> List_.hdft
    |> Array.of_list
 
 
-let normaliseIsbn (isbns:string list) : (StringT.t * StringT.t) array =
+let normaliseDate (dates:string list) : string list =
+
+   dates
+
+   |> normaliseDateLax
+
+   |> Array.to_list
+   |> (List.map (DateIso8601e.toString false))
+
+
+let normaliseIsbn (isbns:string list) : string list =
 
    isbns
-   |> List.map
-      (Utf8.Filter.filter % Utf8.removeReplacementChars % Blanks.unifySpaces)
+
+   (* basic char constraints *)
+   |> List.map (basicCharTidy %> Utf8.removeReplacementChars)
    (* to machine-readable form *)
    |> List.map (String_.filter (function | ' ' | '-' -> false | _ -> true))
-   (* remove bad ones *)
-   |> List.filter (fun mForm ->
-      match String.length mForm with
-      | 13 ->
-         String_.check Char_.isDigit mForm
-      | 10 ->
-         let isDigitOrX = function | '0'..'9' | 'X' -> true | _ -> false
-         and main,last =
-            let len = String.length mForm in
-            (String.sub mForm 0 (len - 1) , String.sub mForm (len - 1) 1)
-         in
-         (String_.check Char_.isDigit main) && (String_.check isDigitOrX last)
-      | _ -> false)
-   (* prioritise 13-form ones *)
+
+   (* remove invalid ones *)
+   |> List.filter
+      (fun isbn ->
+         match String.length isbn with
+         | 13 ->
+            String_.check Char_.isDigit isbn
+         | 10 ->
+            let isDigitOrX = function | '0'..'9' | 'X' -> true | _ -> false
+            and main , last =
+               let len = String.length isbn in
+               (String.sub isbn 0 (len - 1) , String.sub isbn (len - 1) 1)
+            in
+            (String_.check Char_.isDigit main)
+               && (String_.check isDigitOrX last)
+         | _ ->
+            false)
+
+   (* prioritise 13-digit ones *)
    |> List.sort (fun a b -> compare (String.length b) (String.length a))
+
+
+let normaliseIsbnLax (isbns:string list) : (StringT.t * StringT.t) array =
+
+   isbns
+
+   |> normaliseIsbn
+
    (* pair with label *)
    |> List.map
-         (fun isbn ->
-            (Ok isbn)
-            |^^= ( (fun _ -> StringT.make "ISBN") , StringT.make )
-            |> Result_.toOpt)
+      (fun isbn ->
+         (Ok isbn)
+         |^^= ( (fun _ -> StringT.make "ISBN") , StringT.make )
+         |> Result_.toOpt)
    |> List_.filtmap id
+
    |> Array.of_list
 
 
-let normaliseSubtyp (s:string) : StringT.t option =
+let normaliseString (str:string) : string =
 
-   s
-   |> Utf8.Filter.filter |> Utf8.removeReplacementChars
-   |> Blanks.blankSpacyCtrlChars |> String.trim
+   str
+
+   (* truncate UTF-8 chars to max byte length -- may produce invalid UTF-8 *)
+   |> (let _MAXLEN = 24 in String_.truncate _MAXLEN)
+
+   (* basic char constraints *)
+   |> basicCharTidy
+   |> Utf8.removeReplacementChars
+
+
+let normaliseStringLax (str:string) : StringT.t option =
+
+   str
+
+   |> normaliseString
+   |> StringT.make
+   |> Result_.toOpt
+
+
+let normaliseSubtyp (subtyp:string) : string =
+
+   subtyp
+
+   |> normaliseString
 
    (* drop if contains invalid chars or is negative *)
    |> (fun s ->
@@ -873,30 +960,34 @@ let normaliseSubtyp (s:string) : StringT.t option =
    (* suffix 'p' *)
    |> (function | "" -> "" | s -> s ^ "p")
 
-   |> StringT.make |> Result_.toOpt
+
+let normaliseSubtypLax (subtyp:string) : StringT.t option =
+
+   subtyp
+
+   |> normaliseSubtyp
+   |> StringT.make
+   |> Result_.toOpt
 
 
-let normaliseString (s:string) : StringT.t option =
+let normaliseMetadataRaw (nsr:nameStructRaw) : nameStructRaw =
 
-   s
-   |> Utf8.Filter.replace |> Blanks.blankSpacyCtrlChars |> StringT.filter
-   (* truncate utf8 chars to max byte length *)
-   |> (fun st ->
-      st
-      |> (let _MAXLEN = 24 in String_.truncate _MAXLEN)
-      |> Utf8.Filter.filter
-      |> Utf8.removeReplacementChars)
-   |> StringT.make |> Result_.toOpt
+   {  titleRaw  = normaliseTitle  false 200 nsr.titleRaw  ;
+      authorRaw = normaliseAuthor 100       nsr.authorRaw ;
+      dateRaw   = normaliseDate             nsr.dateRaw   ;
+      idRaw     = normaliseIsbn             nsr.idRaw     ;
+      subtypRaw = normaliseSubtyp           nsr.subtypRaw ;
+      typRaw    = normaliseString           nsr.typRaw    ;  }
 
 
 let normaliseMetadataLax (nsr:nameStructRaw) : nameStructLax =
 
-   {  titleLax  = normaliseTitle nsr.titleRaw ;
-      authorLax = normaliseAuthor nsr.authorRaw ;
-      dateLax   = normaliseDate nsr.dateRaw ;
-      idLax     = normaliseIsbn nsr.idRaw ;
-      subtypLax = normaliseSubtyp nsr.subtypRaw ;
-      typLax    = normaliseString nsr.typRaw ;  }
+   {  titleLax  = normaliseTitleLax  nsr.titleRaw  ;
+      authorLax = normaliseAuthorLax nsr.authorRaw ;
+      dateLax   = normaliseDateLax   nsr.dateRaw   ;
+      idLax     = normaliseIsbnLax   nsr.idRaw     ;
+      subtypLax = normaliseSubtypLax nsr.subtypRaw ;
+      typLax    = normaliseStringLax nsr.typRaw    ;  }
 
 
 let normaliseMetadata_x (trace:bool) (nsl:nameStructLax) : nameStruct =
