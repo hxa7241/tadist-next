@@ -294,34 +294,30 @@ let printMetadata_x ?(trace:bool = false) (json:bool) (input:string) : unit =
 
    let open Tadist in
 
-   let stringToString (str:string) : string =
-      if not json then str else "\"" ^ str ^ "\""
-   in
-   let listToString (json:bool) (sep:string) (sl:string list) : string =
-      let opn , cls =
-         if not json then "" , "" else "[ " , " ]"
-      and concatenation =
-         sl |> (List.map stringToString) |> (String.concat sep)
-      in
-      opn ^ concatenation ^ cls
-   in
-
-   let title    = nameStruct.titleRaw |> (String.concat " ") |> stringToString
-   and authors  = listToString json ", " nameStruct.authorRaw
-   and dates    = listToString json ", " nameStruct.dateRaw
-   and isbn     = listToString json ", " nameStruct.idRaw
-   and pages    =
-      if nameStruct.subtypRaw <> ""
-      then String_.filter Char_.isDigit nameStruct.subtypRaw
+   let stringToIni  (str:string) : string =
+      Tadist.escapeIniString str
+   and stringToJson (str:string) : string =
+      "\"" ^ (Tadist.escapeJsonStringBasic str) ^ "\""
+   and stringToNumber (str:string) : string =
+      if str <> ""
+      then String_.filter Char_.isDigit str
       else "0"
-   and filetype = nameStruct.typRaw |> stringToString in
+   in
+   let listToIni  (sl:string list) : string =
+      sl |> (List.map stringToIni) |> (String.concat " | ")
+   and listToJson (sl:string list) : string =
+      let concatenation =
+         sl |> (List.map stringToJson) |> (String.concat ", ")
+      in
+      "[ " ^ concatenation ^ " ]"
+   in
 
    if not json
    then
       Printf.printf
 {|
 [metadata]
-; string, csv string, csv ISO8601, csv string, number, string
+; string | bar-sv string | bar-sv ISO8601 | bar-sv string | number | string
 title    = %s
 authors  = %s
 dates    = %s
@@ -330,7 +326,12 @@ pages    = %s
 filetype = %s
 
 |}
-         title authors dates isbn pages filetype
+         (nameStruct.titleRaw  |> (String.concat " ") |> stringToIni)
+         (nameStruct.authorRaw |> listToIni)
+         (nameStruct.dateRaw   |> listToIni)
+         (nameStruct.idRaw     |> listToIni)
+         (nameStruct.subtypRaw |> stringToNumber)
+         (nameStruct.typRaw    |> stringToIni)
    else
       Printf.printf
 {|
@@ -347,7 +348,12 @@ filetype = %s
 }
 
 |}
-         title authors dates isbn pages filetype
+         (nameStruct.titleRaw  |> (String.concat " ") |> stringToJson)
+         (nameStruct.authorRaw |> listToJson)
+         (nameStruct.dateRaw   |> listToJson)
+         (nameStruct.idRaw     |> listToJson)
+         (nameStruct.subtypRaw |> stringToNumber)
+         (nameStruct.typRaw    |> stringToJson)
 
 
 let suggest_x (input:string) : unit =
