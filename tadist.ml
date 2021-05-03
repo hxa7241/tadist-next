@@ -1435,6 +1435,10 @@ let toStringText (name:nameStruct) : string =
    toStringNameStruct name "\""  " "  "; "  " / "  ", "  "."
 
 
+let nameStructToString (ns:nameStruct) : string =
+   toStringNameStruct ns "\""  " "  "\n"  "\n"  " | "  "\n"
+
+
 let rawToString (nsr:nameStructRaw) : string =
    [  ("titles:  " , nsr.titleRaw     ) ;
       ("authors: " , nsr.authorRaw    ) ;

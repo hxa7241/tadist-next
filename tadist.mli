@@ -373,4 +373,7 @@ val toStringName : nameStruct -> string
 val toStringText : nameStruct -> string
 
 (** Verbosely render to a string. *)
+val nameStructToString : nameStruct -> string
+
+(** Verbosely render to a string. *)
 val rawToString : nameStructRaw -> string
