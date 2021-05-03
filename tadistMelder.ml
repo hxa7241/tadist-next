@@ -174,38 +174,6 @@ let queryForIsbn (trace:bool) (isbns:(StringT.t * StringT.t) array)
    Result_.toOpt
 
 
-let getNameStructFromFilename_x
-   (trace        : bool)
-   (normaliser   : nameStructRaw -> 'ns)
-   (getIsbns     : 'ns -> (StringT.t * StringT.t) array)
-   (melder       : 'ns -> 'ns -> 'ns)
-   (filePathname : string)
-   : 'ns =
-
-   (* get internal metadata *)
-   let metadata : 'ns =
-      (extractMetadata_x trace filePathname)
-      |> normaliser
-   in
-
-   (* get ISBNs : (StringT.t * StringT.t) array *)
-   (getIsbns metadata)
-   |>
-   (* get external query data : _ option *)
-   (queryForIsbn trace)
-   |>-
-   (* mix in remotely queried metadata, if available : _ option *)
-   (fun querydata : 'ns option ->
-      (normaliser querydata)
-      |>
-      (melder metadata)
-      |>
-      Option.some)
-   |>
-   (* any query failure defaults meld to just internal metadata *)
-   (Option_.default metadata)
-
-
 
 
 (* ---- public functions ---- *)
@@ -213,26 +181,92 @@ let getNameStructFromFilename_x
 let makeMetadataFromFilename_x (trace:bool) (filePathname:string)
    : nameStructRaw =
 
-   let getIsbnsRaw metadata : (StringT.t * StringT.t) array =
+   (* get internal metadata *)
+   let metadataRaw : nameStructRaw = (extractMetadata_x trace filePathname) in
+   let metadata    : nameStructRaw = Tadist.normaliseMetadataRaw metadataRaw in
+
+   let querydata : nameStructRaw option =
+      (* get ISBNs : (StringT.t * StringT.t) array *)
       metadata.idRaw |> Tadist.normaliseIsbnLax
+      |>
+      (* get external query data : nameStructRaw option *)
+      (queryForIsbn trace)
    in
 
-   getNameStructFromFilename_x
-      trace
-      Tadist.normaliseMetadataRaw getIsbnsRaw meldExtractedAndQueriedRaw
-      filePathname
+   let meldeddata : nameStructRaw =
+      querydata
+      |>-
+      (* mix in remotely queried metadata, if available *)
+      (fun querydata : nameStructRaw option ->
+         (Tadist.normaliseMetadataRaw querydata)
+         |>
+         (meldExtractedAndQueriedRaw metadata)
+         |>
+         Option.some)
+      |>
+      (* any query failure defaults meld to just internal metadata *)
+      (Option_.default metadata)
+   in
+
+   (* some extra stuff just for trace *)
+   let _ =
+      if trace
+      then
+         ignore(
+            let metadata = Tadist.normaliseMetadataLax metadataRaw in
+            let nameStruct =
+               querydata
+               |>-
+               (fun querydata : nameStructLax option ->
+                  (Tadist.normaliseMetadataLax querydata)
+                  |>
+                  (meldExtractedAndQueriedLax metadata)
+                  |>
+                  Option.some)
+               |>
+               (* any query failure defaults meld to just internal metadata *)
+               (Option_.default metadata)
+               |>
+               (Tadist.normaliseMetadata_x trace)
+            in
+            let __MODULE_FUNCTION__ =
+               __MODULE__ ^ ".makeMetadataFromFilename_x"
+            in
+            traceHead trace __MODULE_FUNCTION__ "tadist metadata" ;
+            traceString trace "" (Tadist.nameStructToString nameStruct) ;
+            traceString trace "" (Tadist.toStringText nameStruct) ;
+            traceString trace "" (Tadist.toStringName nameStruct) ; )
+      ;
+   in
+
+   meldeddata
 
 
 let makeNameStructFromFileName_x (trace:bool) (filePathname:string)
    : nameStruct =
 
-   let getIsbnsLax metadata : (StringT.t * StringT.t) array =
-      metadata.idLax
+   (* get internal metadata *)
+   let metadata : nameStructLax =
+      (* : nameStructRaw *)
+      (extractMetadata_x trace filePathname)
+      |>
+      Tadist.normaliseMetadataLax
    in
 
-   (getNameStructFromFilename_x
-      trace
-      Tadist.normaliseMetadataLax getIsbnsLax meldExtractedAndQueriedLax
-      filePathname)
-   |>
-   (Tadist.normaliseMetadata_x trace)
+   (* mix in remotely queried metadata, if available *)
+   let melded : nameStructLax =
+      (* get external query data : nameStructRaw option *)
+      (queryForIsbn trace metadata.idLax)
+      |>-
+      (fun querydata : nameStructLax option ->
+         (Tadist.normaliseMetadataLax querydata)
+         |>
+         (meldExtractedAndQueriedLax metadata)
+         |>
+         Option.some)
+      |>
+      (* any query failure defaults meld to just internal metadata *)
+      (Option_.default metadata)
+   in
+
+   Tadist.normaliseMetadata_x trace melded
