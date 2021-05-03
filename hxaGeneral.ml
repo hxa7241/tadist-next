@@ -500,7 +500,7 @@ sig
    val isBlank    : char -> bool
    val isNewline  : char -> bool
    val isCrOrLf   : char -> bool
-   val isNonCtrl  : char -> bool
+   val isCtrl     : char -> bool
 end
 =
 struct
@@ -533,11 +533,11 @@ struct
    let isCrOrLf (c:char) : bool =
       (c = '\r') || (c = '\n')
 
-   let isNonCtrl (c:char) : bool =
+   let isCtrl (c:char) : bool =
       match c with
       | '\x00'..'\x1F'
-      | '\x7F'         -> false
-      | _              -> true
+      | '\x7F'         -> true
+      | _              -> false
 end
 
 

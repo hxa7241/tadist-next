@@ -361,8 +361,8 @@ sig
    (** Is \r or \n ?. *)
    val isCrOrLf : char -> bool
 
-   (** Is not \x00-\x1F or \x7F ?. *)
-   val isNonCtrl : char -> bool
+   (** Is \x00-\x1F or \x7F ?. *)
+   val isCtrl   : char -> bool
 end
 
 
