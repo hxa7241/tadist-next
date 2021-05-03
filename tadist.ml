@@ -668,7 +668,7 @@ let basicCharTidy (str:string) : string =
 
    |> Utf8.Filter.replace
    |> Blanks.unifySpaces
-   |> (String_.filter Char_.isNonCtrl)
+   |> (String_.filter (ne Char_.isCtrl))
    |> String.trim
 
 
@@ -1036,6 +1036,60 @@ let normaliseMetadata_x (trace:bool) (nsl:nameStructLax) : nameStruct =
 
 
 (* ---- functions ---- *)
+
+let escapeString (translator:char->string) (str:string) : string =
+
+   let len = String.length str in
+   let buf = Buffer.create (len + (len / 2)) in
+   for i = 0 to (len - 1) do
+      Buffer.add_string buf (translator str.[i]) ;
+   done ;
+   Buffer.contents buf
+
+
+let escapeIniString (ini:string) : string =
+
+   let translator (c:char) : string =
+      match c with
+      | '\\'                  -> {|\\|}
+      | '|'                   -> {|\||}
+      | c when Char_.isCtrl c -> Printf.sprintf "\\x%02X" (int_of_char c)
+      | ignore                -> string_of_char ignore
+   in
+
+   escapeString translator ini
+
+
+let unescapeIniString (ini:string) : string =
+
+   let substituter (whole:string) : string =
+      match Str.matched_string whole with
+      | {|\\|}                            -> {|\|}
+      | {|\||}                            -> {|||}
+      | str when
+         ((4 = String.length str) &&
+            ("\\x" = String_.lead 2 str)) ->
+         string_of_char
+            (char_of_int
+               (int_of_string ("0x" ^ (String_.subc 2 2 str))))
+      | ignore                            -> ignore
+   and rx = Str.regexp {|\\\\\|\\|\|\\[xX][0-9a-fA-F][0-9a-fA-F]|} in
+
+   Str.global_substitute rx substituter ini
+
+
+let escapeJsonStringBasic (json:string) : string =
+
+   let translator (c:char) : string =
+      match c with
+      | '\\'                  -> {|\\|}
+      | '"'                   -> {|\"|}
+      | c when Char_.isCtrl c -> Printf.sprintf "\\u%04X" (int_of_char c)
+      | ignore                -> string_of_char ignore
+   in
+
+   escapeString translator json
+
 
 let unescapeJsonString (json:string) : string =
 

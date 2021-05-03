@@ -341,7 +341,16 @@ val normaliseMetadata_x : bool -> nameStructLax -> nameStruct
 
 (* ---- functions ---- *)
 
-(** Translate \""  \\  \/  \b  \f  \n  \r  \t  into actual chars. *)
+(** Translate \ | and ctrl-chars to: \\ \| \xXX. *)
+val escapeIniString   : string -> string
+
+(** Translate \\ \| and \xXX to actual chars. *)
+val unescapeIniString : string -> string
+
+(** Translate \ dbl-quote and ctrl-chars to: \\ \dbl-quote \uXXXX. *)
+val escapeJsonStringBasic : string -> string
+
+(** Translate \""  \\  \/  \b  \f  \n  \r  \t  \uXXXX  to actual chars. *)
 val unescapeJsonString : string -> string
 
 
