@@ -6,7 +6,7 @@ TADIST tool 1.2 (OCaml 4.12)
 Harrison Ainsworth / HXA7241 : 2015, 2021  
 http://www.hxa.name/tools
 
-2021-04-18
+2021-05-11
 
 
 
@@ -109,7 +109,7 @@ Run make, to produce:
 Changes
 -------
 
-### Version 1.2 : 2021-04-18 ###
+### Version 1.2 : 2021-05-11 ###
 
 Supports PDF files.
 
@@ -153,7 +153,7 @@ DC:`
    title:`TADIST tool 1.2 (OCaml 4.12)`
    creator:`Harrison Ainsworth / HXA7241`
 
-   date:`2021-04-18`
+   date:`2021-05-11`
    date:`2020-04-10`
    date:`2015-05-23`
 
