@@ -480,6 +480,36 @@ let getTextPages (trace:bool) (pdfPathname:string) : (string list) ress =
    ((String.split_on_char '\x0C') %> Result.ok)
 
 
+let printToolVersions (trace:bool) (header:string) : unit =
+
+   if trace
+   then
+      begin
+         traceHead trace header "" ;
+
+         traceRess trace "which: " id (toolInvoke "which pdfinfo") ;
+         traceRess trace "which: " id (toolInvoke "which pdftotext") ;
+
+         let toolVersion (tool:string) : string =
+            let extract (c:char) (s:string) : string =
+               (String_.halve c s) |> (Option_.foldf (snd) (ko s))
+            in
+            (toolInvoke tool)
+            |>
+            (Result_.map
+               (  (fun ok  -> extract '\n' ok)
+               ,  (fun err -> extract ')'  err)  ))
+            |>
+            (Result_.defaultf id)
+         in
+
+         traceString trace "-v: " (toolVersion "pdfinfo -v") ;
+         traceString trace "-f: " (toolVersion "pdfinfo -f") ;
+         traceString trace "-v: " (toolVersion "pdftotext -v") ;
+         traceString trace "-f: " (toolVersion "pdftotext -f") ;
+      end
+
+
 
 
 (* ---- public functions ---- *)
@@ -493,6 +523,8 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
 
    (* recognised as pdf *)
    then
+
+      let _ = printToolVersions trace __MODULE_FUNCTION__ in
 
       (* try to get basic data *)
       (getMetadata trace pdfPathname
