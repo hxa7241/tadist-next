@@ -182,6 +182,8 @@ let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
       \r\n"
    in
 
+   traceString trace "request string:\n\n" request ;
+
    try
       let socket = Unix.(socket PF_INET SOCK_STREAM 0) in
       try
