@@ -135,13 +135,13 @@ let httpResponseBody (head:string) (bodyRaw:string) : string =
             (parseLength , parseStart)
             |>
             (Option_.foldf handleChunk dumpRest)
-            |>
-            List.rev
 
-         and prefixPos = String_.indexp (Fun.negate Char_.isBlank) bodyRaw in
+         and prefixPos =
+            String_.indexp (Fun.negate Char_.isBlank) bodyRaw
+         in
 
          match prefixPos with
-         | Some pos -> extractChunks bodyRaw pos []
+         | Some pos -> (extractChunks bodyRaw pos []) |> List.rev
          | None     -> []
       in
 
