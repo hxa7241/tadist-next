@@ -420,6 +420,7 @@ let extractTadist_x (trace:bool) (epubPathname:string)
       let isbns =
          (getTextIsbns trace epubPathname contentOpfPath htmlPathnames)
          |> (List.append isbns)
+         |> Tadist.normaliseIsbn
          |> List_.deduplicate
       in
 
