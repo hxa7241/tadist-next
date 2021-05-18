@@ -177,7 +177,7 @@ let requestOpenLib (trace:bool) (isbn:Isbn.t) : string ress =
       in
       "GET " ^ urlPathAndQuery ^ " HTTP/1.1\r\n\
       Host: " ^ requestHost ^ "\r\n\
-      User-Agent: Tadist tool 1.1\r\n\
+      User-Agent: Tadist tool\r\n\
       Connection: close\r\n\
       \r\n"
    in
