@@ -289,15 +289,6 @@ let lookupMetadataValues (metadata:string*string) (key:string) : string list =
             [ extractXmlOneTagFlat "xmp:CreateDate" xmp ]
          in
          (dcDate @ xmpDate)
-         |>
-         (List.map
-            (fun date ->
-               (* convert from "YYYY-MM-DDThh:mm:ss.sTZD" to "D:YYYYMMDD" *)
-               (String_.lead 10 date)
-               |>
-               (String_.filter ((<>)'-'))
-               |>
-               ((^) "D:") ))
       | "Subject"->
          (* <dc:description>
               <rdf:Alt>
@@ -340,23 +331,32 @@ let lookupMetadataValue (metadata:string*string) (key:string) : string =
 
 let getDates (metadata:string*string) : string list =
 
-   (* format:
-    * D:YYYYMMDDHHmmSSOHH'mm'
-    * with optionalness: D:YYYY[MM[DD[HH[mm[SS[O[HH'[mm']]]]]]]] *)
-
    (lookupMetadataValues metadata "CreationDate")
    |>
+   (* extract "YYYYMMDD" *)
    List.map
-      (fun (s:string) ->
-         (* take yearmonthday, or just year *)
-         if (String.length s) >= 10
+      (fun (str:string) ->
+         (* is PDF format, or ISO-8601 format *)
+         if (String_.lead 2 str) = "D:"
          then
-            String.sub s 2 8
-         else if (String.length s) >= 6
-         then
-            String.sub s 2 4
+            (* PDF format: D:YYYYMMDDHHmmSSOHH'mm'
+               with optionalness: D:YYYY[MM[DD[HH[mm[SS[O[HH'[mm']]]]]]]] *)
+            if (String.length str) >= 10
+            (* take yearmonthday *)
+            then
+               String.sub str 2 8
+            else if (String.length str) >= 6
+            (* take just year *)
+            then
+               String.sub str 2 4
+            else
+               ""
          else
-            "" )
+            (* ISO-8601 format: YYYY[-MM-DD[THH:mm:[SS[(+|-)HH:mm]]]]
+               eg: 2006-03-09T18:39:33+05:30 *)
+            (String_.lead 10 str)
+            |>
+            (String_.filter ((<>)'-')) )
 
 
 let getIsbnsFromMetadata (metadata:string*string) : string list =
