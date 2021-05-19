@@ -791,6 +791,8 @@ let normaliseAuthor (maxLength:int) (authors:string list) : string list =
    |> (List.map parseNamelist) |> List.flatten
    |> (List.filter String_.notEmpty)
 
+   |> List_.deduplicate
+
    (* remove parenthised *)
    |> (List.map (Str.global_replace (Str.regexp "([^)]*)") ""))
 
