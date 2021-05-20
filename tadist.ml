@@ -796,6 +796,18 @@ let normaliseAuthor (maxLength:int) (authors:string list) : string list =
    (* remove parenthised *)
    |> (List.map (Str.global_replace (Str.regexp "([^)]*)") ""))
 
+   (* separate initials:
+      J.Smith   -> J. Smith
+      J.K.Smith -> J. K. Smith *)
+   |> (List.map
+      (fun name ->
+         let rx = Str.regexp {|\([ .][^ .]\.\)\([^ ]\)|} in
+         let rec insertSpace (input:string) : string =
+            let output = Str.global_replace rx {|\1 \2|} input in
+            if output = input then output else insertSpace output
+         in
+         insertSpace (" " ^ name)))
+
    (* remove any empty *)
    |> (List.map (Blanks.squashSpaces %> String.trim))
    |> (List.filter String_.notEmpty)
