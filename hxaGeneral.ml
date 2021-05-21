@@ -712,30 +712,18 @@ struct
    let truncate (max:int) (s:string) : string =
       if String.length s <= max then s else String.sub s 0 max
 
-   let capitaliseAll (input:string) : string =
-      let finder = Str.regexp {|^[a-z]\|[^a-zA-Z][a-z]|}
-      and substituter (whole:string) : string =
-         let wordStart = Str.matched_string whole in
-         match (String.length wordStart) with
-         | 1 ->
-            (* very first char of string *)
-            String.capitalize_ascii wordStart
-         | 2 ->
-            (* for word-break of: blank, '_', '-' *)
-            if
-               isFirstChar
-                  (fun c -> (Char_.isBlank c) || (c = '_') || (c = '-'))
-                  wordStart
-            then
-               (String.sub wordStart 0 1)
-               ^ (String.capitalize_ascii (String.sub wordStart 1 1))
-            else
-               wordStart
-         | _ ->
-            (* regex should not allow this *)
-            wordStart
-      in
-      Str.global_substitute finder substituter input
+   let capitaliseAll (str:string) : string =
+      let len = String.length str in
+      let buf = Buffer.create len
+      and isPrevAlpha = ref false in
+      for i = 0 to (len - 1) do
+         let c = str.[i] in
+         Buffer.add_char
+            buf
+            (if !isPrevAlpha then c else Char.uppercase_ascii c) ;
+         isPrevAlpha := Char_.isAlpha c ;
+      done ;
+      Buffer.contents buf
 
    let toInt ?(zeroPadded:(bool * int) option) ?(widthMaxed:int option)
       ?(signed:bool option) (input:string) : int option =
