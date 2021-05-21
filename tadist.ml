@@ -768,7 +768,7 @@ let normaliseTitle (isStrict:bool) (maxLength:int) (titles:string list)
       (* max length *)
       |> (truncateWords maxLength)
       (* title-case *)
-      |> (List.map String.capitalize_ascii)
+      |> (List.map String_.capitaliseAll)
 
 
 let normaliseTitleLax (titles:string list) : StringT.t array =
