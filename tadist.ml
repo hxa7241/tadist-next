@@ -750,8 +750,10 @@ let normaliseTitle (isStrict:bool) (maxLength:int) (titles:string list)
          | _                                     -> title)
       (* maybe abbreviate edition *)
       |> (if isStrict then abbrevEdition else id)
-      (* maybe replace hyphens with spaces *)
-      |> (String.map (function | '-' when isStrict -> ' ' | c -> c))
+      (* maybe replace certain chars with spaces *)
+      |> (if not isStrict
+         then id
+         else (String.map (function | '-' | '_' | '/' | '\\' -> ' ' | c -> c)) )
       (* lowercase, if all uppercase, and more than one word *)
       |> (fun title ->
          if String.contains title ' '
