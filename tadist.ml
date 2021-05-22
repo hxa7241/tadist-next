@@ -743,9 +743,9 @@ let normaliseTitle (isStrict:bool) (maxLength:int) (titles:string list)
          |> (Rx.regexApply {|^\(.....+\)(.*) *$|} ~pos:0 ~caseInsens:false)
          |>- (Rx.groupFound 1)
          |> (Option.value ~default:title) )
-      (* maybe truncate after ':', if more than 7 chars before *)
+      (* maybe truncate after last ':', if more than 7 chars before *)
       |> (fun title ->
-         match String.index_opt title ':' with
+         match String.rindex_opt title ':' with
          | Some pos when (isStrict && (pos > 8)) -> String.sub title 0 pos
          | _                                     -> title)
       (* maybe abbreviate edition *)
