@@ -491,21 +491,29 @@ end
 
 module Char_ :
 sig
-   val isAlpha    : char -> bool
-   val isDigit    : char -> bool
-   val isDigitOct : char -> bool
-   val isDigitHex : char -> bool
-   val isSign     : char -> bool
-   val isAscii    : char -> bool
-   val isBlank    : char -> bool
-   val isNewline  : char -> bool
-   val isCrOrLf   : char -> bool
-   val isCtrl     : char -> bool
+   val isAlpha     : char -> bool
+   val isLowercase : char -> bool
+   val isUppercase : char -> bool
+   val isDigit     : char -> bool
+   val isDigitOct  : char -> bool
+   val isDigitHex  : char -> bool
+   val isSign      : char -> bool
+   val isAscii     : char -> bool
+   val isBlank     : char -> bool
+   val isNewline   : char -> bool
+   val isCrOrLf    : char -> bool
+   val isCtrl      : char -> bool
 end
 =
 struct
    let isAlpha (c:char) : bool =
       match c with | 'a'..'z' | 'A'..'Z' -> true | _ -> false
+
+   let isLowercase (c:char) : bool =
+      match c with | 'a'..'z' -> true | _ -> false
+
+   let isUppercase (c:char) : bool =
+      match c with | 'A'..'Z' -> true | _ -> false
 
    let isDigit (c:char) : bool =
       match c with | '0'..'9' -> true | _ -> false

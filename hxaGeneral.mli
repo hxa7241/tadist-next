@@ -337,6 +337,12 @@ sig
    (** Is a-z or A-Z ?. *)
    val isAlpha   : char -> bool
 
+   (** Is a-z ?. *)
+   val isLowercase : char -> bool
+
+   (** Is A-Z ?. *)
+   val isUppercase : char -> bool
+
    (** Is 0-9 ?. *)
    val isDigit   : char -> bool
 
