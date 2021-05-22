@@ -811,6 +811,15 @@ let normaliseAuthor (maxLength:int) (authors:string list) : string list =
          in
          insertSpace (" " ^ name)))
 
+   (* if all uppercase, make lowercase *)
+   |> (List.map
+      (fun str ->
+         if String_.check (ne Char_.isLowercase) str
+         then String.lowercase_ascii str
+         else str))
+   (* title-case *)
+   |> (List.map String_.capitaliseAll)
+
    (* remove any empty *)
    |> (List.map (Blanks.squashSpaces %> String.trim))
    |> (List.filter String_.notEmpty)
@@ -824,10 +833,8 @@ let normaliseAuthorLax (authors:string list) : StringT.t array =
 
    |> (normaliseAuthor max_int)
 
-   (* extract and regularise last names *)
+   (* extract last names *)
    |> (List.map getLastName)
-   |> (List.map (String.lowercase_ascii %> String_.capitaliseAll))
-
    (* constrain *)
    |> (truncateWords 32)
    |> (List_.filtmap (StringT.makef % Result_.toOpt))
