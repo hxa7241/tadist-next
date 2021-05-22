@@ -754,9 +754,10 @@ let normaliseTitle (isStrict:bool) (maxLength:int) (titles:string list)
       |> (if not isStrict
          then id
          else (String.map (function | '-' | '_' | '/' | '\\' -> ' ' | c -> c)) )
-      (* lowercase, if all uppercase, and more than one word *)
+      (* if all uppercase, make lowercase *)
       |> (fun title ->
-         if String.contains title ' '
+         if (String_.check (ne Char_.isLowercase) title)
+            (*&& (String.contains title ' ')*)
          then String.lowercase_ascii title
          else title)
       (* tokenise : string list *)
