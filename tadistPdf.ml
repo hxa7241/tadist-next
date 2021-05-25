@@ -559,7 +559,7 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
          (* add ISBNs found in text *)
          let isbns =
             (List.append
-               (Tadist.Isbn.extractIsbnsFromText trace 2 text)
+               (Tadist.Isbn.extractIsbnsFromText trace 4 text)
                isbns)
             |> Tadist.normaliseIsbn
             |> List_.deduplicate

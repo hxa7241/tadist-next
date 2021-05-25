@@ -386,7 +386,7 @@ let getTextIsbns (trace:bool) (epubPathname:string) (contentopfpath:string)
       getTextPages trace epubPathname contentopfpath leadAndtrail
    in
 
-   Tadist.Isbn.extractIsbnsFromText trace 2 pages
+   Tadist.Isbn.extractIsbnsFromText trace 4 pages
 
 
 

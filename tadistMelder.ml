@@ -138,7 +138,7 @@ let queryForIsbn (trace:bool) (isbns:(StringT.t * StringT.t) array)
    : nameStructRaw option =
 
    (* only try first few : 'a array *)
-   (Array_.lead 2 isbns)
+   (Array_.lead 3 isbns)
    |>
    (* try successive ISBNs until good result : nameStructRaw ress *)
    (Array.fold_left
