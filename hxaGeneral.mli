@@ -468,7 +468,7 @@ sig
    val truncate : int -> string -> string
 
    (** Like capitalize_ascii, but all words, not only first letter of string.
-    *  (Uppercase all alpha chars that follow non-alpha chars) *)
+    *  (Uppercase all alpha chars that follow ascii non-alpha chars) *)
    val capitaliseAll : string -> string
 
    (** Parse int, with some optional restrictions.

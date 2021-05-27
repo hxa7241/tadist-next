@@ -723,13 +723,13 @@ struct
    let capitaliseAll (str:string) : string =
       let len = String.length str in
       let buf = Buffer.create len
-      and isPrevAlpha = ref false in
+      and isPrevAsciiNonAlpha = ref true in
       for i = 0 to (len - 1) do
          let c = str.[i] in
          Buffer.add_char
             buf
-            (if !isPrevAlpha then c else Char.uppercase_ascii c) ;
-         isPrevAlpha := Char_.isAlpha c ;
+            (if !isPrevAsciiNonAlpha then Char.uppercase_ascii c else c) ;
+         isPrevAsciiNonAlpha := (Char_.isAscii c) && (not (Char_.isAlpha c)) ;
       done ;
       Buffer.contents buf
 
