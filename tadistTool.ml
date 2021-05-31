@@ -22,9 +22,12 @@ open HxaGeneral
 
 (* ---- values ---- *)
 
+let _VNUM = "1.2.1"
+let _COMP = "(OCaml 4.12)"
+
 let _VERSION =
 {|
-TADIST tool (OCaml 4.12) 1.2
+TADIST tool |} ^ _COMP ^ {| |} ^ _VNUM ^ {|
 Harrison Ainsworth / HXA7241 : 2015, 2021 : http://www.hxa.name
 
 License GNU AGPLv3 : http://www.gnu.org/licenses/agpl-3.0.html
@@ -35,7 +38,7 @@ There is NO WARRANTY, to the extent permitted by law.
 
 let _HINT =
 {|
-TADIST tool 1.2 (OCaml 4.12) : 2021 : http://www.hxa.name
+TADIST tool |} ^ _VNUM ^ {| |} ^ _COMP ^ {| : 2021 : http://www.hxa.name
 
 $ tadist -m <filename>   : for metadata (epub/pdf)
 $ tadist -r <filename>   : to rename (epub/pdf)
@@ -45,7 +48,7 @@ $ tadist -?              : for help
 
 let _HELP =
 {|
-  TADIST tool 1.2 (OCaml 4.12)
+  TADIST tool |} ^ _VNUM ^ {| |} ^ _COMP ^ {|
   Harrison Ainsworth / HXA7241 : 2015, 2021
   http://www.hxa.name
 
