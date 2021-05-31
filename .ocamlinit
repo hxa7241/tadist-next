@@ -3,7 +3,7 @@
 #warnings "+a";;
 
 #load "str.cma" ;;
-#directory "/home/hxa/projects/tadist/libs" ;;
+#directory "./libs" ;;
 #mod_use "hxaGeneral.ml" ;;
 #mod_use "utf8.ml" ;;
 #mod_use "tadist.ml" ;;
