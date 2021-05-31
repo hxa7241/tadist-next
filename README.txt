@@ -16,8 +16,8 @@ Contents
 --------
 
 * Description
-* Installation
 * Build
+* Installation
 * Changes
 * Acknowledgements
 * Metadata
@@ -76,33 +76,42 @@ Error exit codes:
 
 
 
+Build
+-----
+
+Language/compiler dependency:
+* OCaml 4.12 (or thereabouts)
+
+Library dependencies (other versions might suffice):
+* camlzip 1.10
+* lzip 1.2.11
+
+Runtime dependencies (not actually to be built, but notable):
+* https://www.xpdfreader.com/download.html 4.03 -- pdfinfo, pdftotext
+* http://openlibrary.org/api/books
+
+Procedure:
+1: build camlzip (which might need building zlib)
+2: unpack the tadist source code
+3: make a directory called 'libs' and from camlzip and zlib put in it: 
+   * dllcamlzip.so
+   * libcamlzip.a
+   * libz.a
+   * zip.[a, cma, cmi, cmx, cmxa]
+4: run make (on 'makefile'), to produce:
+   * tadist -- native executable
+
+
+
 Installation
 ------------
 
 * Put the tadist executable program anywhere.
 * Install pdfinfo and pdftotext:
-   * First check if they are already installed, otherwise proceed.
-   * Get Xpdf command line tools from: https://www.xpdfreader.com/download.html
-   * Put pdfinfo and pdftotext in the path or in the same directory as tadist.
-
-
-
-Build
------
-
-Requirements:
-* OCaml 4.12 (or thereabouts)
-
-Library dependencies (other versions might suffice):
-* camlzip 1.10
-
-Runtime dependencies:
-* https://www.xpdfreader.com/download.html
-* http://openlibrary.org/api/books
-
-Run make, to produce:
-* tadist  -- native executable
-* tadistb -- OCaml bytecode executable
+   1: First check if they are already installed, otherwise proceed.
+   2: Get Xpdf command line tools from: https://www.xpdfreader.com/download.html
+   3: Put pdfinfo and pdftotext in the path or in the same directory as tadist.
+* enable internet access
 
 
 
@@ -118,7 +127,7 @@ Supports PDF files.
 
 ### Version 1.1 : 2020-04-10 ###
 
-OpenLibrary.org ISBN query data
+OpenLibrary.org ISBN query.
 
 (OCaml 4.10)
 
