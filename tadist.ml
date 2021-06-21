@@ -235,7 +235,7 @@ struct
          ||
          (* 10: last digit may be 'X' *)
          (  ((String.length s) = 10) &&
-            ((String_.last s) = 'X') &&
+            ((String_.last_x s) = 'X') &&
             (String_.check Char_.isDigit (String_.lead 9 s))  )
       then Ok s
       else Error "ISBN chars invalid"
@@ -256,7 +256,7 @@ struct
       (* remove any spaces or hyphens *)
       let s = String_.filter (fun c -> not ((c = ' ') || (c = '-'))) s in
       (* check content *)
-      s |> checkChars |>= checkLength
+      s |> checkLength |>= checkChars
 
    let length (isbn:t) : int =
       String.length isbn
@@ -289,7 +289,7 @@ struct
 
    let checkChecksum (isbn:t) : bool =
       (String_.notEmpty isbn) &&
-         ((String_.last isbn) = (makeChecksum isbn))
+         ((String_.last_x isbn) = (makeChecksum isbn))
 
    let check (s:string) : bool =
       match make s with
@@ -1025,7 +1025,7 @@ let normaliseMetadata_x (trace:bool) (nsl:nameStructLax) : nameStruct =
       (Result_.defaultf
          (fun _ ->
             traceHead trace __MODULE_FUNCTION__ "" ;
-            (raiseTrace
+            (raiseTrace_x
                trace
                EXIT_DATAERR
                __MODULE_FUNCTION__
@@ -1040,7 +1040,7 @@ let normaliseMetadata_x (trace:bool) (nsl:nameStructLax) : nameStruct =
       (Option_.defaultf
          (fun _ ->
             traceHead trace __MODULE_FUNCTION__ "" ;
-            (raiseTrace
+            (raiseTrace_x
                trace
                EXIT_DATAERR
                __MODULE_FUNCTION__

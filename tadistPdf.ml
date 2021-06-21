@@ -70,7 +70,7 @@ let recognisePdf_x (trace:bool) (pdfPathname:string) : bool =
    with
    | Sys_error extraMsg ->
       let message = "cannot open/read file: " ^ pdfPathname in
-      raiseTrace
+      raiseTrace_x
          trace EXIT_NOINPUT __MODULE_FUNCTION__
          message
          "Either there is no file of that name, or it is not openable. Maybe \
@@ -537,7 +537,7 @@ let extractTadist_x (trace:bool) (pdfPathname:string)
       (Result_.defaultf
          (fun message ->
             traceHead trace __MODULE_FUNCTION__ "" ;
-            (raiseTrace
+            (raiseTrace_x
                trace EXIT_DATAERR __MODULE_FUNCTION__
                message
                "Invocation of an external tool seems not to have worked. First, \

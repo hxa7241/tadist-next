@@ -168,7 +168,7 @@ let recogniseEpub_x (trace:bool) (epubPathname:string) : bool =
    with
    | Sys_error extraMsg ->
       let message = "cannot open/read file: " ^ epubPathname in
-      raiseTrace
+      raiseTrace_x
          trace EXIT_NOINPUT __MODULE_FUNCTION__
          message
          "Either there is no file of that name, or it is not openable. Maybe \
@@ -220,7 +220,7 @@ let getContentOpf_x (trace:bool) (epubPathname:string) : (string * string) =
    |>
    (Result_.defaultf
       (fun message ->
-         (raiseTrace
+         (raiseTrace_x
             trace EXIT_DATAERR __MODULE_FUNCTION__
             message
             "The file seems to missing important parts. You probably need to \

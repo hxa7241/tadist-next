@@ -139,7 +139,7 @@ val exitSysPrint : sysExit -> string -> string -> 'a
    @param fifth  hint
    @param sixth  supplemental message
  *)
-val raiseTrace   : bool -> sysExit -> string -> string -> string -> string -> 'a
+val raiseTrace_x : bool -> sysExit -> string -> string -> string -> string -> 'a
 
 
 
@@ -535,7 +535,7 @@ sig
 
    (** Last char.
       @raise Invalid_argument "index out of bounds" on empty string *)
-   val last : string -> char
+   val last_x : string -> char
 
    (** First n chars, with clamped n. *)
    val lead : int -> string -> string

@@ -141,7 +141,7 @@ let exitSysPrint (sysexit:sysExit) (message:string) (hint:string) : 'a =
    | EXIT_UNSPECIFIED -> exitPrint 114 "unspecified/unknown error" message hint
 
 
-let raiseTrace   (trace:bool) (sysexit:sysExit)
+let raiseTrace_x (trace:bool) (sysexit:sysExit)
    (location:string) (message:string) (hint:string) (extra:string)
    : 'a =
 
@@ -593,7 +593,7 @@ sig
    val truncate      : int -> string -> string
    val capitaliseAll : string -> string
 
-   val last          : string -> char
+   val last_x        : string -> char
    val lead          : int -> string -> string
    val trail         : int -> string -> string
    val leadTrail     : int -> string -> (string * string)
@@ -711,7 +711,7 @@ struct
 
    (* -- extract -- *)
 
-   let last   (s:string) : char =
+   let last_x (s:string) : char =
       s.[(String.length s) - 1]
 
    let lead (pos:int) (s:string) : string =

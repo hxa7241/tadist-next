@@ -42,7 +42,7 @@ let extractMetadata_x (trace:bool) (filePathname:string) : nameStructRaw =
          let __MODULE_FUNCTION__ = __MODULE__ ^ ".extractMetadata_x"
          and message = "unrecognised file type" in
          traceHead trace __MODULE_FUNCTION__ "" ;
-         raiseTrace
+         raiseTrace_x
             trace EXIT_DATAERR __MODULE_FUNCTION__
             message
             "Only the file types mentioned in the documentation are supported. \
