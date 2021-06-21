@@ -40,6 +40,7 @@ exception Intolerable of (sysExit * string * string)
 
 (* ---- functions ---- *)
 
+
 (* -- data -- *)
 
 let ofList1 (l1:'a list1) : 'a list =
@@ -62,6 +63,7 @@ let ( @< ) (l:'a list) (a:'a) : 'a list =
    l @ (a :: [])
 
 
+
 (* -- print, exception-default, assert, exit -- *)
 
 let print_string_flush (s:string) : unit =
@@ -79,8 +81,9 @@ let traceString (trace:bool) (label:string) (content:string) : unit =
 
 
 let traceRess (trace:bool) (label:string) (toString:'a -> string)
-   (content:'a ress)
+   (content:('a,string) result)
    : unit =
+
    traceString
       trace
       label
@@ -105,6 +108,7 @@ let assertLog_x (outputter:string->unit) (b:bool) (message:string) : bool =
 
 let exitPrint (code:int) (main:string) (supplement:string) (hint:string)
    : 'a =
+
    let message =
       let sum = main ^ (if supplement = "" then "" else ": " ^ supplement) in
       let len = String.length sum in
@@ -137,14 +141,16 @@ let exitSysPrint (sysexit:sysExit) (message:string) (hint:string) : 'a =
    | EXIT_UNSPECIFIED -> exitPrint 114 "unspecified/unknown error" message hint
 
 
-let raiseTrace (trace:bool) (sysexit:sysExit)
+let raiseTrace   (trace:bool) (sysexit:sysExit)
    (location:string) (message:string) (hint:string) (extra:string)
    : 'a =
+
    traceString
       trace
       ("^^^ Raise: [" ^ location ^ "] ")
       (message ^ " (" ^ extra ^ ")") ;
    raise (Intolerable (sysexit , message , hint))
+
 
 
 (* -- string, numerical, timer -- *)
@@ -183,6 +189,7 @@ let timerWall (f:'a -> 'b) (input:'a) : ('b * float) =
    ( output , timeEnd -. timeBegin )
 
 
+
 (* -- function combinators -- *)
 
 let id = Fun.id
@@ -198,6 +205,7 @@ let ( %> ) = ( % )
 let ne = Fun.negate
 
 
+
 (* -- heterogenous (product) map -- *)
 
 let hemap2 (f0,f1:('a0 -> 'b0) * ('a1 -> 'b1)) (a0,a1:'a0 * 'a1) : ('b0 * 'b1) =
@@ -206,29 +214,33 @@ let hemap2 (f0,f1:('a0 -> 'b0) * ('a1 -> 'b1)) (a0,a1:'a0 * 'a1) : ('b0 * 'b1) =
 
 
 
-(* ---- std lib module augmentations ---- *)
+(* ---- stdlib module augmentations ---- *)
 
 module Option_ :
 sig
-   val default  : 'a           -> 'a option -> 'a
-   val valuef   : (unit -> 'a) -> 'a option -> 'a
-   val defaultf : (unit -> 'a) -> 'a option -> 'a
-   val diverge  : 'a option -> ('a option * unit option)
-   val foldf    : ('a -> 'b) -> (unit -> 'b) -> 'a option -> 'b
-   val toBool   : 'a option -> bool
-   val fromBool : bool -> unit option
-   val classify : ('a -> bool) -> 'a -> 'a option
-   val toRes    : 'e -> 'o option -> ('o,'e) result
-   val toResU   : 'o option -> ('o, unit) result
+   val default        : 'a           -> 'a option -> 'a
+   val valuef         : (unit -> 'a) -> 'a option -> 'a
+   val defaultf       : (unit -> 'a) -> 'a option -> 'a
+   val diverge        : 'a option -> ('a option * unit option)
+   val foldf          : ('a -> 'b) -> (unit -> 'b) -> 'a option -> 'b
+
+   val toBool         : 'a option -> bool
+   val fromBool       : bool -> unit option
+   val classify       : ('a -> bool) -> 'a -> 'a option
+   val toRes          : 'e -> 'o option -> ('o,'e) result
+   val toResU         : 'o option -> ('o, unit) result
    val resoptToOptres : (('o, 'e) result) option -> ('o option, 'e) result
-   val toExc_x  : (unit -> exn) -> 'a option -> 'a
-   val fromExc  : (unit -> 'a) -> 'a option
-   val and2     : ('a option) -> ('b option) -> (('a * 'b) option)
-   val or2      : ('a option) -> ('a option) -> ('a option)
-   (*val merge2   : 'a -> ('a -> 'a -> 'a) -> ('a option * 'a option) -> 'a*)
+   val toExc_x        : (unit -> exn) -> 'a option -> 'a
+   val fromExc        : (unit -> 'a) -> 'a option
+
+   val and2           : ('a option) -> ('b option) -> (('a * 'b) option)
+   val or2            : ('a option) -> ('a option) -> ('a option)
+   (*val merge2      : 'a -> ('a -> 'a -> 'a) -> ('a option * 'a option) -> 'a*)
 end
 =
 struct
+   (* -- map -- *)
+
    let default (d:'a) (o:'a option) : 'a =
       Option.value ~default:d o
 
@@ -243,6 +255,9 @@ struct
       match o with
       | Some a -> (Some a , None   )
       | None   -> (None   , Some ())
+
+
+   (* -- convert -- *)
 
    let foldf (fs:'a -> 'b) (fn:unit -> 'b) (o:'a option) : 'b =
       (Option.map fs o) |> (defaultf fn)
@@ -271,23 +286,14 @@ struct
 
    let resoptToOptres (resopt:(('o,'e) result) option)
       : (('o option),'e) result =
-
       match resopt with
       | Some res ->
          begin match res with
          | Ok o    -> Ok (Some o)
          | Error e -> Error e
          end
-      | None -> Ok None
-
-      (*
-      o r -> ro
-      ----+----
-      s o |  os (value)
-      s e |  e
-      n - |  on
-      n - |  on
-      *)
+      | None ->
+         Ok None
 
    let toExc_x (f:unit -> exn) (o:'a option) : 'a =
       match o with
@@ -296,6 +302,9 @@ struct
 
    let fromExc (f:unit -> 'a) : 'a option =
       excToDefaultf ~default:(Fun.const None) ~f:(f % Option.some)
+
+
+   (* -- logical -- *)
 
    let and2 (o0:'o0 option) (o1:'o1 option) : ('o0 * 'o1) option =
       match o0 , o1 with
@@ -321,20 +330,22 @@ end
 
 module Result_ :
 sig
-   val default      : 'o         -> ('o,'e) result -> 'o
-   val valuef       : ('e -> 'o) -> ('o,'e) result -> 'o
-   val defaultf     : ('e -> 'o) -> ('o,'e) result -> 'o
+   val default        : 'o         -> ('o,'e) result -> 'o
+   val valuef         : ('e -> 'o) -> ('o,'e) result -> 'o
+   val defaultf       : ('e -> 'o) -> ('o,'e) result -> 'o
    val map : (('a -> 'c) * ('b -> 'd)) -> ('a,'b) result -> ('c,'d) result
-   (*val resMap_      : ?ok:('a -> 'c) -> ?er:('b -> 'd) -> ('a,'b) result ->
-      ('c,'d) result*)
-   val okMap        : ('o0 -> 'o1) -> ('o0,'e) result -> ('o1,'e) result
-   val errorMap     : ('e0 -> 'e1) -> ('o,'e0) result -> ('o,'e1) result
-   val diverge      : ('o,'e) result -> ('o option * 'e option)
-   val toOpt        : ('o,'e) result -> 'o option
+   (*val resMap_        : ?ok:('a -> 'c) -> ?er:('b -> 'd) -> ('a,'b) result ->
+                        ('c,'d) result*)
+   val okMap          : ('o0 -> 'o1) -> ('o0,'e) result -> ('o1,'e) result
+   val errorMap       : ('e0 -> 'e1) -> ('o,'e0) result -> ('o,'e1) result
+   val diverge        : ('o,'e) result -> ('o option * 'e option)
+
+   val toOpt          : ('o,'e) result -> 'o option
    val optresToResopt : ('o option, 'e) result -> (('o, 'e) result) option
-   val toExc_x      : ('e -> exn) -> ('o,'e) result -> 'o
-   val fromExc      : (unit -> 'o) -> ('o , exn) result
-   val fromExc2     : 'e -> (unit -> 'o) -> ('o,'e) result
+   val toExc_x        : ('e -> exn) -> ('o,'e) result -> 'o
+   val fromExc        : (unit -> 'o) -> ('o , exn) result
+   val fromExc2       : 'e -> (unit -> 'o) -> ('o,'e) result
+
    val ressOr2      :
       string ->
       ('o0 * 'o1) ->
@@ -351,6 +362,9 @@ sig
 end
 =
 struct
+
+   (* -- map -- *)
+
    let default (d:'o) (r:('o,'e) result) : 'o =
       Result.value ~default:d r
 
@@ -383,6 +397,9 @@ struct
    (*let errorMap (f:('e0 -> 'e1)) (r:('o,'e0) result) : ('o,'e1) result =
       resMap (id , f) r*)
 
+
+   (* -- convert -- *)
+
    let diverge (r:('o,'e) result) : ('o option * 'e option) =
       match r with
       | Ok    o -> (Some o , None)
@@ -396,23 +413,14 @@ struct
 
    let optresToResopt (optres:(('o option),'e) result)
       : (('o,'e) result) option =
-
       match optres with
       | Ok opt ->
          begin match opt with
          | Some s -> Some (Ok s)
          | None   -> None
          end
-      | Error e -> Some (Error e)
-
-      (*
-      r o -> or
-      ----+----
-      o s |  so (value)
-      o n |  n
-      e - |  se
-      e - |  se
-      *)
+      | Error e ->
+         Some (Error e)
 
    let toExc_x (f:'e -> exn) (r:('o,'e) result) : 'o =
       match r with
@@ -434,6 +442,9 @@ struct
 
    let result_of_bool (b:bool) : ('o,'e) result =
       if b then Ok () else Error ()*)
+
+
+   (* -- logical -- *)
 
    let ressOr2
       (joiner:string)
@@ -494,10 +505,12 @@ sig
    val isAlpha     : char -> bool
    val isLowercase : char -> bool
    val isUppercase : char -> bool
+
    val isDigit     : char -> bool
    val isDigitOct  : char -> bool
    val isDigitHex  : char -> bool
    val isSign      : char -> bool
+
    val isAscii     : char -> bool
    val isBlank     : char -> bool
    val isNewline   : char -> bool
@@ -506,6 +519,9 @@ sig
 end
 =
 struct
+
+   (* -- alpha -- *)
+
    let isAlpha (c:char) : bool =
       match c with | 'a'..'z' | 'A'..'Z' -> true | _ -> false
 
@@ -514,6 +530,9 @@ struct
 
    let isUppercase (c:char) : bool =
       match c with | 'A'..'Z' -> true | _ -> false
+
+
+   (* -- numeric -- *)
 
    let isDigit (c:char) : bool =
       match c with | '0'..'9' -> true | _ -> false
@@ -526,6 +545,9 @@ struct
 
    let isSign (c:char) : bool =
       (c = '-') || (c = '+')
+
+
+   (* -- ascii -- *)
 
    let isAscii (c:char) : bool =
       (int_of_char c) <= 127
@@ -551,43 +573,49 @@ end
 
 module String_ :
 sig
-   val isEmpty     : string -> bool
-   val notEmpty    : string -> bool
-   val lastPos     : string -> int
-   val repeat      : int -> string -> string
-   val lead        : int -> string -> string
-   val trail       : int -> string -> string
-   val leadTrail   : int -> string -> (string * string)
-   val last        : string -> char
-   val subo        : int -> int -> string -> string option
-   val subc        : int -> int -> string -> string
-   val subp        : int -> int -> string -> string
-   val subpc       : int -> int -> string -> string
-   val isFirstChar : (char -> bool) -> string -> bool
-   val index       : char -> ?start:int -> string -> int option
-   val indexp      : (char -> bool) -> ?start:int -> string -> int option
-   val indexl      : char -> ?start:int -> string -> int
-   val indexpl     : (char -> bool) -> ?start:int -> string -> int
-   val rindexp     : (char -> bool) -> string -> int option
-   val containsp   : (char -> bool) -> string -> bool
-   val filter      : (char -> bool) -> string -> string
-   val filterAscii : string -> string
-   val check       : (char -> bool) -> string -> bool
-   val halvep      : char -> string -> (string * string * int) option
-   val halve       : char -> string -> (string * string) option
-   val splitp      : ?ls:((string * int) list) -> (char -> bool) -> string ->
-                     (string * int) list
-   val split       : (char -> bool) -> string -> string list
-   val trimTrunc   : (string * int) -> (string , string) result
-   val truncate    : int -> string -> string
+   val isEmpty       : string -> bool
+   val notEmpty      : string -> bool
+   val lastPos       : string -> int
+   val isFirstChar   : (char -> bool) -> string -> bool
+   val index         : char -> ?start:int -> string -> int option
+   val indexp        : (char -> bool) -> ?start:int -> string -> int option
+   val indexl        : char -> ?start:int -> string -> int
+   val indexpl       : (char -> bool) -> ?start:int -> string -> int
+   val rindexp       : (char -> bool) -> string -> int option
+   val containsp     : (char -> bool) -> string -> bool
+   val check         : (char -> bool) -> string -> bool
+
+   val repeat        : int -> string -> string
+
+   val filter        : (char -> bool) -> string -> string
+   val filterAscii   : string -> string
+   val trimTrunc     : (string * int) -> (string , string) result
+   val truncate      : int -> string -> string
    val capitaliseAll : string -> string
-   val toInt       : ?zeroPadded:(bool * int) -> ?widthMaxed:int ->
-                     ?signed:bool -> string -> int option
-   val ofOpt       : string option -> string
-   val toOpt       : string -> string option
+
+   val last          : string -> char
+   val lead          : int -> string -> string
+   val trail         : int -> string -> string
+   val leadTrail     : int -> string -> (string * string)
+   val subo          : int -> int -> string -> string option
+   val subc          : int -> int -> string -> string
+   val subp_x        : int -> int -> string -> string
+   val subpc         : int -> int -> string -> string
+   val halvep        : char -> string -> (string * string * int) option
+   val halve         : char -> string -> (string * string) option
+   val splitp        : ?ls:((string * int) list) -> (char -> bool) -> string ->
+                       (string * int) list
+   val split         : (char -> bool) -> string -> string list
+
+   val toInt         : ?zeroPadded:(bool * int) -> ?widthMaxed:int ->
+                       ?signed:bool -> string -> int option
+   val ofOpt         : string option -> string
+   val toOpt         : string -> string option
 end
 =
 struct
+   (* -- query -- *)
+
    let isEmpty (s:string) : bool =
       (String.length s) = 0
 
@@ -596,44 +624,6 @@ struct
 
    let lastPos (s:string) : int =
       (String.length s) - 1
-
-   let repeat (i:int) (s:string) : string =
-      let b = Buffer.create 16 in
-      if i > 0 then for _ = 1 to i do Buffer.add_string b s done ;
-      Buffer.contents b
-
-   let lead (pos:int) (s:string) : string =
-      let posc = clamp ~lo:0 ~up:(String.length s) pos in
-      String.sub s 0 posc
-
-   let trail (pos:int) (s:string) : string =
-      let posc = clamp ~lo:0 ~up:(String.length s) pos in
-      String.sub s posc ((String.length s) - posc)
-
-   let leadTrail (pos:int) (s:string) : (string * string) =
-      ( lead pos s , trail pos s )
-
-   let last (s:string) : char =
-      s.[(String.length s) - 1]
-
-   let subo (pos:int) (len:int) (s:string) : string option =
-      try Some (String.sub s pos len) with
-      | Invalid_argument _ -> None
-
-   let subc (pos:int) (len:int) (s:string) : string =
-      let wholeLen = String.length s in
-      let posc     = clamp ~lo:0 ~up:wholeLen          pos in
-      let lenc     = clamp ~lo:0 ~up:(wholeLen - posc) len in
-      String.sub s posc lenc
-
-   let subp (startpos:int) (endpos:int) (s:string) : string =
-      String.sub s startpos (endpos - startpos)
-
-   let subpc (startpos:int) (endpos:int) (s:string) : string =
-      let wholeLen = String.length s in
-      let startc   = clamp ~lo:0      ~up:wholeLen startpos in
-      let endc     = clamp ~lo:startc ~up:wholeLen endpos in
-      subc startpos (endc - startc) s
 
    let isFirstChar (pred:char -> bool) (s:string) : bool =
       ((String.length s) > 0) && pred s.[0]
@@ -669,6 +659,22 @@ struct
    let containsp (pred: char -> bool) (s:string) : bool =
       (indexp pred s) |> Option_.toBool
 
+   let check (pred: char -> bool) (s:string) : bool =
+      match rindexp (Fun.negate pred) s with
+      | Some _ -> false
+      | None   -> true
+
+
+   (* -- construct -- *)
+
+   let repeat (i:int) (s:string) : string =
+      let b = Buffer.create 16 in
+      if i > 0 then for _ = 1 to i do Buffer.add_string b s done ;
+      Buffer.contents b
+
+
+   (* -- modify -- *)
+
    let filter (pred: char -> bool) (s:string) : string =
       let len = String.length s in
       let buf = Buffer.create len in
@@ -680,10 +686,63 @@ struct
    let filterAscii : (string -> string) =
       filter Char_.isAscii
 
-   let check (pred: char -> bool) (s:string) : bool =
-      match rindexp (Fun.negate pred) s with
-      | Some _ -> false
-      | None   -> true
+   let trimTrunc ((s:string) , (max:int)) : (string , string) result =
+      let st = String.trim s in
+      if (String.length st) <= max
+      then Ok st
+      else Error ("string too long (> " ^ (string_of_int max) ^ ")")
+
+   let truncate (max:int) (s:string) : string =
+      if String.length s <= max then s else String.sub s 0 max
+
+   let capitaliseAll (str:string) : string =
+      let len = String.length str in
+      let buf = Buffer.create len
+      and isPrevAsciiNonAlpha = ref true in
+      for i = 0 to (len - 1) do
+         let c = str.[i] in
+         Buffer.add_char
+            buf
+            (if !isPrevAsciiNonAlpha then Char.uppercase_ascii c else c) ;
+         isPrevAsciiNonAlpha := (Char_.isAscii c) && (not (Char_.isAlpha c)) ;
+      done ;
+      Buffer.contents buf
+
+
+   (* -- extract -- *)
+
+   let last   (s:string) : char =
+      s.[(String.length s) - 1]
+
+   let lead (pos:int) (s:string) : string =
+      let posc = clamp ~lo:0 ~up:(String.length s) pos in
+      String.sub s 0 posc
+
+   let trail (pos:int) (s:string) : string =
+      let posc = clamp ~lo:0 ~up:(String.length s) pos in
+      String.sub s posc ((String.length s) - posc)
+
+   let leadTrail (pos:int) (s:string) : (string * string) =
+      ( lead pos s , trail pos s )
+
+   let subo (pos:int) (len:int) (s:string) : string option =
+      try Some (String.sub s pos len) with
+      | Invalid_argument _ -> None
+
+   let subc (pos:int) (len:int) (s:string) : string =
+      let wholeLen = String.length s in
+      let posc     = clamp ~lo:0 ~up:wholeLen          pos in
+      let lenc     = clamp ~lo:0 ~up:(wholeLen - posc) len in
+      String.sub s posc lenc
+
+   let subp_x (startpos:int) (endpos:int) (s:string) : string =
+      String.sub s startpos (endpos - startpos)
+
+   let subpc (startpos:int) (endpos:int) (s:string) : string =
+      let wholeLen = String.length s in
+      let startc   = clamp ~lo:0      ~up:wholeLen startpos in
+      let endc     = clamp ~lo:startc ~up:wholeLen endpos in
+      subc startpos (endc - startc) s
 
    let halvep (div:char) (str:string) : (string * string * int) option =
       Option.map
@@ -711,27 +770,8 @@ struct
       let lsi = splitp pred s in
       fst (List.split lsi)
 
-   let trimTrunc ((s:string) , (max:int)) : (string , string) result =
-      let st = String.trim s in
-      if (String.length st) <= max
-      then Ok st
-      else Error ("string too long (> " ^ (string_of_int max) ^ ")")
 
-   let truncate (max:int) (s:string) : string =
-      if String.length s <= max then s else String.sub s 0 max
-
-   let capitaliseAll (str:string) : string =
-      let len = String.length str in
-      let buf = Buffer.create len
-      and isPrevAsciiNonAlpha = ref true in
-      for i = 0 to (len - 1) do
-         let c = str.[i] in
-         Buffer.add_char
-            buf
-            (if !isPrevAsciiNonAlpha then Char.uppercase_ascii c else c) ;
-         isPrevAsciiNonAlpha := (Char_.isAscii c) && (not (Char_.isAlpha c)) ;
-      done ;
-      Buffer.contents buf
+   (* -- convert -- *)
 
    let toInt ?(zeroPadded:(bool * int) option) ?(widthMaxed:int option)
       ?(signed:bool option) (input:string) : int option =
@@ -794,28 +834,33 @@ module List_ :
 sig
    val isEmpty       : 'a list -> bool
    val notEmpty      : 'a list -> bool
+   val find          : ('a -> bool) -> 'a list -> 'a option
+   val findmap       : ('a -> 'b option) -> 'a list -> 'b option
+
+   val unfoldl       : (int -> 'a) -> int -> 'a list
+   val unfoldo       : (int -> 'a option) -> 'a list
+
    val hd            : 'a list -> 'a option
    val first         : 'a list -> 'a option
    val ft            : 'a list -> 'a option
    val last          : 'a list -> 'a option
-   val tlSafe        : 'a list -> 'a list
    val nth           : int -> 'a list -> 'a option
+   val tlSafe        : 'a list -> 'a list
    val hdft          : 'a list -> 'a list
    val bisect        : int -> 'a list -> ('a list * 'a list)
    val lead          : int -> 'a list -> 'a list
    val trail         : int -> 'a list -> 'a list
-   val find          : ('a -> bool) -> 'a list -> 'a option
-   val filtmap       : ('a -> 'b option) -> 'a list -> 'b list
-   val partmap       : ('a -> ('o, 'e) result) -> 'a list -> ('o list * 'e list)
-   val findmap       : ('a -> 'b option) -> 'a list -> 'b option
-   val deduplicate : 'a list -> 'a list
    val optAnd        : ('a option) list -> ('a list) option
    val optOr         : ('a option) list -> ('a list) option
    val resAnd        : (('o,'e) result list) -> ('o list , 'e list) result
-   val unfoldl       : (int->'a) -> int -> 'a list
-   val unfoldo       : (int->'a option) -> 'a list
+
+   val filtmap       : ('a -> 'b option) -> 'a list -> 'b list
+   val partmap       : ('a -> ('b, 'c) Either.t) -> 'a list ->
+                       ('b list * 'c list)
+   val deduplicate   : 'a list -> 'a list
    val equalenTruncate : 'a list -> 'b list -> ('a list * 'b list)
    val equalenExtend   : 'a -> 'b -> 'a list -> 'b list -> ('a list * 'b list)
+
    val ofStringAscii : string -> char list
    val toStringAscii : (char list) -> string
    val ofOpt         : 'a option -> 'a list
@@ -823,11 +868,49 @@ sig
 end
 =
 struct
+   (* -- query -- *)
+
    let isEmpty (l:'a list) : bool =
-      (List.length l = 0)
+      List.length l = 0
 
    let notEmpty (l:'a list) : bool =
-      not (isEmpty l)
+      List.length l <> 0
+
+   let find = List.find_opt
+   (*let find (f:'a -> bool) (l:'a list) : 'a option =
+      try Some (List.find f l) with Not_found -> None*)
+
+   let findmap = List.find_map
+   (*let rec findmap (predmap:'a -> 'b option) (l:'a list) : 'b option =
+      match l with
+      | a :: tail ->
+         begin match predmap a with
+         | None        -> findmap predmap tail
+         | Some _ as b -> b
+         end
+      | [] -> None*)
+
+
+   (* -- construct -- *)
+
+   let unfoldl (f:int -> 'a) (size:int) : 'a list =
+      let rec recur (list:'a list) (f:int->'a) (size:int) : 'a list =
+         if size > 0
+         then recur ((f (size - 1)) :: list) f (size - 1)
+         else list
+      in
+      recur [] f size
+
+   let unfoldo (f:int -> 'a option) : 'a list =
+      let rec recur (list:'a list) (index:int) (f:int->'a option) : 'a list =
+         match (f index) with
+         | Some element -> recur (element :: list) (index + 1) f
+         | None         -> List.rev list
+      in
+      recur [] 0 f
+
+
+   (* -- extract -- *)
 
    let hd (l:'a list) : 'a option =
       match l with
@@ -844,13 +927,14 @@ struct
 
    let last = ft
 
+   let nth (index:int) (l:'a list) : 'a option =
+      try List.nth_opt l index with
+      | Invalid_argument _ -> None
+
    let tlSafe (l:'a list) : 'a list =
       match l with
       | _ :: tail -> tail
       | []        -> []
-
-   let nth (index:int) (l:'a list) : 'a option =
-      try Some (List.nth l index) with Failure _ -> None
 
    let hdft (l:'a list) : 'a list =
       match l with
@@ -872,9 +956,28 @@ struct
    let trail (m:int) (l:'a list) : 'a list =
       snd (bisect m l)
 
-   let find = List.find_opt
-   (*let findo (f:'a -> bool) (l:'a list) : 'a option =
-      try Some (List.find f l) with Not_found -> None*)
+   let optAnd (lo:('a option) list) : ('a list) option =
+      let la    = List.filter_map Fun.id lo in
+      let laLen = List.length la in
+      (* Some if: all Some, or empty *)
+      if (laLen = (List.length lo))
+      then Some la else None
+
+   let optOr (lo:('a option) list) : ('a list) option =
+      match List.filter_map Fun.id lo with
+      | [] -> None
+      | la -> Some la
+
+   let resAnd (resList:(('ok,'er) result) list) : ('ok list , 'er list) result =
+      let resToEit : (_, _) result -> (_, _) Either.t =
+         function | Ok a -> Either.Left a | Error b -> Either.Right b
+      in
+      let okList , erList = List.partition_map resToEit resList in
+      let okListLen       = List.length okList
+      and resListLen      = List.length resList in
+      (* Ok if: all Ok, or empty *)
+      if (okListLen = resListLen)
+      then (Ok okList) else (Error erList)
 
    (*
    ?
@@ -905,18 +1008,22 @@ struct
       last
    *)
 
+
+   (* -- modify -- *)
+
    let filtmap = List.filter_map
    (*let filtmap (f:'a -> 'b option) (l:'a list) : 'b list =
       List.fold_right (fun a out ->
          match f a with | Some b -> b :: out | None -> out) l []*)
 
-   let partmap (f:'a -> ('ok,'er) result) (l:'a list) : ('ok list * 'er list) =
+   let partmap = List.partition_map
+   (*let partmap (f:'a -> ('ok,'er) result) (l:'a list) : ('ok list * 'er list) =
       List.fold_right
          (fun a (oOut , eOut) ->
             match f a with
             | Ok    o -> (o :: oOut ,      eOut)
             | Error e -> (     oOut , e :: eOut))
-         l ([] , [])
+         l ([] , [])*)
 
    let deduplicate (l:'a list) : 'a list =
       let dict = Hashtbl.create (List.length l) in
@@ -933,52 +1040,6 @@ struct
       |> snd
       |> List.rev
 
-   let findmap = List.find_map
-   (*let rec findmap (predmap:'a -> 'b option) (l:'a list) : 'b option =
-      match l with
-      | a :: tail ->
-         begin match predmap a with
-         | None        -> findmap predmap tail
-         | Some _ as b -> b
-         end
-      | [] -> None*)
-
-   let optAnd (lo:('a option) list) : ('a list) option =
-      let la    = filtmap Fun.id lo in
-      let laLen = List.length la in
-      (* Some if: all Some, or empty *)
-      if (laLen = (List.length lo))
-      then Some la else None
-
-   let optOr (lo:('a option) list) : ('a list) option =
-      match filtmap Fun.id lo with
-      | [] -> None
-      | la -> Some la
-
-   let resAnd (listRes:(('ok,'er) result) list) : ('ok list , 'er list) result =
-      let listOk , listErr = partmap Fun.id listRes in
-      let listOkLen        = List.length listOk
-      and listResLen       = List.length listRes in
-      (* Ok if: all Ok, or empty *)
-      if (listOkLen = listResLen)
-      then (Ok listOk) else (Error listErr)
-
-   let unfoldl (f:int->'a) (size:int) : 'a list =
-      let rec recur (list:'a list) (f:int->'a) (size:int) : 'a list =
-         if size > 0
-         then recur ((f (size - 1)) :: list) f (size - 1)
-         else list
-      in
-      recur [] f size
-
-   let unfoldo (f:int->'a option) : 'a list =
-      let rec recur (list:'a list) (index:int) (f:int->'a option) : 'a list =
-         match (f index) with
-         | Some element -> recur (element :: list) (index + 1) f
-         | None         -> List.rev list
-      in
-      recur [] 0 f
-
    let equalenTruncate (la:'a list) (lb:'b list) : ('a list * 'b list) =
       let aLen , bLen = List.length la , List.length lb in
       match compare aLen bLen with
@@ -993,6 +1054,9 @@ struct
       | -1 -> (la @ (unfoldl (Fun.const da) (bLen - aLen)) , lb)
       | +1 -> (la , lb @ (unfoldl (Fun.const db) (aLen - bLen)))
       |  _ -> (la , lb)
+
+
+   (* -- convert -- *)
 
    let ofStringAscii (s:string) : char list =
       unfoldo (fun i -> try Some s.[i] with | Invalid_argument _ -> None)
@@ -1018,24 +1082,29 @@ end
 module Array_ :
 sig
    val isEmpty   : 'a array -> bool
+
    val lead      : int -> 'a array -> 'a array
    val trail     : int -> 'a array -> 'a array
    val leadTrail : int -> 'a array -> ('a array * 'a array)
    val bisect    : int -> 'a array -> ('a array * 'a array)
    val bisecto   : int -> 'a array -> ('a array * 'a array) option
    val partition : ('a -> bool) -> 'a array -> ('a array * 'a array)
-   val printc_x  : ('a -> out_channel -> unit) -> 'a array -> out_channel ->
-                   unit
+
    val ofOpt     : 'a option -> 'a array
    val toOpt     : 'a array  -> 'a option
-   (*
-   val printks_x : ('a -> unit -> string) -> 'a array -> unit -> string
-   *)
+   val printc_x  : ('a -> out_channel -> unit) -> 'a array -> out_channel ->
+                   unit
+   (* val printks_x : ('a -> unit -> string) -> 'a array -> unit -> string *)
 end
 =
 struct
+   (* -- query -- *)
+
    let isEmpty (a:'a array) : bool =
       Array.length a = 0
+
+
+   (* -- construct / modify / extract -- *)
 
    let lead (pos:int) (a:'a array) : 'a array =
       let posc = clamp ~lo:0 ~up:(Array.length a) pos in
@@ -1049,9 +1118,9 @@ struct
       ( lead pos a , trail pos a )
 
    (* exceptioning (same as Array.sub) *)
-   (*let bisect (a:'a array) (i:int) : ('a array * 'a array) =
+   (* let bisect (a:'a array) (i:int) : ('a array * 'a array) =
       let len = Array.length a in
-      (Array.sub a 0 i) , (Array.sub a i (len - i))*)
+      (Array.sub a 0 i) , (Array.sub a i (len - i)) *)
 
    let bisect (i:int) (a:'a array) : ('a array * 'a array) =
       let len = Array.length a in
@@ -1070,9 +1139,8 @@ struct
       let l1 , l2 = List.partition pred l0 in
       ( Array.of_list l1 , Array.of_list l2 )
 
-   let printc_x (printer:('a -> out_channel -> unit)) (a:'a array)
-      (out:out_channel) : unit =
-      Array.iter (fun e -> Printf.fprintf out "%t " (printer e)) a
+
+   (* -- convert -- *)
 
    let ofOpt (o:'a option) : 'a array =
       match o with
@@ -1082,10 +1150,12 @@ struct
    let toOpt (a:'a array) : 'a option =
       Option_.fromExc (fun () -> Array.get a 0)
 
-   (*
-   let printks_x (p:('a -> unit -> string)) (a:'a array) () : string =
-      (* maybe *)
-   *)
+   let printc_x (printer:('a -> out_channel -> unit)) (a:'a array)
+      (out:out_channel) : unit =
+      Array.iter (fun e -> Printf.fprintf out "%t " (printer e)) a
+
+   (* let printks_x (p:('a -> unit -> string)) (a:'a array) () : string =
+      (* maybe *) *)
 end
 
 
@@ -1189,12 +1259,16 @@ sig
    val splitExt  : string -> (string * string)
    val getMain   : string -> string
    val getExt    : string -> string
+
    val splitPath : string -> (string * string)
    val getName   : string -> string
    val getPath   : string -> string
 end
 =
 struct
+
+   (* -- name . ext -- *)
+
    let splitExt (nameExt:string) : (string * string) =
       try
          let extPos = (String.rindex nameExt '.') in
@@ -1208,6 +1282,9 @@ struct
 
    let getExt (nameExt:string) : string =
       snd (splitExt nameExt)
+
+
+   (* -- path / name -- *)
 
    let splitPath (pathName:string) : (string * string) =
       match (String.rindex_opt pathName '/') with
@@ -1228,6 +1305,7 @@ sig
    type rxmatch
 
    val compile    : ?caseInsens:bool -> string -> rx
+
    val apply      : rx     -> ?pos:int -> string -> rxmatch option
    val regexApply : string -> ?pos:int -> ?caseInsens:bool -> string ->
                     rxmatch option
@@ -1236,12 +1314,16 @@ sig
                     rxmatch option
    val allMatches : rx -> string -> string list
    val allMatchesPos : rx -> string -> (string * int) list
+
    val wholeFound : rxmatch -> string
    val wholePos   : rxmatch -> (int * int)
    val groupFound : int -> rxmatch -> (string option)
 end
 =
 struct
+
+   (* -- types -- *)
+
    type rx      = Str.regexp
    type rxmatch =
       {  whole  : string ;
@@ -1250,7 +1332,9 @@ struct
    (*type rx      = Re.re
    type rxmatch = string array option*)
 
-   (* private *)
+
+   (* -- private -- *)
+
    let expressOneMatch (query:bool) (content:string) : rxmatch option =
       if query
       then
@@ -1278,10 +1362,16 @@ struct
       (*try Ok (Re.get_all (Re.exec rx content)) with
       | Not_found -> None*)
 
+
+   (* -- prepare -- *)
+
    let compile ?(caseInsens:bool=false) (rxs:string) : rx =
       if not caseInsens
       then Str.regexp rxs
       else Str.regexp_case_fold rxs
+
+
+   (* -- apply -- *)
 
    let apply (rx:rx) ?(pos:int=0) (content:string) : rxmatch option =
       let query = Str.string_match rx content pos in
@@ -1331,6 +1421,9 @@ struct
             | (Str.Delim str , pos) -> Some (str , pos)
             | (Str.Text  _   , _  ) -> None ))
 
+
+   (* -- extract -- *)
+
    let wholeFound (rxmatch:rxmatch) : string =
       rxmatch.whole
 
@@ -1346,22 +1439,49 @@ end
 
 (* ---- functions ---- *)
 
+
 (* -- error-handling pipeline/monad -- *)
 
-let bypass (f:'a -> unit) (a:'a) : 'a =
-   (f a) ; a
+let ( |>- ) = Option.bind
+(* let ( |>- ) (o:'a option) (f:'a -> 'b option) : 'b option =
 
-(*let ( |>=& ) (r0:('o0,string) result) (r1:('o1,string) result)
+   match o with
+   | Some a -> f a
+   | None   -> None *)
+
+let ( let|>- ) = ( |>- )
+
+
+let ( |>= ) = Result.bind
+(* let ( |>= ) (r:('a,'e) result) (f:'a -> ('b,'e) result) : ('b,'e) result =
+
+   match r with
+   | Ok    a      -> f a
+   | Error _ as e -> e *)
+
+let ( let|>= ) = ( |>= )
+
+
+(* let ( |>>= ) (r:('a,'e) result) (f:'a -> ('b,'e) result)
+   : (('a * 'b) , 'e) result =
+
+   r |>= (fun a ->
+      match f a with
+      | Ok    b      -> Ok (a , b)
+      | Error _ as e -> e) *)
+
+
+(* let ( |>=& ) (r0:('o0,string) result) (r1:('o1,string) result)
    : (('o1 * 'o0) , string) result =
 
    match (r0, r1) with
    | (Ok r0    , Ok r1   ) -> Ok (r1, r0)
    | (Error r0 , Ok _    ) -> Error r0
    | (Ok _     , Error r1) -> Error r1
-   | (Error r0 , Error r1) -> Error (r0 ^ ", " ^ r1)*)
+   | (Error r0 , Error r1) -> Error (r0 ^ ", " ^ r1) *)
 
 
-(*let resAnd (ab:('o0,'e0) result * ('o1,'e1) result)
+(* let resAnd (ab:('o0,'e0) result * ('o1,'e1) result)
    : (('o0 * 'o1) , ('e0 option * 'e1 option)) result =
 
    match ab with
@@ -1371,58 +1491,14 @@ let bypass (f:'a -> unit) (a:'a) : 'a =
    | Error e0 , Error e1 -> Error (Some e0 , Some e1)*)
 
 
-(*let ( &&= ) (a:('o0,'e) result) (b:('o1,'e) result)
+(* let ( &&= ) (a:('o0,'e) result) (b:('o1,'e) result)
    : (('o1 * 'o0) , 'e list) result =
 
    match (a,b) with
    | (Ok o0    , Ok o1   ) -> Ok (o1 , o0)
    | (Ok _     , Error e1) -> Error [e1]
    | (Error e0 , Ok _    ) -> Error [e0]
-   | (Error e0 , Error e1) -> Error [e1 ; e0]*)
-
-
-let ( ||> ) (o:'a option) (f:unit -> 'a option) : 'a option =
-   match o with
-   | Some _ as a -> a
-   | None        -> f ()
-
-
-let ( &&> ) (o:'a option) (f:unit -> 'a option) : 'a option =
-   match o with
-   | Some _ -> f ()
-   | None   -> None
-
-
-let ( |>- ) = Option.bind
-(*let ( |>- ) (o1:'o1 option) (f:'o1 -> 'o2 option)
-   : 'o2 option =
-
-   match o1 with
-   | Some o -> f o
-   | None   -> None*)
-
-(*let ( let|>- ) = ( |>- )*)
-
-
-let ( |>= ) = Result.bind
-(*let ( |>= ) (r1:('o1,'e) result) (f:'o1 -> ('o2,'e) result)
-   : ('o2,'e) result =
-
-   match r1 with
-   | Ok    o      -> f o
-   | Error _ as e -> e*)
-
-let ( let|>= ) = ( |>= )
-
-
-(*let ( |>>= ) (r1:('o1,'e) result) (f:'o1 -> ('o2,'e) result)
-   : (('o1 * 'o2) , 'e) result =
-
-   r1 |>= (fun o1 ->
-      match f o1 with
-      | Ok    o2     -> Ok (o1 , o2)
-      | Error _ as e -> e)*)
-
+   | (Error e0 , Error e1) -> Error [e1 ; e0] *)
 
 (* dependent on List, so moved below that
 
@@ -1432,72 +1508,71 @@ let ( |^= ) (r:('o1,'e) result) (lf:('o1 -> ('o2,'e) result) list)
    (* : (('o2,'e) result) list *)
    (List.map ((|>=) r) lf)
    |>
-   List.resAnd
-*)
+   List.resAnd *)
 
 
 let optAnd2p
-   (f0:'s0 -> 'o1 option)
-   (f1:'s0 -> 'o2 option)
-   (s0:'s0)
-   : ('o1 * 'o2) option =
+   (f :'x -> 'a option)
+   (g :'x -> 'b option)
+   (x :'x)
+   : ('a * 'b) option =
 
-   Option_.and2 (f0 s0) (f1 s0)
-
-
-let ressOr2p
-   (joiner:string)
-   (defaults:('o1 * 'o2))
-   (f0:'o0 -> ('o1,string) result)
-   (f1:'o0 -> ('o2,string) result)
-   (o0:'o0)
-   : (('o1 * 'o2) , string) result =
-
-   Result_.ressOr2 joiner defaults ((f0 o0) , (f1 o0))
-
-
-let ressAnd2p
-   (joiner:string)
-   (f0:'o0 -> ('o1,string) result)
-   (f1:'o0 -> ('o2,string) result)
-   (o0:'o0)
-   : (('o1 * 'o2) , string) result =
-
-   Result_.ressAnd2 joiner ((f0 o0) , (f1 o0))
+   Option_.and2 (f x) (g x)
 
 
 let ( |^^- )
-   (o1:'o1 option)
-   (  (f0:'o1 -> 'o2 option) ,
-      (f1:'o1 -> 'o3 option) )
-   : ('o2 * 'o3) option =
+   (x :'x option)
+   (  (f :'x -> 'a option) ,
+      (g :'x -> 'b option) )
+   : ('a * 'b) option =
 
-   o1 |>- (optAnd2p f0 f1)
+   x |>- (optAnd2p f g)
+
+
+let ressOr2p
+   (joiner   :string)
+   (defaults :('a * 'b))
+   (f        :'x -> ('a,string) result)
+   (g        :'x -> ('b,string) result)
+   (x        :'x)
+   : (('a * 'b) , string) result =
+
+   Result_.ressOr2 joiner defaults ((f x) , (g x))
+
+
+let ressAnd2p
+   (joiner :string)
+   (f      :'x -> ('a,string) result)
+   (g      :'x -> ('b,string) result)
+   (x      :'x)
+   : (('a * 'b) , string) result =
+
+   Result_.ressAnd2 joiner ((f x) , (g x))
 
 
 let ( |^^= )
-   (r1:'o1 ress)
-   (  (f0:'o1 -> 'o2 ress) ,
-      (f1:'o1 -> 'o3 ress) )
-   : ('o2 * 'o3) ress =
+   (x :('x,string) result)
+   (  (f :'x -> ('a,string) result) ,
+      (g :'x -> ('b,string) result) )
+   : (('a * 'b) , string) result =
 
-   r1 |>= (fun o1 ->
-      match ((f0 o1) , (f1 o1)) with
-      | (Ok o2    , Ok o3   ) -> Ok (o2 , o3)
+   x |>= (fun x ->
+      match ((f x) , (g x)) with
+      | (Ok a     , Ok b   )  -> Ok (a , b)
       | (Ok _     , Error e1) -> Error e1
       | (Error e0 , Ok _    ) -> Error e0
       | (Error e0 , Error e1) -> Error (e0 ^ " && " ^ e1))
 
 
 let ressAnd3p
-   (joiner:string)
-   (f0:'o0 -> ('o1,string) result)
-   (f1:'o0 -> ('o2,string) result)
-   (f2:'o0 -> ('o3,string) result)
-   (o0:'o0)
-   : (('o1 * 'o2 * 'o3) , string) result =
+   (joiner :string)
+   (f      :'x -> ('a,string) result)
+   (g      :'x -> ('b,string) result)
+   (h      :'x -> ('c,string) result)
+   (x      :'x)
+   : (('a * 'b * 'c) , string) result =
 
-   Result_.ressAnd3 joiner ((f0 o0) , (f1 o0) , (f2 o0))
+   Result_.ressAnd3 joiner ((f x) , (g x) , (h x))
 
    (*
    (ressAnd2 joiner
@@ -1521,10 +1596,10 @@ let ressAnd3p
 
 
 let ( |^^^= )
-   (r1:('o1,string) result)
-   (  (f0:'o1 -> 'o2 ress) ,
-      (f1:'o1 -> 'o3 ress) ,
-      (f2:'o1 -> 'o4 ress) )
+   (r1 :('o1,string) result)
+   (  (f0 :'o1 -> 'o2 ress) ,
+      (f1 :'o1 -> 'o3 ress) ,
+      (f2 :'o1 -> 'o4 ress) )
    : ('o2 * 'o3 * 'o4) ress =
 
    let f12 = (fun o1 -> (Ok o1) |^^= (f1 , f2)) in
@@ -1545,29 +1620,47 @@ let ( |^^^= )
          Error (e0 ^ " && " ^ e1 ^ " && " ^ e2))*)
 
 
-let ( |>=? ) (r1:('o,'e) result) (f:'e -> ('o,'e) result)
+let ( |>=? ) (r:('o,'e) result) (f:'e -> ('o,'e) result)
    : ('o,'e) result =
 
-   match r1 with
+   match r with
    | Ok _ as o -> o
    | Error e   -> f e
 
 
-let ( |>=+ ) (o1:'o1) (f:'o1 -> ('o2,'e) result) : ('o2,'e) result =
-   (Ok o1) |>= f
+let ( |>=+ ) (a :'a) (f :'a -> ('b,'e) result) : ('b,'e) result =
+   (Ok a) |>= f
 
 
-let ( |>=- ) (r1:('o1,'e) result) (f:'o1 -> 'o2) : ('o2,'e) result =
-   r1 |>= (fun o1 -> Ok (f o1))
+let ( |>=- ) (r :('a,'e) result) (f :'a -> 'b) : ('b,'e) result =
+   r |>= (fun a -> Ok (f a))
 
 
 let ( |>=> )
-   (f:'o1 -> ('o2,'e) result)
-   (g:'o2 -> ('o3,'e) result)
-   (r:('o1,'e) result)
-   : ('o3,'e) result =
+   (f :'a -> ('b,'e) result)
+   (g :'b -> ('c,'e) result)
+   (r :('a,'e) result)
+   : ('c,'e) result =
 
    r |>= f |>= g
+
+
+let bypass (f:'a -> unit) (a:'a) : 'a =
+   (f a) ; a
+
+
+let ( ||> ) (o:'a option) (f:unit -> 'a option) : 'a option =
+   match o with
+   | Some _ as a -> a
+   | None        -> f ()
+
+
+let ( &&> ) (o:'a option) (f:unit -> 'a option) : 'a option =
+   match o with
+   | Some _ -> f ()
+   | None   -> None
+
+
 
 
 (* -- file read/write -- *)
@@ -1621,6 +1714,7 @@ let inputString (inChannel:in_channel) (expectedLength:int) : string =
    Buffer.contents buf
 
 
+
 (* -- command-line invoke -- *)
 
 let quoteShellPathname (pathname:string) : string =
@@ -1655,7 +1749,7 @@ let commandLineInvoke2 (command:string) (environ:string list) (input:string)
 
 let commandLineInvoke (command:string) (environ:string list) (input:string)
    (expectedLength:int)
-   : string ress =
+   : (string , string) result =
 
    match commandLineInvoke2 command environ input expectedLength with
 
